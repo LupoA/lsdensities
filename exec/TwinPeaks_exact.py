@@ -1,13 +1,15 @@
 import sys
+
 sys.path.append("..")
 from importall import *
 
 Mpi = 0.5
 MpiA = 0.5
-MpiB = 1.
+MpiB = 1.0
 Mpi_mp = mpf(str(Mpi))
 MpiA_mp = mpf(str(MpiA))
 MpiB_mp = mpf(str(MpiB))
+
 
 def init_variables(args_):
     in_ = u.inputs()
@@ -20,13 +22,14 @@ def init_variables(args_):
     in_.sigma = args_.sigma
     in_.emax = args_.emax * Mpi
     in_.Ne = args_.ne
-    #in_.l = args_.l
+    # in_.l = args_.l
     in_.alpha = args_.alpha
     in_.emin = args_.emin
     in_.prec = -1
     in_.plots = args_.plots
     in_.assign_mp_values()
     return in_
+
 
 def main():
     print(LogMessage(), "Initialising")
@@ -49,7 +52,7 @@ def main():
         corr[t] = mp.exp(-mpf(t) * MpiA_mp) + mp.exp(-mpf(t) * MpiB_mp)
 
     S = Smatrix_mp(tmax)
-    invS = S**(-1)
+    invS = S ** (-1)
     diff = S * invS
     diff = norm2_mp(diff) - 1
     # print(LogMessage(), shouldbeone)
@@ -58,16 +61,27 @@ def main():
     ht = h_Et_mp(invS, par, espace_mp)
     rho = y_combine_central_mp(ht, corr, par)
 
-    plt.plot(espace / Mpi, gauss_fp(espace, MpiA, par.sigma)+gauss_fp(espace, MpiB, par.sigma), color='k', linestyle='dashed', label='BG target')
-    plt.grid(visible=True, axis='both')
-    plt.plot(espace / Mpi, rho, color='b', label=r'BG output with $\sigma/Mpi=${:2.2f}'.format(par.sigma / Mpi))
-    plt.xlabel(r'$E/M_{pi}$')
-    plt.legend(prop={'size': 12, 'family': 'Helvetica'})
+    plt.plot(
+        espace / Mpi,
+        gauss_fp(espace, MpiA, par.sigma) + gauss_fp(espace, MpiB, par.sigma),
+        color="k",
+        linestyle="dashed",
+        label="BG target",
+    )
+    plt.grid(visible=True, axis="both")
+    plt.plot(
+        espace / Mpi,
+        rho,
+        color="b",
+        label=r"BG output with $\sigma/Mpi=${:2.2f}".format(par.sigma / Mpi),
+    )
+    plt.xlabel(r"$E/M_{pi}$")
+    plt.legend(prop={"size": 12, "family": "Helvetica"})
     plt.tight_layout()
     plt.show()
 
     end()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
