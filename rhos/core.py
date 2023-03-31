@@ -19,14 +19,17 @@ def Smatrix_sigma_mp(tmax_, sigma_):
     return S_
 
 
-def Smatrix_mp(tmax_, alpha_=mpf(0)):
+def Smatrix_mp(tmax_, alpha_=mpf(0), emin_=mpf(0)):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):
             entry = mp.fadd(mpf(i), mpf(j))
-            entry = mp.fadd(entry, mpf(2))
-            entry = mp.fsub(entry, alpha_)
-            entry = mp.fdiv(mpf(1), entry)
+            arg = mp.fadd(entry, mpf(2))  # i+j+2
+            entry = mp.fsub(arg, alpha_)    # i+j+2-a
+            arg = mp.fneg(arg)
+            arg = mp.fmul(arg, emin_)
+            arg = mp.exp(arg)
+            entry = mp.fdiv(arg, entry)
             S_[i, j] = entry
     return S_
 
@@ -72,9 +75,9 @@ def ft_mp(e, t, sigma_, alpha=mpf("0"), emin=mpf("0")):
 
 def A0_mp(e_, sigma_, alpha=mpf(0), emin=mpf(0)):
     aux = mp.fmul(sigma_, sigma_)
-    aux = mp.div(aux, mpf(2))
+    aux = mp.fdiv(aux, mpf(2))
     aux = mp.fmul(aux, alpha)
-    aux = mp.fadd(e, aux)
+    aux = mp.fadd(e_, aux)
     aux = mp.fsub(aux, emin)
     res = mp.fdiv(aux, sigma_)
     res = mp.erf(res)  #   Erf
