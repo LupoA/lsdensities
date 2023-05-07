@@ -1,9 +1,10 @@
 from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
-
+import numpy as np
 sys.path.append("../utils")
 from rhoUtils import LogMessage
+from transform import *
 from core import *
 
 #   Functionals A, B and W
@@ -89,12 +90,101 @@ def gWg(smat,cov,gt,estar,mplambda, a0_,bnorm, params, verbose=False):
     #print(LogMessage(), "Debug ::: ", 'A0 = ', a0_)
     aterm = mp.fdiv(aterm, a0_)
     if verbose==True:
-        print(LogMessage(), 'ABW :::', 'Energy ', estar, 'Lambda {:2.3f}'.format(float(mplambda)), 'A/A0 = ', float(aterm))
+        print(LogMessage(), 'ABW :::', 'Energy {:2.3f}'.format(float(estar)), 'Lambda {:2.3f}'.format(float(mplambda)), 'A/A0 = ', float(aterm))
     bterm = gBg(gt,cov,bnorm)
     if verbose==True:
-        print(LogMessage(), 'ABW :::', 'Energy ', estar, 'Lambda', float(mplambda), 'B/Bnorm = ', float(bterm))
+        print(LogMessage(), 'ABW :::', 'Energy {:2.3f}'.format(float(estar)), 'Lambda {:2.3f}'.format(float(mplambda)), 'B/Bnorm = ', float(bterm))
     scale = mp.fsub(mpf(1),mplambda)
     wterm = mp.fmul(aterm, scale)   #   (1-l) A/A0
     bterm = mp.fmul(mplambda,bterm) #   l B/Bnorm
     wterm = mp.fadd(wterm, bterm)    #  ( 1-l) A/A0 + l B/Bnorm
     return wterm
+
+def getW(espace_mp, Smat, CovDmat, csq, params, eNorm=False):
+    tmax = params.tmax
+    lset = np.linspace(0.01, 0.6, 20)
+    num_lambda = len(lset)
+    Wvec = np.zeros(num_lambda)
+    for ei in range(params.Ne):
+        estar = espace_mp[ei]
+        lstar_ID = 0
+        if eNorm==False:
+            Bnorm = csq
+        if eNorm==True:
+            Bnorm = mp.fdiv(csq, estar)
+            Bnorm = mp.fdiv(Bnorm, estar)
+        for li in range(num_lambda):
+            mp_l = mpf(str(lset[li]))
+            scale = mpf(str(lset[li]/(1-lset[li])))
+            scale = mp.fdiv(scale, Bnorm)
+            a0 = A0_mp(estar, params.mpsigma, alpha=mpf(0), emin=mpf(0))
+            scale = mp.fmul(scale, a0)
+            W = CovDmat*scale
+            W = W + Smat
+            invW = W**(-1)
+            #   given W, get the coefficient
+            gtestar = h_Et_mp_Eslice(invW, params, estar)
+            Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0, Bnorm, params, verbose=True))
+    return Wvec
+        #plt.plot(lset, Wvec, marker='^', ls='')
+        #plt.show()
+
+def getLstar(espace_mp, Smat, CovDmat, csq, params, eNorm=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20):
+    tmax = params.tmax
+    lset = np.linspace(lambda_min, lambda_max, num_lambda)
+    Wvec = np.zeros(num_lambda)
+    for ei in range(params.Ne):
+        estar = espace_mp[ei]
+        lstar_ID = 0
+        Wstar = -1
+        if eNorm==False:
+            Bnorm = csq
+        if eNorm==True:
+            Bnorm = mp.fdiv(csq, estar)
+            Bnorm = mp.fdiv(Bnorm, estar)
+        for li in range(num_lambda):
+            mp_l = mpf(str(lset[li]))
+            scale = mpf(str(lset[li]/(1-lset[li])))
+            scale = mp.fdiv(scale, Bnorm)
+            a0 = A0_mp(estar, params.mpsigma, alpha=mpf(0), emin=mpf(0))
+            scale = mp.fmul(scale, a0)
+            W = CovDmat*scale
+            W = W + Smat
+            invW = W**(-1)
+            #   given W, get the coefficient
+            gtestar = h_Et_mp_Eslice(invW, params, estar)
+            Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0, Bnorm, params, verbose=True))
+            if Wvec[li] > Wstar:
+                Wstar = Wvec[li]
+                lstar_ID = li
+    return lset[lstar_ID]
+
+def getLstar_Eslice(estar, Smat, CovDmat, csq, params, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20):
+    tmax = params.tmax
+    lset = np.linspace(lambda_min, lambda_max, num_lambda)
+    Wvec = np.zeros(num_lambda)
+
+    lstar_ID = 0
+    Wstar = -1
+    if eNorm_==False:
+        Bnorm = csq
+    if eNorm_==True:
+        Bnorm = mp.fdiv(csq, estar)
+        Bnorm = mp.fdiv(Bnorm, estar)
+    for li in range(num_lambda):
+        mp_l = mpf(str(lset[li]))
+        scale = mpf(str(lset[li]/(1-lset[li])))
+        scale = mp.fdiv(scale, Bnorm)
+        a0 = A0_mp(estar, params.mpsigma, alpha=mpf(0), emin=mpf(0))
+        scale = mp.fmul(scale, a0)
+        W = CovDmat*scale
+        W = W + Smat
+        invW = W**(-1)
+        #   given W, get the coefficient
+        gtestar = h_Et_mp_Eslice(invW, params, estar)
+        Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0, Bnorm, params, verbose=True))
+        if Wvec[li] > Wstar:
+            Wstar = Wvec[li]
+            lstar_ID = li
+    print(LogMessage(), 'Lambda ::: ', "Lambda* at E = ", float(estar), ' ::: ', lset[lstar_ID])
+    return lset[lstar_ID]

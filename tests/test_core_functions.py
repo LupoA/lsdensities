@@ -5,6 +5,7 @@ from importall import *
 import scipy
 from scipy import integrate
 
+## TODO: A0 currently doesnt support non-zero alpha due to a typo
 
 def main():
     init_precision(128)
@@ -22,7 +23,7 @@ def main():
         abs(
             float(
                 mp.fsub(
-                    ft_mp(0.8, t=3, sigma_=0.1, alpha=mpf(-0.99), emin=mpf(0.25)),
+                    ft_mp(e=0.8, t=3, sigma_=0.1, alpha=mpf(-0.99), emin=mpf(0.25)),
                     mpf(str("0.0444940561260751335503904613233")),
                 )
             )
@@ -30,10 +31,30 @@ def main():
         < 1e-12
     )
     assert (
+            abs(
+                float(
+                    mp.fsub(
+                        ft_mp(e=0.8, t=3, sigma_=0.1),
+                        mpf(str("0.0948935")),
+                    )
+                )
+            )
+            < 1e-6
+    )
+    assert (
         abs(float(mp.fsub(ft_mp(e=1.2, sigma_=0.2, t=7), mpf(str("0.000599148")))))
         < 1e-8
     )
     print(LogMessage(), "ft_mp ok")
+    assert (
+            abs(float(mp.fsub(A0_mp(e_=1.2, sigma_=0.3, alpha=mpf(-0.99), emin=mpf(0.25)), mpf(str("0.940372")))))
+            < 1e-5
+    )
+    assert (
+            abs(float(mp.fsub(A0_mp(e_=3, sigma_=0.2), mpf(str("1.41047")))))
+            < 1e-5
+    )
+    print(LogMessage(), "A0_mp ok")
 
     v = mp.matrix(1, 5)
     v[0] = mpf(5)
@@ -48,6 +69,13 @@ def main():
     print(LogMessage(), "my stddv - true stddv", "{:2.2e}".format(float(diff)))
     assert diff < 10 ** (-mp.dps + 1)
     print(LogMessage(), "averageVector_mp ok")
+    vbar = averageScalar_mp(v)
+    assert (vbar[0] - 6) == 0
+    sqrt2 = mp.sqrt(2)
+    diff = mp.fsub(vbar[1], sqrt2)
+    print(LogMessage(), "my stddv - true stddv", "{:2.2e}".format(float(diff)))
+    assert diff < 10 ** (-mp.dps + 1)
+    print(LogMessage(), "averageScalar_mp ok")
     del v
     v = np.zeros((5, 3))
     v[0][0] = 5
@@ -82,6 +110,7 @@ def main():
         lambda x: gauss_fp(x, 0.5, 1, norm="Full"), -np.inf, np.inf
     )
     print(LogMessage(), "Integrate in (-inf,inf) ", I[0], "+/-", I[1])
+
 
 
 if __name__ == "__main__":

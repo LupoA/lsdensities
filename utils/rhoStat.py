@@ -110,7 +110,10 @@ def averageVector_mp(in_, bootstrap=True):
 
 
 def averageScalar_mp(in_, bootstrap=True):
-    samplesize_ = in_.rows
+    if (in_.rows==1):
+        samplesize_ = in_.cols
+    if (in_.cols==1):
+        samplesize_ = in_.rows
     out_ = mp.matrix(2, 1)
     out_[0] = 0
     out_[1] = 0

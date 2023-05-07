@@ -7,6 +7,8 @@ from rhoUtils import LogMessage
 
 
 def Smatrix_sigma_mp(tmax_, sigma_):
+    print(LogMessage(), 'Not implemented')
+    exit(0)
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):

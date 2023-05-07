@@ -1,14 +1,12 @@
 import sys
-
 sys.path.append("..")
 from importall import *
 
-Mpi = 0.066
-Mpi_mp = mpf("0.066")
+
 out_path = "."
 e_norm = 0
-state_at = 5
-
+Mpi = 5*0.066
+eNorm = False
 
 def init_variables(args_):
     in_ = u.inputs()
@@ -29,7 +27,6 @@ def init_variables(args_):
     in_.assign_mp_values()
     return in_
 
-
 def main():
     print(LogMessage(), "Initialising")
     args = parseArgumentPeak()
@@ -49,7 +46,7 @@ def main():
     #   one peak vector
     op = np.zeros(par.time_extent)
     for t in range(par.time_extent):
-        op[t] = np.exp(-(t) * 5 * Mpi)
+        op[t] = np.exp(-(t) * Mpi)
     cov = np.zeros((T, T))
     for i in range(T):
         cov[i, i] = (op[i] * 0.02) ** 2
@@ -74,40 +71,46 @@ def main():
     mpcov = mp.matrix(tmax)
     for i in range(tmax):
         mpcov[i, i] = mpf(str(cov[i + 1][i + 1]))
-    c1sq = mpf(str(op[1] ** 2))
-    #   Check W
-    getW(espace_mp, S, mpcov, c1sq, par, eNorm=False)
+    cNorm = mpf(str(op[1] ** 2))
+
+    #   Get rho
+    rho = mp.matrix(par.Ne,1)
+    drho = mp.matrix(par.Ne, 1)
+    for e_i in range(par.Ne):
+        estar = espace_mp[e_i]
+        #   get lstar
+        lstar_fp = getLstar_Eslice(estar, S, mpcov, cNorm, par, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20)
+        scale_fp = lstar_fp / (1-lstar_fp)
+        scale_mp = mpf(scale_fp)
+        a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
+        scale_mp = mp.fmul(scale_mp, a0)
+        if eNorm == False:
+            Bnorm = cNorm
+        if eNorm == True:
+            Bnorm = mp.fdiv(cNorm, estar)
+            Bnorm = mp.fdiv(Bnorm, estar)
+        scale_mp = mp.fdiv(scale_mp, Bnorm)
+        T = mpcov*scale_mp
+        T = T + S
+        invT = T**(-1)
+        #   Get coefficients
+        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
+        rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
+        rho[e_i] = rhoE[0]
+        drho[e_i] = rhoE[1]
+
+    plt.errorbar(x=espace / Mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
+                 ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / Mpi), color=u.CB_color_cycle[0])
+    plt.plot(espace/Mpi, gauss_fp(espace, Mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
+    plt.xlabel('Energy/Mpi', fontdict=u.timesfont)
+    plt.ylabel('Spectral density', fontdict=u.timesfont)
+    plt.legend(prop={'size': 12, 'family': 'Helvetica'})
+    plt.grid()
+    #plt.xlim(left=0, right=8)
+    plt.tight_layout()
+    plt.show()
 
     return 0
-
-
-def getW(espace_mp, Smat, CovDmat, csq, params, eNorm=False):
-    tmax = params.tmax
-    lset = np.linspace(0.01, 0.6, 20)
-    num_lambda = len(lset)
-    Wvec = np.zeros(num_lambda)
-    for ei in range(params.Ne):
-        estar = espace_mp[ei]
-        lstar_ID = 0
-        if eNorm==False:
-            Bnorm = csq
-        if eNorm==True:
-            Bnorm = mp.fdiv(csq, estar)
-            Bnorm = mp.fdiv(Bnorm, estar)
-        for li in range(num_lambda):
-            mp_l = mpf(str(lset[li]))
-            scale = mpf(str(lset[li]/(1-lset[li])))
-            scale = mp.fdiv(scale, Bnorm)
-            a0 = A0_mp(estar, params.mpsigma, alpha=mpf(0), emin=mpf(0))
-            scale = mp.fmul(scale, a0)
-            W = CovDmat*scale
-            W = W + Smat
-            invW = W**(-1)
-            #   given W, get the coefficient
-            gtestar = h_Et_mp_Eslice(invW, params, estar)
-            Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0, Bnorm, params, verbose=True))
-        plt.plot(lset, Wvec, marker='^', ls='')
-        plt.show()
 
 if __name__ == "__main__":
     main()
