@@ -15,7 +15,7 @@ def init_variables(args_):
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = args_.emax
+    in_.emax = args_.emax * args_.mpi
     in_.Ne = args_.ne
     in_.alpha = args_.alpha
     in_.emin = args_.emin
@@ -29,7 +29,7 @@ def main():
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
-    espace = np.linspace(0.1, par.emax, par.Ne)
+    espace = np.linspace(par.massNorm/20, par.emax, par.Ne)
     espace_mp = mp.matrix(par.Ne, 1)
     for e_id in range(par.Ne):
         espace_mp[e_id] = mpf(str(espace[e_id]))
@@ -51,13 +51,9 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     # corr.eval_corrmatrix(plot=True)
 
-    from correlatorUtils import effective_mass
-    effmass = effective_mass(corr, par, type='EXP')
-    effmass.plot(logscale=False)
-    exit(1)
-
-    tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
-    par.tmax = tmax
+    #tmax = 90  #   soon to be parsed from command line it is the latest correlator we use
+    #par.tmax = tmax
+    tmax = par.tmax
 
     #   make it into a mp sample
     mpcorr_sample = mp.matrix(par.num_boot, tmax)
