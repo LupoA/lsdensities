@@ -6,8 +6,11 @@ import matplotlib.pyplot as plt
 sys.path.append("..")
 sys.path.append("utils")
 sys.path.append("rhos")
+sys.path.append("extra")
 sys.path.append("../utils")
 sys.path.append("../rhos")
+sys.path.append("../extra")
+
 import rhoUtils as u
 from rhoUtils import init_precision
 from rhoUtils import LogMessage
