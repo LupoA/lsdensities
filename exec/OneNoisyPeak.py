@@ -75,14 +75,15 @@ def main():
     #   Get rho
     rho = mp.matrix(par.Ne,1)
     drho = mp.matrix(par.Ne, 1)
+    #   Preparatory functions
+    a0_e = A0E_mp(espace_mp, par)
     for e_i in range(par.Ne):
         estar = espace_mp[e_i]
         #   get lstar
-        lstar_fp = getLstar_Eslice(estar, S, mpcov, cNorm, par, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20)
+        lstar_fp = getLstar_Eslice(estar, S, a0_e[e_i], mpcov, cNorm, par, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20)
         scale_fp = lstar_fp / (1-lstar_fp)
         scale_mp = mpf(scale_fp)
-        a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
-        scale_mp = mp.fmul(scale_mp, a0)
+        scale_mp = mp.fmul(scale_mp, a0_e[e_i])
         if eNorm == False:
             Bnorm = cNorm
         if eNorm == True:

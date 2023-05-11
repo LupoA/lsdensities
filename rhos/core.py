@@ -95,3 +95,9 @@ def A0_mp(e_, sigma_, alpha=mpf(0), emin=mpf(0)):
     aux_ = mp.fmul(aux_, aux_)
     res = mp.fdiv(res, aux_)
     return res
+
+def A0E_mp(espacemp_, par):   #   vector of A0s for each energy
+    a0_e = mp.matrix(par.Ne, 1)
+    for ei in range(par.Ne):
+        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
+    return a0_e

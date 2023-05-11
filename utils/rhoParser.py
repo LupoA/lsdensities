@@ -57,7 +57,7 @@ def parseArgumentPeak():
         "--alpha",
         metavar="Alpha",
         type=float,
-        help="alpha parameter define different measure in the functional A. Default=0",
+        help="alpha parameter defining different measure in the functional A. Default=0",
         default=0.0,
     )
     parser.add_argument(
@@ -131,7 +131,7 @@ def parseArgumentRhoFromData():
         "--alpha",
         metavar="Alpha",
         type=float,
-        help="alpha parameter define different measure in the functional A. Default=0",
+        help="alpha parameter defining different measure in the functional A. Default=0",
         default=0.0,
     )
     parser.add_argument(
