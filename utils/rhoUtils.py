@@ -190,7 +190,7 @@ class inputs:
         self.Ne = 1
         self.alpha = 0
         self.emin = 0
-        self.Mpi = 1.
+        self.massNorm = 1.
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
@@ -204,13 +204,13 @@ class inputs:
         self.mpemax = mpf(str(self.emax))
         self.mpalpha = mpf(str(self.alpha))
         self.mpemin = mpf(str(self.emin))
-        self.mpMpi = mpf(str(self.Mpi))
+        self.mpMpi = mpf(str(self.massNorm))
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
         print(LogMessage(), "Init ::: ", "Output directory:", self.outdir)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
-        print(LogMessage(), "Init ::: ", "Mpi:", self.Mpi)
+        print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)
         print(LogMessage(), "Init ::: ", "sigma (mp):", self.sigma, "(", self.mpsigma, ")")
         print(LogMessage(), "Init ::: ", "Samples :", self.num_samples)

@@ -14,7 +14,7 @@ def init_variables(args_):
     in_.time_extent = args_.T
     in_.tmax = args_.T - 1
     in_.outdir = args_.outdir
-    in_.mpi = Mpi
+    in_.massNorm = Mpi
     in_.num_samples = args_.nms
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma

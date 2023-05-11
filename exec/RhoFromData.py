@@ -12,7 +12,7 @@ def init_variables(args_):
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
-    in_.mpi = args_.mpi
+    in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
     in_.emax = args_.emax
@@ -36,7 +36,6 @@ def main():
 
     #   Reading datafile, storing correlator
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
-    par.mpi = 1.0
     par.assign_values()
     par.report()
 
@@ -51,6 +50,11 @@ def main():
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     # corr.eval_corrmatrix(plot=True)
+
+    from correlatorUtils import effective_mass
+    effmass = effective_mass(corr, par, type='EXP')
+    effmass.plot(logscale=False)
+    exit(1)
 
     tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
     par.tmax = tmax
@@ -114,7 +118,7 @@ def main():
         drho[e_i] = rhoE[1]
 
     plt.errorbar(
-        x=espace / par.mpi,
+        x=espace / par.massNorm,
         y=rho,
         yerr=drho,
         marker="o",
@@ -122,7 +126,7 @@ def main():
         elinewidth=1.3,
         capsize=2,
         ls="",
-        label="HLT (sigma = {:2.2f} Mpi)".format(par.sigma / par.mpi),
+        label="HLT (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
         color=u.CB_color_cycle[0],
     )
     plt.xlabel("Energy/Mpi", fontdict=u.timesfont)
