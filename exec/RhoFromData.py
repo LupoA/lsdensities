@@ -100,7 +100,6 @@ def main():
 
     plt.errorbar(x=espace / par.mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
                  ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / par.mpi), color=u.CB_color_cycle[0])
-    plt.plot(espace/par.mpi, gauss_fp(espace, par.mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
     plt.xlabel('Energy/Mpi', fontdict=u.timesfont)
     plt.ylabel('Spectral density', fontdict=u.timesfont)
     plt.legend(prop={'size': 12, 'family': 'Helvetica'})
