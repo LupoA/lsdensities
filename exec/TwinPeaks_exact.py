@@ -27,7 +27,7 @@ def init_variables(args_):
     in_.emin = args_.emin
     in_.prec = -1
     in_.plots = args_.plots
-    in_.assign_mp_values()
+    in_.assign_values()
     return in_
 
 
@@ -36,7 +36,6 @@ def main():
     args = parseArgumentPeak()
     init_precision(args.prec)
     par = init_variables(args)
-    par.assign_mp_values()
     espace = np.linspace(0.1, par.emax, par.Ne)
     espace_mp = mp.matrix(par.Ne, 1)
     for e_id in range(par.Ne):
@@ -46,16 +45,14 @@ def main():
     tmax = par.tmax
 
     #   Generate corr
-    corr = mp.matrix(T, 1)
-    # corr = np.zeros(time_extent)
-    for t in range(T):
-        corr[t] = mp.exp(-mpf(t) * MpiA_mp) + mp.exp(-mpf(t) * MpiB_mp)
+    corr = mp.matrix(tmax, 1)
+    for t in range(tmax):
+        corr[t] = mp.exp(-mpf(t+1) * MpiA_mp) + mp.exp(-mpf(t+1) * MpiB_mp)
 
     S = Smatrix_mp(tmax)
     invS = S ** (-1)
     diff = S * invS
     diff = norm2_mp(diff) - 1
-    # print(LogMessage(), shouldbeone)
     print(LogMessage(), "S/S - 1 ::: ", diff)
 
     ht = h_Et_mp(invS, par, espace_mp)

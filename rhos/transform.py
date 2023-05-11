@@ -2,7 +2,6 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 from core import *
-
 sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
@@ -52,7 +51,7 @@ def y_combine_central_mp(ht_, corr_, params):
     for e in range(params.Ne):
         rho[e] = 0
         for i in range(params.tmax):
-            aux_ = mp.fmul(ht_[e, i], corr_[i + 1])
+            aux_ = mp.fmul(ht_[e, i], corr_[i])
             rho[e] = mp.fadd(rho[e], aux_)
     return rho
 
@@ -65,20 +64,9 @@ def y_combine_sample_mp(ht_, corrtype_, params):
         for e in range(params.Ne):
             rhob[e, b] = 0
             for i in range(params.tmax):
-                aux_ = mp.fmul(ht_[e, i], y[i + 1])
+                aux_ = mp.fmul(ht_[e, i], y[i])
                 rhob[e, b] = mp.fadd(rhob[e, b], aux_)
     return averageVector_mp(rhob)
-
-
-def y_combine_sample_Eslice_mp(ht_sliced, corrtype_, params):
-    rhob = mp.matrix(1, params.num_boot)
-    for b in range(params.num_boot):
-        y = corrtype_.sample[b,:]
-        rhob[b] = 0
-        for i in range(params.tmax):
-            aux_ = mp.fmul(ht_sliced[i], y[i + 1])
-            rhob[b] = mp.fadd(rhob[b], aux_)
-    return averageScalar_mp(rhob)
 
 def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
     rhob = mp.matrix(params.num_boot,1)
@@ -86,7 +74,7 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
         y = mpmatrix[b,:]
         rhob[b] = 0
         for i in range(params.tmax):
-            aux_ = mp.fmul(ht_sliced[i], y[i + 1])
+            aux_ = mp.fmul(ht_sliced[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
     print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)

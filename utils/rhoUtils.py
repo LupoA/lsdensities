@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
-from rhoStat import averageVector_fp
+from rhoStat import averageVector_fp, getCovMatrix_fp
 import time
 
 CB_color_cycle = [
@@ -50,7 +50,7 @@ def ranvec(vec, dim, a, b):
 
 
 class obs:
-    def __init__(self, T_, nms_=1):
+    def __init__(self, T_, nms_=1, is_resampled = False):
         self.central = np.zeros(T_)  # Central value of the sample
         self.err = np.zeros(T_)  # Error on the central value
         self.sigma = np.zeros(T_)  # Variance of the sample
@@ -59,17 +59,45 @@ class obs:
         self.sample = np.zeros((nms_, T_))  # Sample elements
         self.cov = np.zeros((T_, T_))  # Cov matrix estimated from sample
         self.corrmat = np.zeros((T_, T_))  # Corr matrix estimated from sample
+        self.is_resampled = is_resampled
 
-    def evaluate(self, resampled=False):
+    def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
         for i in range(self.T):
             self.central[i], self.sigma[i] = averageVector_fp(
                 self.sample[:, i], get_error=True, get_var=True
             )
-        if resampled == False:
-            self.err[i] = self.sigma[i] / np.sqrt(self.nms)
-        if resampled == True:
+        if self.is_resampled == False:
+            self.err = self.sigma / np.sqrt(self.nms)
+        if self.is_resampled == True:
             self.err = self.sigma
+
+    def evaluate_covmatrix(self, plot=False):
+        assert (self.is_resampled == True)
+        for vi in range(self.T):
+            for vj in range(self.T):
+                self.cov[vi][vj] = 0
+                for n in range(self.nms):
+                    self.cov[vi][vj] += (self.sample[n][vi] - self.central[vi]) * (
+                            self.sample[n][vj] - self.central[vj]
+                    )
+                self.cov[vi][vj] /= self.nms - 1
+        if plot == True:
+            plt.imshow(self.cov, cmap="viridis")
+            plt.colorbar()
+            plt.show()
+            plt.clf()
+        return self.cov
+
+    def eval_corrmatrix(self, plot=False):
+        for vi in range(self.T):
+            for vj in range(self.T):
+                self.corrmat[vi][vj] = self.cov[vi][vj] / (self.sigma[vi] * self.sigma[vj])
+        if plot == True:
+            plt.imshow(self.corrmat)
+            plt.colorbar()
+            plt.show()
+            plt.clf()
 
     def plot(self, show=True, logscale=True, label=None, yscale=1):
         plt.tight_layout()
@@ -101,17 +129,27 @@ def print_hlt_format(mtobs, T, nms, filename, directory):
                 print(i, mtobs[j, i], file=output)
 
 
-def read_hlt_format(filename_, directory_):
-    cin = os.path.join(directory_, filename_)
-    with open(cin, "r") as file:
+def read_datafile(datapath_, resampled=False):    #(filename_, directory_):
+    #   The input file has a header with time_extent and number of measurements.
+    #   then data config by config. Example:
+    #   32  100
+    #   0   corr[0]
+    #   1   corr[1]
+    #   ...
+    #   31  corr[31]
+    #   0   corr[0]
+    #   ... so on
+
+    #   cin = os.path.join(directory_, filename_)
+    with open(datapath_, "r") as file:
         # Read header
         header = next(file).strip()
-        print(LogMessage(), "Header: ", header)
+        print(LogMessage(), "Reading file :::", "Header: ", header)
         header_nms = int(header.split(" ")[0])
         header_T = int(header.split(" ")[1])
-        print(LogMessage(), "Reading correlator with T = ", header_T)
-        print(LogMessage(), "Reading correlator with measurements = ", header_nms)
-        mcorr_ = obs(header_T, header_nms)
+        print(LogMessage(), "Reading file :::", "Time extent ", header_T)
+        print(LogMessage(), "Reading file :::", "Measurements ", header_nms)
+        mcorr_ = obs(header_T, header_nms, is_resampled=resampled)
         # loop over file: read and store
         indx = 0
         for l in file:
@@ -121,7 +159,8 @@ def read_hlt_format(filename_, directory_):
             # print(l.rstrip(), "     ", t, n)
             mcorr_.sample[n, t] = float(l.split(" ")[1])
             indx += 1
-    return mcorr_
+    #   Returns np array of correlators
+    return mcorr_, header_T, header_nms
 
 
 from mpmath import mp, mpf
@@ -142,7 +181,7 @@ class inputs:
     def __init__(self):
         self.time_extent = -1
         self.tmax = -1
-        self.indir = "None"
+        self.datapath = "None"
         self.outdir = "None"
         self.num_boot = -1
         self.num_samples = -1
@@ -151,26 +190,29 @@ class inputs:
         self.Ne = 1
         self.alpha = 0
         self.emin = 0
+        self.Mpi = 1.
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
         self.mpemax = mpf("0")
         self.mplambda = mpf("0")
+        self.mpMpi = mpf("0")
 
-    def assign_mp_values(self):
+    def assign_values(self):
+        self.tmax = self.time_extent - 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpalpha = mpf(str(self.alpha))
         self.mpemin = mpf(str(self.emin))
-        # self.mplambda = mpf(str(self.l))
+        self.mpMpi = mpf(str(self.Mpi))
 
     def report(self):
-        print(LogMessage(), "Init ::: ", "Reading directory:", self.indir)
+        print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
         print(LogMessage(), "Init ::: ", "Output directory:", self.outdir)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
+        print(LogMessage(), "Init ::: ", "Mpi:", self.Mpi)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)
-        print(LogMessage(), "Init ::: ", "sigma :", self.sigma)
-        print(LogMessage(), "Init ::: ", "mp sigma ", self.mpsigma)
+        print(LogMessage(), "Init ::: ", "sigma (mp):", self.sigma, "(", self.mpsigma, ")")
         print(LogMessage(), "Init ::: ", "Samples :", self.num_samples)
         print(LogMessage(), "Init ::: ", "Bootstrap samples :", self.num_boot)
         print(LogMessage(), "Init ::: ", "Number of energies :", self.Ne)

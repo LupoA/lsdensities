@@ -39,6 +39,16 @@ def bootstrap_compact_fp(par_, in_):
             out_[b][i] /= par_.num_samples
     return out_
 
+def parallel_bootstrap_compact_fp(par_, in_, out_, start, end):
+    from rhoUtils import ranvec
+    randv = np.zeros(par_.num_samples)
+    for b in range(start, end):
+        randv = ranvec(randv, par_.num_samples, 0, par_.num_samples)
+        for i in range(0, par_.time_extent):
+            out_[b][i] = 0
+            for j in range(0, par_.num_samples):
+                out_[b][i] += in_[int(randv[j])][i]
+            out_[b][i] /= par_.num_samples
 
 def bootstrap_fp(T_, nms_, Nb_, in_, out_):
     from rhoUtils import ranvec
@@ -53,14 +63,14 @@ def bootstrap_fp(T_, nms_, Nb_, in_, out_):
     return out_
 
 
-def getCovMatrix_fp(in_, nbins, vmax, showplot=False):
+def getCovMatrix_fp(sample, central, nbins, vmax, showplot=False):
     cov_ = np.zeros((vmax, vmax))
     for vi in range(vmax):
         for vj in range(vmax):
             cov_[vi][vj] = 0
             for n in range(nbins):
-                cov_[vi][vj] += (in_.sample[n][vi] - in_.central[vi]) * (
-                    in_.sample[n][vj] - in_.central[vj]
+                cov_[vi][vj] += (sample[n][vi] - central[vi]) * (
+                    sample[n][vj] - central[vj]
                 )
             cov_[vi][vj] /= nbins - 1
     if showplot == True:

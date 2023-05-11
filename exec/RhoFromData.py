@@ -2,75 +2,75 @@ import sys
 sys.path.append("..")
 from importall import *
 
-
-out_path = "."
-e_norm = 0
-Mpi = 5*0.066
 eNorm = False
+
+    # NOT YET TESTED
 
 def init_variables(args_):
     in_ = u.inputs()
     in_.prec = args_.prec
-    in_.time_extent = args_.T
-    in_.tmax = args_.T - 1
+    in_.datapath = args_.datapath
     in_.outdir = args_.outdir
-    in_.mpi = Mpi
-    in_.num_samples = args_.nms
+    in_.mpi = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = args_.emax * Mpi
+    in_.emax = args_.emax
     in_.Ne = args_.ne
+    # in_.l = args_.l
     in_.alpha = args_.alpha
     in_.emin = args_.emin
     in_.prec = -1
     in_.plots = args_.plots
-    in_.assign_values()
     return in_
 
 def main():
     print(LogMessage(), "Initialising")
-    args = parseArgumentPeak()
+    args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
     espace = np.linspace(0.1, par.emax, par.Ne)
     espace_mp = mp.matrix(par.Ne, 1)
     for e_id in range(par.Ne):
         espace_mp[e_id] = mpf(str(espace[e_id]))
-    par.report()
-    T = par.time_extent
-    tmax = par.tmax
-    nms = par.num_samples
-    Nb = par.num_boot
 
-    #   one peak vector
-    op = np.zeros(par.time_extent)
-    for t in range(par.time_extent):
-        op[t] = np.exp(-(t) * Mpi)
-    cov = np.zeros((T, T))
-    for i in range(T):
-        cov[i, i] = (op[i] * 0.02) ** 2
-    #   make it a sample and bootstrap it
-    corr = u.obs(T, Nb, is_resampled=True)
-    measurements = np.random.multivariate_normal(op, cov, nms)
-    corr.sample = bootstrap_compact_fp(par, measurements)
-    print(LogMessage(), "Correlator resampled")
+    #   Reading datafile, storing correlator
+    rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
+    par.mpi = 1.
+    par.assign_values()
+    par.report()
+
+    #   Here is the correlator
+    rawcorr.evaluate()
+
+    #   here is the resampling
+    corr = u.obs(par.time_extent, par.num_boot, is_resampled=True)
+    resample = parallel_bootstrap_loop(par, rawcorr.sample)
+    corr.sample = resample.run()
     corr.evaluate()
+    print(LogMessage(), "Evaluate covariance")
+    corr.evaluate_covmatrix(plot=False)
+    #corr.eval_corrmatrix(plot=True)
+
+    tmax = 56   #   soon to be parsed from command line it is the latest correlator we use
+    par.tmax = tmax
+
     #   make it into a mp sample
-    mpcorr_sample = mp.matrix(Nb, tmax)
-    for n in range(Nb):
+    mpcorr_sample = mp.matrix(par.num_boot, tmax)
+    for n in range(par.num_boot):
         for i in range(tmax):
             mpcorr_sample[n, i] = mpf(str(corr.sample[n][i+1]))
+    #   Get cov for B matrix
+    mpcov = mp.matrix(tmax)
+    for i in range(tmax):
+        mpcov[i, i] = mpf(str(corr.cov[i + 1][i + 1]))
+    cNorm = mpf(str(corr.central[1] ** 2))
+
     #   Get S matrix
     S = Smatrix_mp(tmax)
     invS = S ** (-1)
     diff = S * invS
     diff = norm2_mp(diff) - 1
     print(LogMessage(), "S/S - 1 ::: ", diff)
-    #   Get cov for B matrix
-    mpcov = mp.matrix(tmax)
-    for i in range(tmax):
-        mpcov[i, i] = mpf(str(cov[i + 1][i + 1]))
-    cNorm = mpf(str(op[0] ** 2))
 
     #   Get rho
     rho = mp.matrix(par.Ne,1)
@@ -98,9 +98,9 @@ def main():
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
 
-    plt.errorbar(x=espace / Mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
-                 ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / Mpi), color=u.CB_color_cycle[0])
-    plt.plot(espace/Mpi, gauss_fp(espace, Mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
+    plt.errorbar(x=espace / par.mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
+                 ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / par.mpi), color=u.CB_color_cycle[0])
+    plt.plot(espace/par.mpi, gauss_fp(espace, par.mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
     plt.xlabel('Energy/Mpi', fontdict=u.timesfont)
     plt.ylabel('Spectral density', fontdict=u.timesfont)
     plt.legend(prop={'size': 12, 'family': 'Helvetica'})
@@ -108,7 +108,7 @@ def main():
     plt.tight_layout()
     plt.show()
 
-    return 0
+    end()
 
 if __name__ == "__main__":
     main()

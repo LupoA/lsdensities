@@ -187,4 +187,4 @@ def getLstar_Eslice(estar, Smat, CovDmat, csq, params, eNorm_=False, lambda_min=
             Wstar = Wvec[li]
             lstar_ID = li
     print(LogMessage(), 'Lambda ::: ', "Lambda* at E = ", float(estar), ' ::: ', lset[lstar_ID])
-    return lset[lstar_ID]
+    return lset[lstar_ID]   #l*
