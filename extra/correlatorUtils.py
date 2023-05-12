@@ -14,7 +14,7 @@ from rhoUtils import *
 def effective_mass(corr, par, type='COSH'):
     th=int(par.time_extent/2)
     thm=th-1
-    mass = obs(T_=thm, nms_=par.num_boot, is_resampled = True)
+    mass = Obs(T_=thm, nms_=par.num_boot, is_resampled = True)
     for i in range(0, thm):
         for b in range(0,par.num_boot):
             mass.sample[b,i] = math.acosh( (corr.sample[b,i+2] + corr.sample[b,i])/(2*corr.sample[b,i+1]) )
@@ -24,7 +24,7 @@ def effective_mass(corr, par, type='COSH'):
 def effective_mass(corr, par, type='EXP'):
     th=int(par.time_extent/2)
     thm=th-1
-    mass = obs(T_=thm, nms_=par.num_boot, is_resampled = True)
+    mass = Obs(T_=thm, nms_=par.num_boot, is_resampled = True)
     for i in range(0, thm):
         for b in range(0,par.num_boot):
             mass.sample[b,i] = - math.log( corr.sample[b,i+1] /(corr.sample[b,i]) )

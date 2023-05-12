@@ -49,7 +49,7 @@ def ranvec(vec, dim, a, b):
     return vec
 
 
-class obs:
+class Obs:
     def __init__(self, T_, nms_=1, is_resampled = False):
         self.central = np.zeros(T_)  # Central value of the sample
         self.err = np.zeros(T_)  # Error on the central value
@@ -64,9 +64,7 @@ class obs:
     def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
         for i in range(self.T):
-            self.central[i], self.sigma[i] = averageVector_fp(
-                self.sample[:, i], get_error=True, get_var=True
-            )
+            self.central[i], self.sigma[i] = np.average(self.sample[:, i]), np.std(self.sample[:, i], ddof=1)
         if self.is_resampled == False:
             self.err = self.sigma / np.sqrt(self.nms)
         if self.is_resampled == True:
@@ -149,7 +147,7 @@ def read_datafile(datapath_, resampled=False):    #(filename_, directory_):
         header_T = int(header.split(" ")[1])
         print(LogMessage(), "Reading file :::", "Time extent ", header_T)
         print(LogMessage(), "Reading file :::", "Measurements ", header_nms)
-        mcorr_ = obs(header_T, header_nms, is_resampled=resampled)
+        mcorr_ = Obs(header_T, header_nms, is_resampled=resampled)
         # loop over file: read and store
         indx = 0
         for l in file:

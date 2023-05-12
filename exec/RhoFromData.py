@@ -43,7 +43,7 @@ def main():
     rawcorr.evaluate()
 
     #   here is the resampling
-    corr = u.obs(par.time_extent, par.num_boot, is_resampled=True)
+    corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
     resample = parallel_bootstrap_loop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()

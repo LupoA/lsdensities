@@ -50,7 +50,7 @@ def main():
     for i in range(T):
         cov[i, i] = (op[i] * 0.02) ** 2
     #   make it a sample and bootstrap it
-    corr = u.obs(T, Nb, is_resampled=True)
+    corr = u.Obs(T, Nb, is_resampled=True)
     measurements = np.random.multivariate_normal(op, cov, nms)
     corr.sample = bootstrap_compact_fp(par, measurements)
     print(LogMessage(), "Correlator resampled")

@@ -15,6 +15,7 @@ import rhoUtils as u
 from rhoUtils import init_precision
 from rhoUtils import LogMessage
 from rhoUtils import end
+from rhoUtils import Obs
 from rhoStat import *
 from rhoMath import *
 from core import *
