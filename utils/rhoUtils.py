@@ -2,8 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
+import math
 from rhoStat import averageVector_fp, getCovMatrix_fp
+from core import Smatrix_mp
+from rhoMath import norm2_mp
 import time
+
+target_result_precision = 1e-8
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 CB_color_cycle = [
     "#377eb8",
@@ -50,7 +66,7 @@ def ranvec(vec, dim, a, b):
 
 
 class Obs:
-    def __init__(self, T_, nms_=1, is_resampled = False):
+    def __init__(self, T_: int, nms_:int=1, is_resampled = False):
         self.central = np.zeros(T_)  # Central value of the sample
         self.err = np.zeros(T_)  # Error on the central value
         self.sigma = np.zeros(T_)  # Variance of the sample
@@ -212,3 +228,33 @@ class inputs:
         print(LogMessage(), "Init ::: ", "Emax (mass units)", self.emax/self.massNorm)
         print(LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")")
         print(LogMessage(), "Init ::: ", "Emin (mp)", self.emin, "(", self.mpemin, ")")
+
+#   This function should *reduce* the numerical precision
+#   from the large input value
+#   to a value suggested by the condition
+#   number of S
+#   If the starting prec is too small the function might
+#   too small of a value which results in a warning
+def adjust_precision(tmax):
+    #print(LogMessage(), "Adjust precision ::: ", "Get S matrix")
+    S_ = Smatrix_mp(tmax)
+    condS = mp.cond(S_)
+    #print(LogMessage(), "Adjust precision ::: ", "Condition number of S is {:2.2e}".format(float(condS)))
+    n_prec = math.ceil(math.log10(condS)) + 3   #   +3 to be extra cautious
+    print(LogMessage(), "Adjust precision ::: ", "Suggested numerical precision based on tmax is {:4d}".format(n_prec))
+    print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
+    init_precision(n_prec)
+    S_ = Smatrix_mp(tmax)
+    condS = mp.cond(S_)
+    n_prec_post = math.ceil(math.log10(condS)) + 3
+    if n_prec_post != n_prec:
+        print(LogMessage(),
+              f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Suggested precision might be small. Suggest restarting with higher --prec option")
+        print(LogMessage(),
+              f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Asserting whether minimal precision 1e-8 on the inversion is guaranteed ")
+    invS = S_ ** (-1)
+    diff = S_ * invS
+    diff = norm2_mp(diff) - 1
+    assert ( float(diff) < target_result_precision)
+    #print(LogMessage(), "Adjust precision ::: ", "Suggested precision stable with target result precision ", target_result_precision)
+    return 0

@@ -88,8 +88,8 @@ def parseArgumentRhoFromData():
         "--prec",
         metavar="NumericalPrecision",
         type=int,
-        help="Numerical precision, approximatively in decimal digits. Default=64",
-        default=64,
+        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=200",
+        default=200,
     )
     parser.add_argument(
         "--outdir", metavar="OutputDirectory", help="Directory for output", default="."

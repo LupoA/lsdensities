@@ -6,7 +6,6 @@ eNorm = False
 
 # NOT YET TESTED
 
-
 def init_variables(args_):
     in_ = u.inputs()
     in_.prec = args_.prec
@@ -44,18 +43,22 @@ def main():
 
     #   here is the resampling
     corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
-    resample = parallel_bootstrap_loop(par, rawcorr.sample)
+    resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
+
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
-    # corr.eval_corrmatrix(plot=True)
+    corr.corrmat_from_covmat(plot=False)
 
-    #tmax = 90  #   soon to be parsed from command line it is the latest correlator we use
+    #tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
     #par.tmax = tmax
     tmax = par.tmax
+    adjust_precision(tmax)
+    #tmax = par.tmax
 
     #   make it into a mp sample
+    print(LogMessage(), "Converting into mpmath")
     mpcorr_sample = mp.matrix(par.num_boot, tmax)
     for n in range(par.num_boot):
         for i in range(tmax):
@@ -68,10 +71,6 @@ def main():
 
     #   Get S matrix
     S = Smatrix_mp(tmax)
-    invS = S ** (-1)
-    diff = S * invS
-    diff = norm2_mp(diff) - 1
-    print(LogMessage(), "S/S - 1 ::: ", diff)
 
     #   Get rho
     rho = mp.matrix(par.Ne, 1)
