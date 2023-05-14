@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 from importall import *
 
@@ -6,8 +7,9 @@ eNorm = False
 
 # NOT YET TESTED
 
+
 def init_variables(args_):
-    in_ = u.inputs()
+    in_ = Inputs()
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -28,7 +30,7 @@ def main():
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
-    espace = np.linspace(par.massNorm/20, par.emax, par.Ne)
+    espace = np.linspace(par.massNorm / 20, par.emax, par.Ne)
     espace_mp = mp.matrix(par.Ne, 1)
     for e_id in range(par.Ne):
         espace_mp[e_id] = mpf(str(espace[e_id]))
@@ -41,7 +43,7 @@ def main():
     #   Here is the correlator
     rawcorr.evaluate()
 
-    #   here is the resampling
+    #   Here is the resampling
     corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
@@ -51,11 +53,11 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    #tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
-    #par.tmax = tmax
+    # tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
+    # par.tmax = tmax
     tmax = par.tmax
     adjust_precision(tmax)
-    #tmax = par.tmax
+    # tmax = par.tmax
 
     #   make it into a mp sample
     print(LogMessage(), "Converting into mpmath")
@@ -95,7 +97,7 @@ def main():
         )
         scale_fp = lstar_fp / (1 - lstar_fp)
         scale_mp = mpf(scale_fp)
-        #a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
+        # a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
         scale_mp = mp.fmul(scale_mp, a0_e[e_i])
         if eNorm == False:
             Bnorm = cNorm

@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
-from rhoUtils import LogMessage, inputs
+from rhoUtils import LogMessage, Inputs
 from rhoStat import parallel_bootstrap_compact_fp
 import multiprocessing as multiprocessing
 from typing import List
 
 class ParallelBootstrapLoop:
-    def __init__(self, par: inputs, in_: np.ndarray):
+    def __init__(self, par: Inputs, in_: np.ndarray):
         self.par = par
         self.looplen = par.num_boot
         self.vlen = par.time_extent
