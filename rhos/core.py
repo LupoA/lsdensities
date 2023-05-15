@@ -3,11 +3,9 @@ from progressbar import ProgressBar
 import sys
 
 sys.path.append("../utils")
-from rhoUtils import LogMessage
 
 
-def Smatrix_sigma_mp(tmax_, sigma_):
-    print(LogMessage(), 'Not implemented')
+def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemented
     exit(0)
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):

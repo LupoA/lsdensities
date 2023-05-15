@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 from importall import *
 
@@ -8,7 +9,7 @@ eNorm = False
 
 
 def init_variables(args_):
-    in_ = u.inputs()
+    in_ = Inputs()
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -29,7 +30,7 @@ def main():
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
-    espace = np.linspace(par.massNorm/20, par.emax, par.Ne)
+    espace = np.linspace(par.massNorm / 20, par.emax, par.Ne)
     espace_mp = mp.matrix(par.Ne, 1)
     for e_id in range(par.Ne):
         espace_mp[e_id] = mpf(str(espace[e_id]))
@@ -42,20 +43,24 @@ def main():
     #   Here is the correlator
     rawcorr.evaluate()
 
-    #   here is the resampling
+    #   Here is the resampling
     corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
-    resample = parallel_bootstrap_loop(par, rawcorr.sample)
+    resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
+
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
-    # corr.eval_corrmatrix(plot=True)
+    corr.corrmat_from_covmat(plot=False)
 
-    #tmax = 90  #   soon to be parsed from command line it is the latest correlator we use
-    #par.tmax = tmax
+    # tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
+    # par.tmax = tmax
     tmax = par.tmax
+    adjust_precision(tmax)
+    # tmax = par.tmax
 
     #   make it into a mp sample
+    print(LogMessage(), "Converting into mpmath")
     mpcorr_sample = mp.matrix(par.num_boot, tmax)
     for n in range(par.num_boot):
         for i in range(tmax):
@@ -68,10 +73,6 @@ def main():
 
     #   Get S matrix
     S = Smatrix_mp(tmax)
-    invS = S ** (-1)
-    diff = S * invS
-    diff = norm2_mp(diff) - 1
-    print(LogMessage(), "S/S - 1 ::: ", diff)
 
     #   Get rho
     rho = mp.matrix(par.Ne, 1)
@@ -96,7 +97,7 @@ def main():
         )
         scale_fp = lstar_fp / (1 - lstar_fp)
         scale_mp = mpf(scale_fp)
-        #a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
+        # a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
         scale_mp = mp.fmul(scale_mp, a0_e[e_i])
         if eNorm == False:
             Bnorm = cNorm

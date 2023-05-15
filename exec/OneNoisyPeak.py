@@ -9,7 +9,7 @@ Mpi = 5*0.066
 eNorm = False
 
 def init_variables(args_):
-    in_ = u.inputs()
+    in_ = Inputs()
     in_.prec = args_.prec
     in_.time_extent = args_.T
     in_.tmax = args_.T - 1
