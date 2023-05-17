@@ -19,7 +19,7 @@ def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemente
     return S_
 
 
-def Smatrix_mp(tmax_, alpha_=mpf(0), emin_=mpf(0)):
+def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0)):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):

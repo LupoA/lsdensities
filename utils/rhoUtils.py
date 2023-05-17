@@ -252,7 +252,7 @@ class Inputs:
 #   number of S
 #   If the starting prec is too small the function might
 #   too small of a value which results in a warning
-def adjust_precision(tmax):
+def adjust_precision(tmax: int):
     # print(LogMessage(), "Adjust precision ::: ", "Get S matrix")
     S_ = Smatrix_mp(tmax)
     condS = mp.cond(S_)
