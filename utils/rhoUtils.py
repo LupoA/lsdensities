@@ -213,7 +213,8 @@ class Inputs:
         self.mpMpi = mpf("0")
 
     def assign_values(self):
-        self.tmax = self.time_extent - 1
+        if self.tmax==0:
+            self.tmax = self.time_extent - 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpalpha = mpf(str(self.alpha))
@@ -253,10 +254,8 @@ class Inputs:
 #   If the starting prec is too small the function might
 #   too small of a value which results in a warning
 def adjust_precision(tmax: int):
-    # print(LogMessage(), "Adjust precision ::: ", "Get S matrix")
     S_ = Smatrix_mp(tmax)
     condS = mp.cond(S_)
-    # print(LogMessage(), "Adjust precision ::: ", "Condition number of S is {:2.2e}".format(float(condS)))
     n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
     print(
         LogMessage(),

@@ -5,11 +5,10 @@ from importall import *
 
 eNorm = False
 
-# NOT YET TESTED
-
 
 def init_variables(args_):
     in_ = Inputs()
+    in_.tmax = args_.tmax
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -53,11 +52,8 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    # tmax = 56  #   soon to be parsed from command line it is the latest correlator we use
-    # par.tmax = tmax
     tmax = par.tmax
     adjust_precision(tmax)
-    # tmax = par.tmax
 
     #   make it into a mp sample
     print(LogMessage(), "Converting into mpmath")
