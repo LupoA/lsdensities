@@ -92,6 +92,13 @@ def parseArgumentRhoFromData():
         default=280,
     )
     parser.add_argument(
+        "--tmax",
+        metavar="Tmax",
+        type=int,
+        help="The reconstruction will be performed using correlators c(0), c(1), ... c(tmax). If not specified, tmax will be set to the largest correlator available.",
+        default=0,
+    )
+    parser.add_argument(
         "--outdir", metavar="OutputDirectory", help="Directory for output", default="."
     )
     parser.add_argument(
