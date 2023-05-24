@@ -33,6 +33,42 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0)):
             S_[i, j] = entry
     return S_
 
+def Smatrix_mp_periodic(tmax_: int, alpha_=mpf(0), emin_=mpf(0)):
+    S_ = mp.matrix(tmax_, tmax_)
+    T = tmax_ + 1
+    for i in range(tmax_):
+        for j in range(tmax_):
+            entry = mp.fadd(mpf(i), mpf(j))
+            entry2 = mp.fsub(mpf(i),mpf(j))
+            entry3 = mp.fsub(mpf(j),mpf(i))
+            entry4 = mp.fneg(entry)
+            arg = mp.fadd(entry, mpf(2))  # i+j+2
+            arg2 = mp.fadd(entry2, mpf(T))  # T+i-j
+            arg3 = mp.fadd(entry3, mpf(T)) # T+j-i
+            arg4 = mp.fadd(entry4, mpf(2*T))  # 2T-j-i
+            arg4 = mp.fsub(arg4, mpf(2))  # 2T-j-i-2
+            entry = mp.fsub(arg, alpha_)    # i-j+2-a
+            entry2 = mp.fsub(arg2, alpha_)  # T+i-j-a
+            entry3 = mp.fsub(arg3, alpha_)  # T+j-i-a
+            entry4 = mp.fsub(arg4, alpha_)  # 2T-j-i-2-a
+            arg = mp.fneg(arg)
+            arg2 = mp.fneg(arg2)
+            arg3 = mp.fneg(arg3)
+            arg4 = mp.fneg(arg4)
+            arg = mp.fmul(arg, emin_)
+            arg2 = mp.fmul(arg2, emin_)
+            arg3 = mp.fmul(arg3, emin_)
+            arg4 = mp.fmul(arg4, emin_)
+            arg = mp.exp(arg)
+            arg2 = mp.exp(arg2)
+            arg3 = mp.exp(arg3)
+            arg4 = mp.exp(arg4)
+            entry = mp.fdiv(arg, entry)
+            entry2 = mp.fdiv(arg, entry2)
+            entry3 = mp.fdiv(arg, entry3)
+            entry4 = mp.fdiv(arg, entry4)
+            S_[i, j] = entry + entry2 + entry3 + entry4
+    return S_
 
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     fact_ = mp.sqrt(2)
@@ -71,6 +107,58 @@ def ft_mp(e, t, sigma_, alpha=mpf("0"), emin=mpf("0")):
     aux = mp.fadd(mpf(1), aux)
     res = mp.fdiv(res, aux)
     return res
+
+def ft_mp_periodic(tmax_: int, e, t, sigma_,alpha=mpf("0"), emin=mpf("0")):
+    T = tmax_ + 1
+    # Two parts to be added
+    # First part
+    newt = mp.fsub(t, alpha)  #
+    aux = mp.fmul(sigma_, sigma_)  #   s^2
+    arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
+    aux = mp.fmul(arg, newt)  #   s^2 (alpha-t)^2
+    aux = mp.fmul(aux, mpf("0.5"))  #   s^2 (alpha-t)^2 /2
+    res = mp.exp(aux)  #   exp{s^2 (alpha-t)^2 /2}
+    aux = mp.fneg(newt)  #   alpha-t
+    aux = mp.fmul(e, aux)  #   e(alpha-t)
+    aux = mp.exp(aux)
+    res = mp.fmul(res, aux)  #   exp{s^2 (alpha-t)^2 /2} exp{estar (alpha-t) }
+    arg = mp.fadd(arg, emin)
+    arg = mp.fsub(arg, e)
+    arg = mp.fdiv(arg, sigma_)
+    aux = mp.sqrt(2)
+    arg = mp.fdiv(arg, aux)
+    arg = mp.erfc(arg)  #   this is the COMPLEMENTARY erf
+    res = mp.fmul(res, arg)
+    aux = mp.fdiv(e, aux)
+    aux = mp.fdiv(aux, sigma_)
+    aux = mp.erf(aux)
+    aux = mp.fadd(mpf(1), aux)
+    res = mp.fdiv(res, aux)
+    # Second part
+    newt2 = mp.fadd(t, alpha)  # alpha+t
+    newt2 = mp.fsub(newt2,T) #alpha+t-T
+    aux2 = mp.fmul(sigma_, sigma_)  # s^2
+    arg2 = mp.fmul(aux2, newt2)  # s^2 (t+alpha-T)
+    aux2 = mp.fmul(arg2, newt2)  # s^2 (alpha+t-T)^2
+    aux2 = mp.fmul(aux2, mpf("0.5"))  # s^2 (alpha+t-T)^2 /2
+    res2 = mp.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
+    aux2 = newt2  # alpha+t-T
+    aux2 = mp.fmul(e, aux2)  # e(alpha+t-T)
+    aux2 = mp.exp(aux2)
+    res2 = mp.fmul(res2, aux2)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
+    arg2 = mp.fsub(emin, arg2)
+    arg2 = mp.fsub(arg2, e)
+    arg2 = mp.fdiv(arg2, sigma_)
+    aux2 = mp.sqrt(2)
+    arg2 = mp.fdiv(arg2, aux2)
+    arg2 = mp.erfc(arg2)  # this is the COMPLEMENTARY erf
+    res2 = mp.fmul(res2, arg2)
+    aux2 = mp.fdiv(e, aux2)
+    aux2 = mp.fdiv(aux2, sigma_)
+    aux2 = mp.erf(aux2)
+    aux2 = mp.fadd(mpf(1), aux2)
+    res2 = mp.fdiv(res2, aux2)
+    return res + res2
 
 
 def A0_mp(e_, sigma_, alpha=mpf(0), emin=mpf(0)):

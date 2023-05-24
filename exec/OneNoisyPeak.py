@@ -46,12 +46,15 @@ def main():
     op = np.zeros(par.time_extent)
     for t in range(par.time_extent):
         op[t] = np.exp(-(t) * Mpi)
+        #op[t] = np.exp(-(t) * Mpi) + np.exp(-(T-t) * Mpi)
     cov = np.zeros((T, T))
     for i in range(T):
         cov[i, i] = (op[i] * 0.02) ** 2
     #   make it a sample and bootstrap it
     corr = u.Obs(T, Nb, is_resampled=True)
     measurements = np.random.multivariate_normal(op, cov, nms)
+    # Print correlator
+    #print_hlt_format(measurements, par.time_extent, nms, 'correlator_fake_periodic_T32.dat', './')
     corr.sample = bootstrap_compact_fp(par, measurements)
     print(LogMessage(), "Correlator resampled")
     corr.evaluate()
@@ -80,7 +83,8 @@ def main():
     for e_i in range(par.Ne):
         estar = espace_mp[e_i]
         #   get lstar
-        lstar_fp = getLstar_Eslice(estar, S, a0_e[e_i], mpcov, cNorm, par, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20)
+        #lstar_fp = getLstar_Eslice(estar, S, a0_e[e_i], mpcov, cNorm, par, eNorm_=False, lambda_min=0.01, lambda_max=0.6, num_lambda=20)
+        lstar_fp = 0.2
         scale_fp = lstar_fp / (1-lstar_fp)
         scale_mp = mpf(scale_fp)
         scale_mp = mp.fmul(scale_mp, a0_e[e_i])
@@ -99,7 +103,9 @@ def main():
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
 
-    plt.errorbar(x=espace / Mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
+    rhof = np.array(rho, dtype=float)
+    drhof = np.array(drho, dtype=float)
+    plt.errorbar(x=espace / Mpi, y=rhof, yerr=drhof, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
                  ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / Mpi), color=u.CB_color_cycle[0])
     plt.plot(espace/Mpi, gauss_fp(espace, Mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
     plt.xlabel('Energy/Mpi', fontdict=u.timesfont)

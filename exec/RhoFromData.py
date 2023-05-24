@@ -68,7 +68,8 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Get S matrix
-    S = Smatrix_mp(tmax)
+    # S = Smatrix_mp(tmax)
+    S = Smatrix_mp_periodic(tmax)
 
     #   Get rho
     rho = mp.matrix(par.Ne, 1)
@@ -79,8 +80,8 @@ def main():
     for e_i in range(par.Ne):
         estar = espace_mp[e_i]
         #   get lstar
-        lstar_fp = getLstar_Eslice(
-            estar,
+        lstar_fp = getLstar_Eslice_periodic(
+                estar,
             S,
             a0_e[e_i],
             mpcov,
@@ -91,6 +92,7 @@ def main():
             lambda_max=0.6,
             num_lambda=20,
         )
+        #lstar_fp = 0.2
         scale_fp = lstar_fp / (1 - lstar_fp)
         scale_mp = mpf(scale_fp)
         # a0 = A0_mp(e_=estar, sigma_=par.mpsigma, alpha=par.mpalpha, emin=par.mpemin)
@@ -105,15 +107,18 @@ def main():
         T = T + S
         invT = T ** (-1)
         #   Get coefficients
-        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
+        gt = h_Et_mp_Eslice_periodic(invT, par, estar_=estar, tmax_=tmax)
+#        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
         rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
 
+    rhof = np.array(rho, dtype=float)
+    drhof = np.array(drho, dtype=float)
     plt.errorbar(
         x=espace / par.massNorm,
-        y=rho,
-        yerr=drho,
+        y=rhof,
+        yerr=drhof,
         marker="o",
         markersize=1.5,
         elinewidth=1.3,
