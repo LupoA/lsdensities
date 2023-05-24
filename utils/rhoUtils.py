@@ -261,11 +261,12 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")")
 
 class LambdaSearchOptions:
-    def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, ra0: int = 10):
+    def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
         self.lmin = lmin
         self.lmax = lmax
         self.ldensity = ldensity
-        self.ra0 = ra0
+        self.k_star = star_at  # Meaning lambda is found at A = k_star B.
+        self.kfactor = kfactor  #   Meaning lambda dependence is checked at A = kfactor B
         self.lspace = np.linspace(lmin, lmax, ldensity)
 
 class MatrixBundle:

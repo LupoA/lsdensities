@@ -112,3 +112,21 @@ def h_Et_mp_Eslice_float64(Tinv_, params, estar_):
             aux_ = Tinv_[j, i] * ft_float64(estar_, j+1, params.sigma, params.alpha, params.e0)
             ht_[i] += aux_
     return ht_
+
+def y_combine_sample_Eslice_float64(ht_sliced, matrix_of_correlators, params):
+    num_boot, tmax = params.num_boot, params.tmax
+    rhob = np.zeros(num_boot, dtype=np.float64)
+
+    for b in range(num_boot):
+        for i in range(tmax):
+            rhob[b] += ht_sliced[i] * matrix_of_correlators[b, i]
+
+    return np.mean(rhob), np.std(rhob)
+
+def y_combine_sample_Eslice_float64_vectorised(ht_sliced, matrix_of_correlators):
+    rhob = np.sum(ht_sliced * matrix_of_correlators, axis=1)
+
+    avg_of_rhob = np.mean(rhob)
+    std_dv_of_rhob = np.std(rhob)
+
+    return avg_of_rhob, std_dv_of_rhob

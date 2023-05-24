@@ -61,7 +61,7 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax)
-    lambda_bundle = LambdaSearchOptions(lmin = 0.1, lmax = 0.99, ldensity = 20, ra0 = 10)
+    lambda_bundle = LambdaSearchOptions(lmin = 0.1, lmax = 0.99, ldensity = 20, kfactor = 10, star_at = 1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = InverseProblemWrapper(par=par, lambda_config=lambda_bundle, matrix_bundle=matrix_bundle, correlator=corr)
@@ -69,11 +69,40 @@ def main():
     HLT.init_float64()
 
     for e_i in range(HLT.par.Ne):
-        HLT.lambdaCheckPointOne_float64(HLT.espace[e_i])
+        HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=1)
         #HLT.tagAlgebraLibrary(HLT.espace[e_i])
         #HLT.scanInputLambdaRange_float64(HLT.espace[e_i])
         #HLT.scanInputLambdaRange_MP(HLT.espace[e_i], eNorm_=False)
+    for e_i in range(HLT.par.Ne):
+        HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=10)
 
+    assert all(HLT.result_is_filled)
+
+    print(HLT.rho_kfact_dictionary[HLT.lambda_config.k_star].values())
+
+    print(HLT.rho_kfact_dictionary[HLT.lambda_config.kfactor].values())
+
+    import matplotlib.pyplot as plt
+    plt.errorbar(
+        x=HLT.espace / par.massNorm,
+        y=HLT.rho,
+        yerr=HLT.rho_stat_err,
+        marker="o",
+        markersize=1.5,
+        elinewidth=1.3,
+        capsize=2,
+        ls="",
+        label="HLT (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
+        color=u.CB_color_cycle[0],
+    )
+    plt.xlabel("Energy/Mpi", fontdict=u.timesfont)
+    plt.ylabel("Spectral density", fontdict=u.timesfont)
+    plt.legend(prop={"size": 12, "family": "Helvetica"})
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
+    end()
+    HLT.estimate_sys_error()
 
     #   ciao!
     end()

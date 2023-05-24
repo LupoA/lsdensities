@@ -34,6 +34,7 @@ class InverseProblemWrapper:
         self.requires_MP = np.full(par.Ne, False, dtype=bool)
         self.precision_is_always_arbitrary = False
         self.precision_is_never_arbitrary = False
+        #   Floating point utilities
         self.S_float = np.ndarray((self.par.tmax,self.par.tmax), dtype=np.float64)
         self.B_float = np.ndarray((self.par.tmax,self.par.tmax), dtype=np.float64)
         self.W_float = np.ndarray((self.par.tmax, self.par.tmax), dtype=np.float64)
@@ -41,6 +42,15 @@ class InverseProblemWrapper:
         self.A0_float = np.ndarray(self.par.Ne, dtype = np.float64)
         self.A0espace_float_dictionary = {}
         self.is_float64_initialised = False
+        #   Lambda utilities
+        self.optimal_lambdas = np.ndarray((self.par.Ne, 2), dtype=np.float64)
+        self.optimal_lambdas_is_filled = False
+        #   Result, float64
+        self.rho = np.ndarray(self.par.Ne, dtype = np.float64)
+        self.rho_stat_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_kfact_dictionary = {}
+        self.result_is_filled = np.full(par.Ne, False, dtype=bool)
 
     def fillEspaceMP(self):
         for e_id in range(self.par.Ne):
@@ -143,7 +153,7 @@ class InverseProblemWrapper:
         else:
             self.requires_MP[self.espace_dictionary[estar]] = True
 
-    def _aggregate_lambdaCheckPointOne_float64(self, lambda_float64: float, estar: float):  #   allows to cast as a funciton of lambda only at each estar
+    def _aggregate_HLT_lambda_float64(self, lambda_float64: float, estar: float):  #   allows to cast as a funciton of lambda only at each estar
         factor = (self.A0espace_float_dictionary[estar] * lambda_float64) / ((1 - lambda_float64) * self.bnorm_float)
         self.W_float = (self.B_float * factor) + self.S_float
         #Winv = np.linalg.inv(self.W_float)
@@ -151,42 +161,58 @@ class InverseProblemWrapper:
         L, lower = sp_linalg.cho_factor(self.W_float)
         Winv = sp_linalg.cho_solve((L, lower), np.eye(self.W_float.shape[0]))
         gt = h_Et_mp_Eslice_float64(Winv, self.par, estar_=estar)
+        _rho, _drho = y_combine_sample_Eslice_float64(gt, self.correlator.sample, self.par)
         this_A = gAgA0_float64(self.S_float, gt, estar, self.par, self.A0_float[self.espace_dictionary[estar]])
-        this_B = gBg_float64(gt, self.B_float, self.matrix_bundle.bnorm, self.par.tmax)
-        return this_A, this_B
+        this_B = gBg_float64(gt, self.B_float, self.bnorm_float, self.par.tmax)
+        return this_A, this_B, _rho, _drho
 
-    def lambdaCheckPointOne_float64(self, estar, maxiter: int = 100, relative_tol = 0.01):
+    def solveHLT_bisectonSearch_float64(self, estar, maxiter: int = 50, relative_tol = 0.01, k_factor: int = 1):
+        #   Will store results only if k_factor = k_star
+        #   this must be enforced outside of the class
         assert(self.is_float64_initialised == True)
         assert(self.requires_MP[self.espace_dictionary[estar]] == False)
-        #   Search the value of lambda for which A = B
+        #   Search the value of lambda for which A = k B
         _this_lambda = self.lambda_config.lspace[int(self.lambda_config.ldensity/2)]
-        _startingA, _startingB = self._aggregate_lambdaCheckPointOne_float64(_this_lambda, estar)
+        _startingA, _startingB, _none, _none = self._aggregate_HLT_lambda_float64(_this_lambda, estar)
         #rho = y_combine_sample_Eslice_mp(gt, mpmatrix=self.correlator.sample, params=self.par)
         _lmin = self.lambda_config.lmin
         _lmax = self.lambda_config.lmax
         for _ in range(maxiter):
-            _Aleft, _Bleft = self._aggregate_lambdaCheckPointOne_float64(_lmin, estar)
-            _dleft = _Aleft - _Bleft
-            _Aright, _Bright = self._aggregate_lambdaCheckPointOne_float64(_lmax, estar)
-            _dright = _Aright - _Bright
-            _thisA, _thisB = self._aggregate_lambdaCheckPointOne_float64(_this_lambda, estar)
-            _dcentral = _thisA - _thisB
-            print(LogMessage(), "Energy = ", estar, "lambda", _this_lambda, "A, B", _thisA, _thisB)
+            _Aleft, _Bleft, _none, _none = self._aggregate_HLT_lambda_float64(_lmin, estar)
+            _dleft = _Aleft - (k_factor * _Bleft)
+            _Aright, _Bright, _none, _none = self._aggregate_HLT_lambda_float64(_lmax, estar)
+            _dright = _Aright - (k_factor * _Bright)
+            _thisA, _thisB, _thisRho, _thisStatRho = self._aggregate_HLT_lambda_float64(_this_lambda, estar)
+            _dcentral = _thisA - (k_factor * _thisB)
+            print(LogMessage(), "Lambda Search ::: ", "ra0 = {:3.2f}".format(k_factor), "Energy = {:3.4f}".format(estar), "lambda {:3.3f}".format(_this_lambda), "A = {:3.3e}".format(_thisA), "B = {:3.3e}".format(_thisB), "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
             if (abs(_dcentral / _thisA) < relative_tol) and ( abs(_dcentral / _thisB) < relative_tol) :
-                print(LogMessage(), "Converged at iteration ", _, " ::: ", "A, B ", _thisA, _thisB)
+                print(LogMessage(), "Lambda Search ::: ", "Converged at iteration ", _, " ::: ", "ra0 = {:3.2f}".format(k_factor), "Energy = {:3.4f}".format(estar), "lambda {:3.3f}".format(_this_lambda), "A = {:3.3e}".format(_thisA), "B = {:3.3e}".format(_thisB), "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
+                if (k_factor == self.lambda_config.k_star):
+                    self.rho[self.espace_dictionary[estar]] = _thisRho
+                    self.rho_stat_err[self.espace_dictionary[estar]] = _thisStatRho
+                if k_factor not in self.rho_kfact_dictionary:
+                    self.rho_kfact_dictionary[k_factor] = {}
+                self.rho_kfact_dictionary[k_factor][estar] = (_thisRho, _thisStatRho)
+                self.result_is_filled[self.espace_dictionary[estar]] = True
                 return _this_lambda
             if _dleft*_dcentral < 0:
                 _lmax = _this_lambda
             else:
                 _lmin = _this_lambda
             _this_lambda = (_lmax + _lmin ) / 2
+        print(LogMessage(),  "Lambda Search ::: ", f"{bcolors.FAIL}Convergence not reached{bcolors.ENDC} within ", maxiter, " iterations. Returning lambda", _this_lambda,  "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
+        if (k_factor == self.lambda_config.k_star):
+            self.rho[self.espace_dictionary[estar]] = _thisRho
+            self.rho_stat_err[self.espace_dictionary[estar]] = _thisStatRho
+            self.result_is_filled[self.espace_dictionary[estar]] = True
+        return _this_lambda
 
     def scanInputLambdaRange_float64(self, estar, maxiter: int = 300, relative_tol = 0.1):
         assert(self.is_float64_initialised == True)
         assert(self.requires_MP[self.espace_dictionary[estar]] == False)
         #   Search the value of lambda for which A = B
         for _nl in range(self.lambda_config.ldensity):
-            _thisA, _thisB = self._aggregate_lambdaCheckPointOne_float64(self.lambda_config.lspace[_nl], estar)
+            _thisA, _thisB, _none, _none = self._aggregate_HLT_lambda_float64(self.lambda_config.lspace[_nl], estar)
             print(LogMessage(), "lambda =", self.lambda_config.lspace[_nl], "A B",  _thisA, _thisB)
 
     def scanInputLambdaRange_MP(self, estar, eNorm_=False):
@@ -219,3 +245,27 @@ class InverseProblemWrapper:
         plt.show()
         return self.lambda_config.lspace[lstar_ID]   #l*
 
+    def store_optimal_lambda(self):
+        for e_i in range(self.par.Ne):
+            self.optimal_lambdas[e_i][0] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
+                                                                     k_factor=self.lambda_config.k_star)
+        for e_i in range(self.par.Ne):
+            self.optimal_lambdas[e_i][1] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
+                                                                     k_factor=self.lambda_config.kfactor)
+        self.optimal_lambdas_is_filled = True
+
+    def solveHLT_fromLambdaList_float64(self, estar: float, lambda_list):   #TODO: implement
+        return 0
+
+    def estimate_sys_error(self):
+        assert all(self.result_is_filled)
+
+        print(self.rho_kfact_dictionary[self.lambda_config.k_star].values())
+
+        print(self.rho_kfact_dictionary[self.lambda_config.kfactor].values())
+
+        import matplotlib.pyplot as plt
+        plt.errorbar(x=self.espace, y=self.rho, yerr=self.rho_stat_err)
+        plt.show()
+
+        return 0
