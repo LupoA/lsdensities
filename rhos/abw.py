@@ -93,8 +93,7 @@ def gAgA0(smat, gt, estar, params, a0):
 def gAgA0_float64(smat, gt, estar, params, a0):
     return gAg_float64(smat, gt, estar, params) / a0
 
-def gBg(gt, bmat, bnorm):
-    tmax = bmat.cols
+def gBg_float64(gt, bmat, bnorm, tmax):
     res = 0
     vt_ = np.ndarray(tmax, dtype=np.float64)
     for t in range(tmax):
@@ -108,8 +107,9 @@ def gBg(gt, bmat, bnorm):
     #   res = g B g / bnorm
     return res
 
-def gBg_float64(gt, bmat, bnorm, tmax):
+def gBg(gt, bmat, bnorm):
     res = mpf(0)
+    tmax = bmat.cols
     vt_ = mp.matrix(tmax,1)
     for t in range(tmax):
         vt_[t]=0
@@ -171,7 +171,6 @@ def getLstar_Eslice(estar, Smat, a0_estar, CovDmat, csq, params, eNorm_=False, l
     Wvec = np.zeros(num_lambda)
     lstar_ID = 0
     Wstar = -1
-    print("A0 here is ", a0_estar)
     if eNorm_==False:
         Bnorm = csq
     if eNorm_==True:

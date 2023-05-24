@@ -5,6 +5,7 @@ from importall import *
 
 eNorm = False
 
+#   Example without the wrapper
 
 def init_variables(args_):
     in_ = Inputs()
