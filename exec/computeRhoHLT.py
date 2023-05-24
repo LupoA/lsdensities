@@ -68,21 +68,20 @@ def main():
     HLT.prepareHLT()
     HLT.init_float64()
 
+    if(0):
+        for e_i in range(HLT.par.Ne):
+            HLT.tagAlgebraLibrary(HLT.espace[e_i])
     for e_i in range(HLT.par.Ne):
         HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=1)
-        #HLT.tagAlgebraLibrary(HLT.espace[e_i])
-        #HLT.scanInputLambdaRange_float64(HLT.espace[e_i])
-        #HLT.scanInputLambdaRange_MP(HLT.espace[e_i], eNorm_=False)
+
     for e_i in range(HLT.par.Ne):
         HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=10)
 
     assert all(HLT.result_is_filled)
-
-    print(HLT.rho_kfact_dictionary[HLT.lambda_config.k_star].values())
-
-    print(HLT.rho_kfact_dictionary[HLT.lambda_config.kfactor].values())
+    HLT.estimate_sys_error()
 
     import matplotlib.pyplot as plt
+
     plt.errorbar(
         x=HLT.espace / par.massNorm,
         y=HLT.rho,
@@ -92,17 +91,40 @@ def main():
         elinewidth=1.3,
         capsize=2,
         ls="",
-        label="HLT (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
+        label="Stat error only (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
         color=u.CB_color_cycle[0],
     )
+    plt.errorbar(
+        x=HLT.espace / par.massNorm,
+        y=HLT.rho,
+        yerr=HLT.rho_sys_err,
+        marker="o",
+        markersize=1.5,
+        elinewidth=1.3,
+        capsize=2,
+        ls="",
+        label="Sys error only (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
+        color=u.CB_color_cycle[1],
+    )
+    plt.errorbar(
+        x=HLT.espace / par.massNorm,
+        y=HLT.rho,
+        yerr=HLT.rho_quadrature_err,
+        marker="o",
+        markersize=1.5,
+        elinewidth=1.3,
+        capsize=2,
+        ls="",
+        label="Quadrature sum (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
+        color=u.CB_color_cycle[2],
+    )
+
     plt.xlabel("Energy/Mpi", fontdict=u.timesfont)
     plt.ylabel("Spectral density", fontdict=u.timesfont)
     plt.legend(prop={"size": 12, "family": "Helvetica"})
     plt.grid()
     plt.tight_layout()
     plt.show()
-    end()
-    HLT.estimate_sys_error()
 
     #   ciao!
     end()

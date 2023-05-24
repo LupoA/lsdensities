@@ -49,6 +49,7 @@ class InverseProblemWrapper:
         self.rho = np.ndarray(self.par.Ne, dtype = np.float64)
         self.rho_stat_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_kfact_dictionary = {}
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
 
@@ -259,13 +260,10 @@ class InverseProblemWrapper:
 
     def estimate_sys_error(self):
         assert all(self.result_is_filled)
-
-        print(self.rho_kfact_dictionary[self.lambda_config.k_star].values())
-
-        print(self.rho_kfact_dictionary[self.lambda_config.kfactor].values())
-
-        import matplotlib.pyplot as plt
-        plt.errorbar(x=self.espace, y=self.rho, yerr=self.rho_stat_err)
-        plt.show()
-
-        return 0
+        #print(self.rho_kfact_dictionary[self.lambda_config.k_star].values())
+        #print(self.rho_kfact_dictionary[self.lambda_config.kfactor].values())
+        for e_i in range(self.par.Ne):
+            _this = self.rho_kfact_dictionary[self.lambda_config.k_star][self.espace[e_i]]
+            _that = self.rho_kfact_dictionary[self.lambda_config.kfactor][self.espace[e_i]]
+            self.rho_sys_err[e_i] = abs(_this[0] - _that[0]) / 2
+            self.rho_quadrature_err[e_i] = np.sqrt(self.rho_sys_err[e_i]**2 + self.rho_stat_err[e_i]**2)
