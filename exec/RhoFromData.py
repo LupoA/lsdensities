@@ -15,10 +15,13 @@ def init_variables(args_):
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = args_.emax * args_.mpi
+    in_.emax = args_.emax * args_.mpi   #   we pass it in unit of Mpi, here to turn it into lattice (working) units
+    if args_.emin == 0:
+        in_.emin = args_.mpi / 20
+    else:
+        in_.emin = args_.emin
     in_.Ne = args_.ne
     in_.alpha = args_.alpha
-    in_.emin = args_.emin
     in_.prec = -1
     in_.plots = args_.plots
     return in_
@@ -64,7 +67,8 @@ def main():
     #   Get cov for B matrix
     mpcov = mp.matrix(tmax)
     for i in range(tmax):
-        mpcov[i, i] = mpf(str(corr.cov[i + 1][i + 1]))
+        for j in range(tmax):
+            mpcov[i, j] = mpf(str(corr.cov[i + 1][j + 1]))
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Get S matrix
@@ -87,8 +91,8 @@ def main():
             cNorm,
             par,
             eNorm_=False,
-            lambda_min=0.01,
-            lambda_max=0.6,
+            lambda_min=0.1,
+            lambda_max=0.99,
             num_lambda=20,
         )
         scale_fp = lstar_fp / (1 - lstar_fp)
