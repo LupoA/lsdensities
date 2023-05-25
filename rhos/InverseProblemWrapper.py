@@ -12,6 +12,7 @@ from core import *
 from core import A0E_mp, A0E_float64
 from abw import gAg, gBg
 import scipy.linalg as sp_linalg
+import matplotlib.pyplot as plt
 
 class InverseProblemWrapper:
     def __init__(self, par: Inputs, lambda_config: LambdaSearchOptions, matrix_bundle: MatrixBundle, correlator : Obs):
@@ -158,9 +159,7 @@ class InverseProblemWrapper:
         factor = (self.A0espace_float_dictionary[estar] * lambda_float64) / ((1 - lambda_float64) * self.bnorm_float)
         self.W_float = (self.B_float * factor) + self.S_float
         #Winv = np.linalg.inv(self.W_float)
-        #Winv = fast_positive_definite_inverse(self.W_float)
-        L, lower = sp_linalg.cho_factor(self.W_float)
-        Winv = sp_linalg.cho_solve((L, lower), np.eye(self.W_float.shape[0]))
+        Winv = choelesky_invert_scipy(self.W_float)
         gt = h_Et_mp_Eslice_float64(Winv, self.par, estar_=estar)
         _rho, _drho = y_combine_sample_Eslice_float64(gt, self.correlator.sample, self.par)
         this_A = gAgA0_float64(self.S_float, gt, estar, self.par, self.A0_float[self.espace_dictionary[estar]])
@@ -173,7 +172,7 @@ class InverseProblemWrapper:
         assert(self.is_float64_initialised == True)
         assert(self.requires_MP[self.espace_dictionary[estar]] == False)
         #   Search the value of lambda for which A = k B
-        _this_lambda = self.lambda_config.lspace[int(self.lambda_config.ldensity/2)]
+        _this_lambda = self.lambda_config.lspace[int(self.lambda_config.ldensity/3)]    #   start a bit towards the left
         _startingA, _startingB, _none, _none = self._aggregate_HLT_lambda_float64(_this_lambda, estar)
         #rho = y_combine_sample_Eslice_mp(gt, mpmatrix=self.correlator.sample, params=self.par)
         _lmin = self.lambda_config.lmin
@@ -188,27 +187,36 @@ class InverseProblemWrapper:
             print(LogMessage(), "Lambda Search ::: ", "ra0 = {:3.2f}".format(k_factor), "Energy = {:3.4f}".format(estar), "lambda {:3.3f}".format(_this_lambda), "A = {:3.3e}".format(_thisA), "B = {:3.3e}".format(_thisB), "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
             if (abs(_dcentral / _thisA) < relative_tol) and ( abs(_dcentral / _thisB) < relative_tol) :
                 print(LogMessage(), "Lambda Search ::: ", "Converged at iteration ", _, " ::: ", "ra0 = {:3.2f}".format(k_factor), "Energy = {:3.4f}".format(estar), "lambda {:3.3f}".format(_this_lambda), "A = {:3.3e}".format(_thisA), "B = {:3.3e}".format(_thisB), "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
-                if (k_factor == self.lambda_config.k_star):
+
+                if (k_factor == self.lambda_config.k_star): # just storing some quantities
                     self.rho[self.espace_dictionary[estar]] = _thisRho
                     self.rho_stat_err[self.espace_dictionary[estar]] = _thisStatRho
+
                 if k_factor not in self.rho_kfact_dictionary:
                     self.rho_kfact_dictionary[k_factor] = {}
                 self.rho_kfact_dictionary[k_factor][estar] = (_thisRho, _thisStatRho)
                 self.result_is_filled[self.espace_dictionary[estar]] = True
+
                 return _this_lambda
+
             if _dleft*_dcentral < 0:
                 _lmax = _this_lambda
             else:
                 _lmin = _this_lambda
             _this_lambda = (_lmax + _lmin ) / 2
+
         print(LogMessage(),  "Lambda Search ::: ", f"{bcolors.FAIL}Convergence not reached{bcolors.ENDC} within ", maxiter, " iterations. Returning lambda", _this_lambda,  "Rho = {:3.3e}".format(_thisRho), "StatErrRho = {:3.3e}".format(_thisStatRho))
         if (k_factor == self.lambda_config.k_star):
             self.rho[self.espace_dictionary[estar]] = _thisRho
             self.rho_stat_err[self.espace_dictionary[estar]] = _thisStatRho
-            self.result_is_filled[self.espace_dictionary[estar]] = True
+            self.optimal_lambdas[self.espace_dictionary[estar]][0] = _this_lambda
+        if k_factor not in self.rho_kfact_dictionary:
+            self.rho_kfact_dictionary[k_factor] = {}
+        self.rho_kfact_dictionary[k_factor][estar] = (_thisRho, _thisStatRho)
+        self.result_is_filled[self.espace_dictionary[estar]] = True
         return _this_lambda
 
-    def scanInputLambdaRange_float64(self, estar, maxiter: int = 300, relative_tol = 0.1):
+    def scanInputLambdaRange_float64(self, estar):
         assert(self.is_float64_initialised == True)
         assert(self.requires_MP[self.espace_dictionary[estar]] == False)
         #   Search the value of lambda for which A = B
@@ -217,7 +225,6 @@ class InverseProblemWrapper:
             print(LogMessage(), "lambda =", self.lambda_config.lspace[_nl], "A B",  _thisA, _thisB)
 
     def scanInputLambdaRange_MP(self, estar, eNorm_=False):
-        tmax = self.par.tmax
         Wvec = np.zeros(self.lambda_config.ldensity)
         lstar_ID = 0
         Wstar = -1
@@ -255,8 +262,93 @@ class InverseProblemWrapper:
                                                                      k_factor=self.lambda_config.kfactor)
         self.optimal_lambdas_is_filled = True
 
-    def solveHLT_fromLambdaList_float64(self, estar: float, lambda_list):   #TODO: implement
-        return 0
+    def solveHLT_fromLambdaList_float64(self, estar: float):
+        _rho_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
+        _rho_stat_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
+        _A_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
+        for _l in range(self.lambda_config.ldensity):
+            _A_l[_l], _none, _rho_l[_l], _rho_stat_l[_l] = self._aggregate_HLT_lambda_float64(self.lambda_config.lspace[_l], estar)
+
+        fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+        # First subplot with self.lambda_config.lspace
+        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
+            estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm))
+        ax[0].axhspan(
+            ymin=self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
+            ymax=self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
+            alpha=0.3,
+            color=CB_colors[4]
+            )
+        ax[0].errorbar(
+            x=self.lambda_config.lspace,
+            y=_rho_l,
+            yerr=_rho_stat_l,
+            marker=plot_markers[0],
+            markersize=1.8,
+            elinewidth=1.3,
+            capsize=2,
+            ls="",
+            color=CB_colors[0],
+        )
+        ax[0].errorbar(
+            x=self.optimal_lambdas[self.espace_dictionary[estar],0],
+            y=self.rho_kfact_dictionary[self.lambda_config.k_star][estar][0],
+            yerr=self.rho_kfact_dictionary[self.lambda_config.k_star][estar][1],
+            marker=plot_markers[1],
+            markersize=3.8,
+            elinewidth=1.3,
+            capsize=3,
+            ls="",
+            label=r"$A[g_\lambda] / A_0 = B[g_\lambda] $",
+            color=CB_colors[1],
+        )
+        ax[0].errorbar(
+            x=self.optimal_lambdas[self.espace_dictionary[estar],1],
+            y=self.rho_kfact_dictionary[self.lambda_config.kfactor][estar][0],
+            yerr=self.rho_kfact_dictionary[self.lambda_config.kfactor][estar][1],
+            marker=plot_markers[2],
+            markersize=3.8,
+            elinewidth=1.3,
+            capsize=3,
+            ls="",
+            label=r"$A[g_\lambda] / A_0 = {:2.1f} B[g_\lambda] $".format(self.lambda_config.kfactor),
+            color=CB_colors[2],
+        )
+        ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
+        ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+        ax[0].legend(prop={"size": 12, "family": "Helvetica"})
+        ax[0].grid()
+
+        # Second subplot with A/A_0
+        ax[1].errorbar(
+            x=_A_l,
+            y=_rho_l,
+            yerr=_rho_stat_l,
+            marker="+",
+            markersize=1.8,
+            elinewidth=1.3,
+            capsize=2,
+            ls="",
+            label=r"$E/M_{\pi}$" + "= {:2.2f}".format(
+                estar / self.par.massNorm) + r"$\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm),
+            color=CB_colors[0],
+        )
+        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
+        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+        ax[1].legend(prop={"size": 12, "family": "Helvetica"})
+        ax[1].grid()
+
+        ax[1].axhspan(ymin=self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
+                         ymax=self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
+                         alpha=0.3,
+                         color = CB_colors[4]
+                         )
+       # plt.fill_between(self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
+        #                 self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
+        #                 color=CB_colors[4], alpha=0.3)
+
+        plt.tight_layout()
+        plt.show()
 
     def estimate_sys_error(self):
         assert all(self.result_is_filled)
