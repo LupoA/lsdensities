@@ -36,6 +36,19 @@ CB_color_cycle = [
     "#dede00",
 ]
 
+CB_colors = [
+    '#1f77b4',  # Dark Blue
+    '#ff7f0e',  # Orange
+    '#2ca02c',  # Light Green
+    '#d62728',  # Reddish Purple
+    '#9467bd',  # Light Blue
+    '#8c564b',  # Dark Yellow
+    '#e377c2',  # Cyan
+    '#7f7f7f'   # Olive Green
+]
+
+plot_markers = ['o', 's', 'D', 'v', '^', 'p', '*', 'h']
+
 timesfont = {
     "family": "Times",
     "color": "black",
