@@ -68,8 +68,7 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Get S matrix
-    # S = Smatrix_mp(tmax)
-    S = Smatrix_mp_periodic(tmax)
+    S = Smatrix_mp(tmax)
 
     #   Get rho
     rho = mp.matrix(par.Ne, 1)
@@ -80,7 +79,7 @@ def main():
     for e_i in range(par.Ne):
         estar = espace_mp[e_i]
         #   get lstar
-        lstar_fp = getLstar_Eslice_periodic(
+        lstar_fp = getLstar_Eslice(
                 estar,
             S,
             a0_e[e_i],
@@ -107,8 +106,7 @@ def main():
         T = T + S
         invT = T ** (-1)
         #   Get coefficients
-        gt = h_Et_mp_Eslice_periodic(invT, par, estar_=estar, tmax_=tmax)
-#        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
+        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
         rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
