@@ -359,3 +359,21 @@ class InverseProblemWrapper:
             _that = self.rho_kfact_dictionary[self.lambda_config.kfactor][self.espace[e_i]]
             self.rho_sys_err[e_i] = abs(_this[0] - _that[0]) / 2
             self.rho_quadrature_err[e_i] = np.sqrt(self.rho_sys_err[e_i]**2 + self.rho_stat_err[e_i]**2)
+
+    def run(self, show_lambda_scan=False):
+        for e_i in range(self.par.Ne):  # finds solution at a specific lambda
+            self.optimal_lambdas[e_i][0] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
+                                                                              k_factor=self.lambda_config.k_star)
+
+        for e_i in range(self.par.Ne):  # finds solution at another lambda
+            self.optimal_lambdas[e_i][1] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
+                                                                              k_factor=self.lambda_config.kfactor)
+
+        self.optimal_lambdas_is_filled = True
+        assert all(self.result_is_filled)
+
+        self.estimate_sys_error()  # uses both solution to estimate systematics due to lambda
+
+        if show_lambda_scan==True:
+            for e_i in range(self.par.Ne):
+                self.solveHLT_fromLambdaList_float64(self.espace[e_i])

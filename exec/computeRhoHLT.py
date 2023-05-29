@@ -61,7 +61,7 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax)
-    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 10, star_at = 1)
+    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.08, star_at = 1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = InverseProblemWrapper(par=par, lambda_config=lambda_bundle, matrix_bundle=matrix_bundle, correlator=corr)
@@ -71,6 +71,10 @@ def main():
     if(0):  #   select library for linear algebra
         for e_i in range(HLT.par.Ne):
             HLT.computeMinimumPrecision(HLT.espace[e_i])
+
+    HLT.run(show_lambda_scan=True)
+
+    if(0):'''
 
     for e_i in range(HLT.par.Ne):   # finds solution at a specific lambda
         HLT.optimal_lambdas[e_i][0] = HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=lambda_bundle.k_star)
@@ -84,7 +88,7 @@ def main():
     HLT.estimate_sys_error()    #   uses both solution to estimate systematics due to lambda
 
     for e_i in range(HLT.par.Ne):
-        HLT.solveHLT_fromLambdaList_float64(HLT.espace[e_i])
+        HLT.solveHLT_fromLambdaList_float64(HLT.espace[e_i])'''
 
     import matplotlib.pyplot as plt
 
