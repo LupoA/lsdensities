@@ -21,6 +21,7 @@ def init_variables(args_):
     in_.emax = args_.emax * Mpi
     in_.Ne = args_.ne
     in_.alpha = args_.alpha
+    in_.periodicity = args_.periodicity
     in_.assign_values()
     return in_
 
@@ -42,7 +43,7 @@ def main():
     #   one peak vector
     op = np.zeros(par.time_extent)
     for t in range(par.time_extent):
-        op[t] = np.exp(-(t) * Mpi)
+        op[t] = np.exp(-(t) * Mpi) + np.exp(-(T-t) * Mpi)
     cov = np.zeros((T, T))
     for i in range(T):
         cov[i, i] = (op[i] * 0.02) ** 2
@@ -91,7 +92,7 @@ def main():
         T = T + S
         invT = T**(-1)
         #   Get coefficients
-        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
+        gt = h_Et_mp_Eslice(invT, par, estar_=estar, type='COSH', T=par.time_extent)    #TODO: implement periodic function
         rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]

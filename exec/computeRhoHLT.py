@@ -23,8 +23,6 @@ def init_variables(args_):
     in_.e0 = args_.e0
     in_.Ne = args_.ne
     in_.alpha = args_.alpha
-    in_.prec = -1
-    in_.plots = args_.plots
     return in_
 
 

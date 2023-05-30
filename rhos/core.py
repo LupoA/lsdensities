@@ -19,7 +19,7 @@ def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemente
     return S_
 
 
-def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0)):    #   TODO: rename emin into e0
+def Smatrix_mp(tmax_: int, alpha_=mpf(0), e0_=mpf(0), type='EXP', T=0):    #   TODO: rename emin into e0
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):
@@ -27,13 +27,15 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0)):    #   TODO: rename emi
             arg = mp.fadd(entry, mpf(2))  # i+j+2
             entry = mp.fsub(arg, alpha_)    # i+j+2-a
             arg = mp.fneg(arg)
-            arg = mp.fmul(arg, emin_)
+            arg = mp.fmul(arg, e0_)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
             S_[i, j] = entry
+            if type == 'COSH':
+                assert (T > 0)
     return S_
 
-def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None):
+def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None, type='EXP', T=0):    #TODO: implement periodic function
     if S_in is None:
         S_ = np.ndarray((tmax_, tmax_), dtype=np.float64)
     else:
@@ -41,6 +43,8 @@ def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None):
     for i in range(tmax_):
         for j in range(tmax_):
             S_[i, j] = np.exp(-(i+j+2)*e0) / (i+j+2-alpha_)
+    if type == 'COSH':
+        assert (T > 0)
     return S_
 
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
@@ -56,7 +60,7 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     return res_
 
 
-def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0")):
+def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):  #TODO: implement periodic function
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma_, sigma_)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -79,6 +83,8 @@ def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0")):
     aux = mp.erf(aux)
     aux = mp.fadd(mpf(1), aux)
     res = mp.fdiv(res, aux)
+    if type=='COSH':
+        assert(T>0)
     return res
 
 def A0_mp(e_, sigma_, alpha=mpf(0), e0=mpf(0)):
@@ -135,7 +141,7 @@ def A0E_float64(espace_, par):   #   vector of A0s for each energy
         a0_e[ei] = A0_float64(e_=espace_[ei], sigma_=par.sigma, alpha=par.alpha, e0=par.e0)
     return a0_e
 
-def ft_float64(e, t, sigma_, alpha=0, e0=0):
+def ft_float64(e, t, sigma_, alpha=0, e0=0, type='EXP', T=0):   #TODO: implement periodic function
     newt = t - alpha
     aux = sigma_**2
     arg = aux * newt
@@ -158,4 +164,6 @@ def ft_float64(e, t, sigma_, alpha=0, e0=0):
     aux = scipy.special.erf(aux)
     aux = 1 + aux
     res = res / aux
+    if type=='COSH':
+        assert(T>0)
     return res

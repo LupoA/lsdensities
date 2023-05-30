@@ -236,6 +236,7 @@ class Inputs:
         self.emin = 0
         self.e0 = 0
         self.massNorm = 1.0
+        self.periodicity = 'EXP'
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
@@ -258,6 +259,7 @@ class Inputs:
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
         print(LogMessage(), "Init ::: ", "Output directory:", self.outdir)
+        print(LogMessage(), "Init ::: ", "Periodicity:", self.periodicity)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
         print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)

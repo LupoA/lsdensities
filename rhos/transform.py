@@ -6,10 +6,18 @@ sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
 
+#   TODO: implement periodic function
+#   TODO: In this we pass params so a function should be
+#         def function(args, params)
+#           if params.periodicity==EXP:
+#               ...
+#   TODO: in this way we dont have to specify periodicity when we call h_Et et similia
+#         because it is contained in params
+
 
 def h_Et_mp(
     Tinv_, params, espacemp_
-):  #     h(t,E) = sum_{r=0}    Tinv[t][r] * b[r+1,E]
+):  #     h(t,E) = sum_{r=0}    Tinv[t][r] * b[r+1,E]   #TODO: implement periodic function
     ht_ = mp.matrix(
         params.Ne, params.tmax
     )  #     r+1 only in b, since T is already shifted
@@ -31,7 +39,7 @@ def h_Et_mp(
     return ht_
 
 
-def h_Et_mp_Eslice(Tinv_, params, estar_):
+def h_Et_mp_Eslice(Tinv_, params, estar_):  #TODO: implement periodic function
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
         ht_[i] = 0
@@ -80,7 +88,7 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
     return averageScalar_mp(rhob)
 
 
-def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params):
+def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params):   #TODO: implement periodic function
     Nb = params.num_boot
     tmax = params.tmax
     mpll = mpf(str(lpar))
@@ -104,7 +112,7 @@ def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params)
 
 import numpy as np
 
-def h_Et_mp_Eslice_float64(Tinv_, params, estar_):
+def h_Et_mp_Eslice_float64(Tinv_, params, estar_):  #TODO: implement periodic function
     ht_ = np.ndarray(params.tmax, dtype=np.float64)
     for i in range(params.tmax):
         ht_[i] = 0

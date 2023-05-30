@@ -11,6 +11,13 @@ def parseArgumentPeak():
         required=True,
     )
     parser.add_argument(
+        "--tmax",
+        metavar="Tmax",
+        type=int,
+        help="The reconstruction will be performed using correlators c(0), c(1), ... c(tmax). If not specified, tmax will be set to the largest correlator available.",
+        default=0,
+    )
+    parser.add_argument(
         "--prec",
         metavar="NumericalPrecision",
         type=int,
@@ -73,10 +80,10 @@ def parseArgumentPeak():
         default=50,
     )
     parser.add_argument(
-        "--plots",
-        type=bool,
-        help="Show a shitton of plots. Default=False.",
-        default=False,
+        "--periodicity",
+        type=str,
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        default='EXP',
     )
     args = parser.parse_args()
     return args
@@ -160,10 +167,10 @@ def parseArgumentRhoFromData():
         default=50,
     )
     parser.add_argument(
-        "--plots",
-        type=bool,
-        help="Show a shitton of plots. Default=False.",
-        default=False,
+        "--periodicity",
+        type=str,
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        default='EXP',
     )
     args = parser.parse_args()
     return args
