@@ -7,6 +7,7 @@ from rhoStat import averageVector_fp, getCovMatrix_fp
 from core import Smatrix_mp
 from rhoMath import norm2_mp
 import time
+import mpmath as mp
 
 target_result_precision = 1e-8
 
@@ -34,6 +35,19 @@ CB_color_cycle = [
     "#e41a1c",
     "#dede00",
 ]
+
+CB_colors = [
+    '#1f77b4',  # Dark Blue
+    '#ff7f0e',  # Orange
+    '#2ca02c',  # Light Green
+    '#d62728',  # Reddish Purple
+    '#9467bd',  # Light Blue
+    '#8c564b',  # Dark Yellow
+    '#e377c2',  # Cyan
+    '#7f7f7f'   # Olive Green
+]
+
+plot_markers = ['o', 's', 'D', 'v', '^', 'p', '*', 'h']
 
 timesfont = {
     "family": "Times",
@@ -68,7 +82,7 @@ def ranvec(vec, dim, a, b):
 
 
 class Obs:
-    def __init__(self, T_: int, nms_: int = 1, is_resampled=False):
+    def __init__(self, T_: int, nms_: int = 1, tmax_ : int = 1, is_resampled=False):
         self.central = np.zeros(T_)  # Central value of the sample
         self.err = np.zeros(T_)  # Error on the central value
         self.sigma = np.zeros(T_)  # Variance of the sample
@@ -78,6 +92,12 @@ class Obs:
         self.cov = np.zeros((T_, T_))  # Cov matrix estimated from sample
         self.corrmat = np.zeros((T_, T_))  # Corr matrix estimated from sample
         self.is_resampled = is_resampled
+        if tmax_ == 1:
+            self.tmax = T_-1
+        else:
+            self.tmax = tmax_
+        self.mpsample = mp.matrix(self.nms, self.tmax)
+        self.mpcov = mp.matrix(self.tmax, self.tmax)
 
     def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
@@ -112,6 +132,16 @@ class Obs:
             plt.colorbar()
             plt.show()
             plt.clf()
+
+    def fill_mp_sample(self):
+        for n in range(self.nms):
+            for i in range(self.tmax):
+                self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
+        #   Get cov for B matrix
+        self.mpcov = mp.matrix(self.tmax)
+        for i in range(self.tmax):
+            for j in range(self.tmax):
+                self.mpcov[i, j] = mpf(str(self.cov[i + 1][j + 1]))
 
     def plot(self, show=True, logscale=True, label=None, yscale=1):
         plt.tight_layout()
@@ -204,11 +234,14 @@ class Inputs:
         self.Ne = 1
         self.alpha = 0
         self.emin = 0
+        self.e0 = 0
         self.massNorm = 1.0
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
         self.mpemax = mpf("0")
+        self.mpemin = mpf("0")
+        self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
 
@@ -217,8 +250,9 @@ class Inputs:
             self.tmax = self.time_extent - 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
-        self.mpalpha = mpf(str(self.alpha))
         self.mpemin = mpf(str(self.emin))
+        self.mpalpha = mpf(str(self.alpha))
+        self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
 
     def report(self):
@@ -233,27 +267,37 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Samples :", self.num_samples)
         print(LogMessage(), "Init ::: ", "Bootstrap samples :", self.num_boot)
         print(LogMessage(), "Init ::: ", "Number of energies :", self.Ne)
-        print(
-            LogMessage(),
-            "Init ::: ",
-            "Emax (mp) (lattice unit)",
-            self.emax,
-            self.mpemax,
-        )
-        print(LogMessage(), "Init ::: ", "Emax (mass units)", self.emax / self.massNorm)
-        print(
-            LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")"
-        )
-        print(LogMessage(), "Init ::: ", "Emin (mp)", self.emin, "(", self.mpemin, ")")
+        print(LogMessage(), "Init ::: ", "Emax (mp) [lattice unit]", self.emax, self.mpemax)
+        print(LogMessage(), "Init ::: ", "Emax [mass units]", self.emax / self.massNorm)
+        print(LogMessage(), "Init ::: ", "Emin (mp) [lattice unit]", self.emin, "(", self.mpemin, ")")
+        print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
+        print(LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")")
 
+class LambdaSearchOptions:
+    def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
+        self.lmin = lmin
+        self.lmax = lmax
+        self.ldensity = ldensity
+        self.k_star = star_at  # Meaning lambda is found at A = k_star B.
+        self.kfactor = kfactor  #   Meaning lambda dependence is checked at A = kfactor B
+        self.lspace = np.linspace(lmin, lmax, ldensity)
 
-#   This function should *reduce* the numerical precision
-#   from the large input value
-#   to a value suggested by the condition
-#   number of S
-#   If the starting prec is too small the function might
-#   too small of a value which results in a warning
+class MatrixBundle:
+    def __init__(self, Smatrix: mp.matrix, Bmatrix: mp.matrix, bnorm = mpf(1)):
+        self.S = Smatrix
+        self.B = Bmatrix
+        self.bnorm = bnorm
+
+    def compute_W(self, l, a0):
+        return self.S + (l*a0)/((1-l)*self.bnorm)*self.B
+
 def adjust_precision(tmax: int):
+    #   This function should *reduce* the numerical precision
+    #   from the large input value
+    #   to a value suggested by the condition
+    #   number of S
+    #   If the starting prec is too small the function might
+    #   too small of a value which results in a warning
     S_ = Smatrix_mp(tmax)
     condS = mp.cond(S_)
     n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious

@@ -50,6 +50,12 @@ def parseArgumentPeak():
     parser.add_argument(
         "--emin",
         type=float,
+        help="Maximum energy at which the spectral density is evaluated in unity of Mpi, which is set into main(), Default=0",
+        default=0.0,
+    )
+    parser.add_argument(
+        "--0",
+        type=float,
         help="Lower integration bound for functional A, Default=0",
         default=0.0,
     )
@@ -130,6 +136,12 @@ def parseArgumentRhoFromData():
     )
     parser.add_argument(
         "--emin",
+        type=float,
+        help="Maximum energy at which the spectral density is evaluated in unity of Mpi, which is set into main(), Default=Mpi/20",
+        default=0.0,
+    )
+    parser.add_argument(
+        "--e0",
         type=float,
         help="Lower integration bound for functional A, Default=0",
         default=0.0,
