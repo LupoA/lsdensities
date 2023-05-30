@@ -9,7 +9,7 @@ from rhoStat import *
 #   TODO: implement periodic function
 #   TODO: In this we pass params so a function should be
 #         def function(args, params)
-#           if params.periodicity==EXP:
+#               ft_mp(..., type=params.periodicity, T=params.time_extent)
 #               ...
 #   TODO: in this way we dont have to specify periodicity when we call h_Et et similia
 #         because it is contained in params
