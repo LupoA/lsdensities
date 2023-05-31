@@ -26,7 +26,7 @@ def gAg(smat, gt, estar, params):
 
     term3 = mpf(0)
     for t in range(tmax):
-        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0, type=params.periodicity, T=params.tmax), gt[t]) #TODO: implement periodicity in the rest of the file as done in this line
+        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0, type=params.periodicity, T=params.time_extent), gt[t]) #TODO: implement periodicity in the rest of the file as done in this line
         term3 = mp.fadd(term3, aux_)
     term3 = mp.fmul(mpf(2), term3)
     #   term 3 = 2 sum_t f_t g_t
@@ -53,7 +53,7 @@ def gAg_float64(smat, gt, estar, params):
 
     term3 = 0
     for t in range(tmax):
-        aux_ = ft_float64(e=estar, t=t+1, sigma_=params.sigma, alpha=params.alpha, e0=params.e0) * gt[t]    #TODO: implement periodicity
+        aux_ = ft_float64(e=estar, t=t+1, sigma_=params.sigma, alpha=params.alpha, e0=params.e0, type=params.periodicity, T=params.time_extent) * gt[t]
         term3 = term3 + aux_
     term3 *= 2
     #   term 3 = 2 sum_t f_t g_t
@@ -80,7 +80,8 @@ def gAgA0(smat, gt, estar, params, a0):
 
     term3 = 0
     for t in range(tmax):
-        aux_ = mp.fmul(ft_mp(estar, mpf(t+1), params.mpsigma, params.mpalpha, params.mpe0), gt[t])  #TODO: implement periodicity
+        aux_ = mp.fmul(ft_mp(estar, mpf(t+1), params.mpsigma, params.mpalpha, params.mpe0, params.periodicity,
+                             params.time_extent), gt[t])
         term3 = mp.fadd(term3, aux_)
     term3 = mp.fmul(mpf(2), term3)
     term3 = mp.fdiv(term3,a0)

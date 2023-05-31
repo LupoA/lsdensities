@@ -33,9 +33,33 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), e0_=mpf(0), type='EXP', T=0):    #   T
             S_[i, j] = entry
             if type == 'COSH':
                 assert (T > 0)
+                entry2 = mp.fsub(mpf(i), mpf(j))
+                entry3 = mp.fsub(mpf(j), mpf(i))
+                entry4 = mp.fneg(mpf(i))
+                entry4 = mp.fsub(entry4, mpf(j))
+                arg2 = mp.fadd(entry2, mpf(T))  # T+i-j
+                arg3 = mp.fadd(entry3, mpf(T))  # T+j-i
+                arg4 = mp.fadd(entry4, mpf(2 * T))  # 2T-j-i
+                arg4 = mp.fsub(arg4, mpf(2))  # 2T-j-i-2
+                entry2 = mp.fsub(arg2, alpha_)  # T+i-j-a
+                entry3 = mp.fsub(arg3, alpha_)  # T+j-i-a
+                entry4 = mp.fsub(arg4, alpha_)  # 2T-j-i-2-a
+                arg2 = mp.fneg(arg2)
+                arg3 = mp.fneg(arg3)
+                arg4 = mp.fneg(arg4)
+                arg2 = mp.fmul(arg2, e0_)
+                arg3 = mp.fmul(arg3, e0_)
+                arg4 = mp.fmul(arg4, e0_)
+                arg2 = mp.exp(arg2)
+                arg3 = mp.exp(arg3)
+                arg4 = mp.exp(arg4)
+                entry2 = mp.fdiv(arg, entry2)
+                entry3 = mp.fdiv(arg, entry3)
+                entry4 = mp.fdiv(arg, entry4)
+                S_[i, j] += entry2 + entry3 + entry4
     return S_
 
-def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None, type='EXP', T=0):    #TODO: implement periodic function
+def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None, type='EXP', T=0):
     if S_in is None:
         S_ = np.ndarray((tmax_, tmax_), dtype=np.float64)
     else:
@@ -43,8 +67,12 @@ def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None, type='EXP', T=0):    
     for i in range(tmax_):
         for j in range(tmax_):
             S_[i, j] = np.exp(-(i+j+2)*e0) / (i+j+2-alpha_)
-    if type == 'COSH':
-        assert (T > 0)
+            if type == 'COSH':
+                assert (T > 0)
+                aux = np.exp(-(T+i-j)*e0) / (T+i-j-alpha_)
+                aux2 = np.exp(-(T+j-i)*e0) / (T+j-i-alpha_)
+                aux3 = np.exp(-(2*T-j-i-2)*e0) / (2*T-j-i-2-alpha_)
+                S_[i, j] += aux + aux2 + aux3
     return S_
 
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
@@ -60,7 +88,7 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     return res_
 
 
-def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):  #TODO: implement periodic function
+def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma_, sigma_)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -85,6 +113,30 @@ def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):  #TODO: i
     res = mp.fdiv(res, aux)
     if type=='COSH':
         assert(T>0)
+        newt2 = mp.fadd(t, alpha)  # alpha+t
+        newt2 = mp.fsub(newt2, mpf(T))  # alpha+t-T
+        aux2 = mp.fmul(sigma_, sigma_)  # s^2
+        arg2 = mp.fmul(aux2, newt2)  # s^2 (t+alpha-T)
+        aux2 = mp.fmul(arg2, newt2)  # s^2 (alpha+t-T)^2
+        aux2 = mp.fmul(aux2, mpf("0.5"))  # s^2 (alpha+t-T)^2 /2
+        res2 = mp.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
+        aux2 = newt2  # alpha+t-T
+        aux2 = mp.fmul(e, aux2)  # e(alpha+t-T)
+        aux2 = mp.exp(aux2)
+        res2 = mp.fmul(res2, aux2)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
+        arg2 = mp.fsub(e0, arg2)
+        arg2 = mp.fsub(arg2, e)
+        arg2 = mp.fdiv(arg2, sigma_)
+        aux2 = mp.sqrt(2)
+        arg2 = mp.fdiv(arg2, aux2)
+        arg2 = mp.erfc(arg2)  # this is the COMPLEMENTARY erf
+        res2 = mp.fmul(res2, arg2)
+        aux2 = mp.fdiv(e, aux2)
+        aux2 = mp.fdiv(aux2, sigma_)
+        aux2 = mp.erf(aux2)
+        aux2 = mp.fadd(mpf(1), aux2)
+        res2 = mp.fdiv(res2, aux2)
+        res += res2
     return res
 
 def A0_mp(e_, sigma_, alpha=mpf(0), e0=mpf(0)):
@@ -141,7 +193,7 @@ def A0E_float64(espace_, par):   #   vector of A0s for each energy
         a0_e[ei] = A0_float64(e_=espace_[ei], sigma_=par.sigma, alpha=par.alpha, e0=par.e0)
     return a0_e
 
-def ft_float64(e, t, sigma_, alpha=0, e0=0, type='EXP', T=0):   #TODO: implement periodic function
+def ft_float64(e, t, sigma_, alpha=0, e0=0, type='EXP', T=0):
     newt = t - alpha
     aux = sigma_**2
     arg = aux * newt
@@ -166,4 +218,28 @@ def ft_float64(e, t, sigma_, alpha=0, e0=0, type='EXP', T=0):   #TODO: implement
     res = res / aux
     if type=='COSH':
         assert(T>0)
+        newt2 = t + alpha  # alpha+t
+        newt2 = newt2 - T  # alpha+t-T
+        aux2 = sigma_**2   # s^2
+        arg2 = aux2*newt2  # s^2 (t+alpha-T)
+        aux2 = arg2*newt2  # s^2 (alpha+t-T)^2
+        aux2 = aux2*0.5  # s^2 (alpha+t-T)^2 /2
+        res2 = np.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
+        aux2 = newt2  # alpha+t-T
+        aux2 = e*aux2  # e(alpha+t-T)
+        aux2 = np.exp(aux2)
+        res2 = res2*aux2  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
+        arg2 = e0-arg2
+        arg2 = arg2-e
+        arg2 = arg2/sigma_
+        aux2 = math.sqrt(2)
+        arg2 = arg2/aux2
+        arg2 = scipy.special.erfc(arg2)  # this is the COMPLEMENTARY erf
+        res2 = res2*arg2
+        aux2 = e / aux2
+        aux2 = aux2 / sigma_
+        aux2 = scipy.special.erf(aux2)
+        aux2 = 1 + aux2
+        res2 = res2 / aux2
+        res += res2
     return res

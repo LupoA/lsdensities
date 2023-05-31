@@ -59,7 +59,7 @@ def main():
         for i in range(tmax):
             mpcorr_sample[n, i] = mpf(str(corr.sample[n][i+1]))
     #   Get S matrix
-    S = Smatrix_mp(tmax)
+    S = Smatrix_mp(tmax, alpha_=mpf(0), e0_=mpf(0), type='COSH', T=par.time_extent)
     invS = S ** (-1)
     diff = S * invS
     diff = norm2_mp(diff) - 1
@@ -92,12 +92,14 @@ def main():
         T = T + S
         invT = T**(-1)
         #   Get coefficients
-        gt = h_Et_mp_Eslice(invT, par, estar_=estar, type='COSH', T=par.time_extent)    #TODO: implement periodic function
+        gt = h_Et_mp_Eslice(invT, par, estar_=estar)
         rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
 
-    plt.errorbar(x=espace / Mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
+    rhof = np.array(rho, dtype=float)
+    drhof = np.array(drho, dtype=float)
+    plt.errorbar(x=espace / Mpi, y=rhof, yerr=drhof, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
                  ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / Mpi), color=u.CB_color_cycle[0])
     plt.plot(espace/Mpi, gauss_fp(espace, Mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
     plt.xlabel('Energy/Mpi', fontdict=u.timesfont)

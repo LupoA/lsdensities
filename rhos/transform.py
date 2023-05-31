@@ -17,7 +17,7 @@ from rhoStat import *
 
 def h_Et_mp(
     Tinv_, params, espacemp_
-):  #     h(t,E) = sum_{r=0}    Tinv[t][r] * b[r+1,E]   #TODO: implement periodic function
+):  #     h(t,E) = sum_{r=0}    Tinv[t][r] * b[r+1,E]
     ht_ = mp.matrix(
         params.Ne, params.tmax
     )  #     r+1 only in b, since T is already shifted
@@ -33,13 +33,15 @@ def h_Et_mp(
                         params.mpsigma,
                         params.mpalpha,
                         params.mpe0,
+                        type=params.periodicity,
+                        T=params.time_extent
                     ),
                 )
                 ht_[e, i] = mp.fadd(aux_, ht_[e, i])
     return ht_
 
 
-def h_Et_mp_Eslice(Tinv_, params, estar_):  #TODO: implement periodic function
+def h_Et_mp_Eslice(Tinv_, params, estar_):
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
         ht_[i] = 0
@@ -47,7 +49,7 @@ def h_Et_mp_Eslice(Tinv_, params, estar_):  #TODO: implement periodic function
             aux_ = mp.fmul(
                 Tinv_[j, i],
                 ft_mp(
-                    estar_, mpf(j + 1), params.mpsigma, params.mpalpha, params.mpe0
+                    estar_, mpf(j + 1), params.mpsigma, params.mpalpha, params.mpe0, type=params.periodicity, T=params.time_extent
                 ),
             )
             ht_[i] = mp.fadd(aux_, ht_[i])
@@ -112,12 +114,12 @@ def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params)
 
 import numpy as np
 
-def h_Et_mp_Eslice_float64(Tinv_, params, estar_):  #TODO: implement periodic function
+def h_Et_mp_Eslice_float64(Tinv_, params, estar_):
     ht_ = np.ndarray(params.tmax, dtype=np.float64)
     for i in range(params.tmax):
         ht_[i] = 0
         for j in range(params.tmax):
-            aux_ = Tinv_[j, i] * ft_float64(estar_, j+1, params.sigma, params.alpha, params.e0)
+            aux_ = Tinv_[j, i] * ft_float64(estar_, j+1, params.sigma, params.alpha, params.e0, type=params.periodicity, T=params.time_extent)
             ht_[i] += aux_
     return ht_
 

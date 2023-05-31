@@ -95,8 +95,9 @@ def main():
         rhoE = y_combine_sample_Eslice_mp(gt, mpmatrix=mpcorr_sample, params=par)
         rho[e_i] = rhoE[0]
         drho[e_i] = rhoE[1]
-
-    plt.errorbar(x=espace / Mpi, y=rho, yerr=drho, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
+    rhof = np.array(rho, dtype=float)
+    drhof = np.array(drho, dtype=float)
+    plt.errorbar(x=espace / Mpi, y=rhof, yerr=drhof, marker="o", markersize=1.5, elinewidth=1.3, capsize=2,
                  ls='', label='HLT (sigma = {:2.2f} Mpi)'.format(par.sigma / Mpi), color=u.CB_color_cycle[0])
     plt.plot(espace/Mpi, gauss_fp(espace, Mpi , par.sigma, norm='half'), color=u.CB_color_cycle[2], linewidth=1, ls='--', label='Target')
     plt.xlabel('Energy/Mpi', fontdict=u.timesfont)
