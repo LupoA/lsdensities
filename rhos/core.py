@@ -53,9 +53,9 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), e0_=mpf(0), type='EXP', T=0):    #   T
                 arg2 = mp.exp(arg2)
                 arg3 = mp.exp(arg3)
                 arg4 = mp.exp(arg4)
-                entry2 = mp.fdiv(arg, entry2)
-                entry3 = mp.fdiv(arg, entry3)
-                entry4 = mp.fdiv(arg, entry4)
+                entry2 = mp.fdiv(arg2, entry2)
+                entry3 = mp.fdiv(arg3, entry3)
+                entry4 = mp.fdiv(arg4, entry4)
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
