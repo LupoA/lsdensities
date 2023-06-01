@@ -5,10 +5,13 @@ from importall import *
 
 eNorm = False
 
+#TODO at present: float implemented, mp not implemented
+
 
 def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
+    in_.periodicity = args_.periodicity
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -58,8 +61,8 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
-    S = Smatrix_mp(tmax)
-    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.08, star_at = 1)
+    S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
+    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.06, star_at = 1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = InverseProblemWrapper(par=par, lambda_config=lambda_bundle, matrix_bundle=matrix_bundle, correlator=corr)
@@ -71,22 +74,6 @@ def main():
             HLT.computeMinimumPrecision(HLT.espace[e_i])
 
     HLT.run(show_lambda_scan=True)
-
-    if(0):'''
-
-    for e_i in range(HLT.par.Ne):   # finds solution at a specific lambda
-        HLT.optimal_lambdas[e_i][0] = HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=lambda_bundle.k_star)
-
-    for e_i in range(HLT.par.Ne):   # finds solution at another lambda
-        HLT.optimal_lambdas[e_i][1] = HLT.solveHLT_bisectonSearch_float64(HLT.espace[e_i], k_factor=lambda_bundle.kfactor)
-
-    HLT.optimal_lambdas_is_filled = True
-    assert all(HLT.result_is_filled)
-
-    HLT.estimate_sys_error()    #   uses both solution to estimate systematics due to lambda
-
-    for e_i in range(HLT.par.Ne):
-        HLT.solveHLT_fromLambdaList_float64(HLT.espace[e_i])'''
 
     import matplotlib.pyplot as plt
 

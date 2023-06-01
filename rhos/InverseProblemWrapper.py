@@ -69,7 +69,7 @@ class InverseProblemWrapper:
         self.A0_is_filled = True
 
     def init_float64(self):
-        Smatrix_float64(self.par.tmax, self.par.alpha, self.par.e0, S_in=self.S_float)
+        Smatrix_float64(self.par.tmax, self.par.alpha, self.par.e0, S_in=self.S_float, type=self.par.periodicity, T=self.par.time_extent)
         self.A0_float = A0E_float64(self.espace, self.par)
         for i in range(self.par.tmax):
             for j in range(self.par.tmax):

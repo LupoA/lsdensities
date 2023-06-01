@@ -26,7 +26,7 @@ def gAg(smat, gt, estar, params):
 
     term3 = mpf(0)
     for t in range(tmax):
-        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0, type=params.periodicity, T=params.time_extent), gt[t]) #TODO: implement periodicity in the rest of the file as done in this line
+        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0, type=params.periodicity, T=params.time_extent), gt[t])
         term3 = mp.fadd(term3, aux_)
     term3 = mp.fmul(mpf(2), term3)
     #   term 3 = 2 sum_t f_t g_t
@@ -159,7 +159,7 @@ def getLstar(espace_mp, Smat, a0_estar, CovDmat, csq, params, eNorm=False, lambd
             W = W + Smat
             invW = W**(-1)
             #   given W, get the coefficient
-            gtestar = h_Et_mp_Eslice(invW, params, estar)   #TODO: nothing, periodicity already in params
+            gtestar = h_Et_mp_Eslice(invW, params, estar)
             Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0_estar, Bnorm, params, verbose=True))
             if Wvec[li] > Wstar:
                 Wstar = Wvec[li]
@@ -186,7 +186,7 @@ def getLstar_Eslice(estar, Smat, a0_estar, CovDmat, csq, params, eNorm_=False, l
         W = W + Smat
         invW = W**(-1)  # slow!!!
         #   given W, get the coefficient
-        gtestar = h_Et_mp_Eslice(invW, params, estar)   #TODO: nothing, periodicity already in params
+        gtestar = h_Et_mp_Eslice(invW, params, estar)
         Wvec[li] = float(gWg(Smat, CovDmat, gtestar, estar, mp_l, a0_estar, Bnorm, params, verbose=True))
         if Wvec[li] > Wstar:
             Wstar = Wvec[li]
