@@ -45,8 +45,8 @@ def main():
     #   one peak vector
     op = np.zeros(par.time_extent)
     for t in range(par.time_extent):
-        op[t] = np.exp(-(t) * Mpi)
-        #op[t] = np.exp(-(t) * Mpi) + np.exp(-(T-t) * Mpi)
+        #op[t] = np.exp(-(t) * Mpi)
+        op[t] = np.exp(-(t) * Mpi) + np.exp(-(T-t) * Mpi)
     cov = np.zeros((T, T))
     for i in range(T):
         cov[i, i] = (op[i] * 0.02) ** 2

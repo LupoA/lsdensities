@@ -19,26 +19,24 @@ def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemente
     return S_
 
 
-def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0), type='COSH'):
+def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0), type ='COSH'):
+    S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):
-            S_ = mp.matrix(tmax_, tmax_)
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
-            entry = mp.fsub(arg, alpha_)  # i+j+2-a
+            entry = mp.fsub(arg, alpha_)    # i+j+2-a
             arg = mp.fneg(arg)
             arg = mp.fmul(arg, emin_)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
-    if type == 'EXP':   # Non-periodic correlators
-        S_[i, j] = entry
-    elif type == 'COSH':    # Periodic correlators
-        T = tmax_ + 1
-        for i in range(tmax_):
-            for j in range(tmax_):
+            S_[i, j] = entry
+            if type == 'COSH':    # Periodic correlators
+                T = tmax_ + 1
                 entry2 = mp.fsub(mpf(i), mpf(j))
                 entry3 = mp.fsub(mpf(j), mpf(i))
-                entry4 = mp.fneg(entry)
+                entry4 = mp.fneg(mpf(i))
+                entry4 = mp.fsub(entry4, mpf(j))
                 arg2 = mp.fadd(entry2, mpf(T))  # T+i-j
                 arg3 = mp.fadd(entry3, mpf(T))  # T+j-i
                 arg4 = mp.fadd(entry4, mpf(2 * T))  # 2T-j-i
@@ -55,12 +53,10 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), emin_=mpf(0), type='COSH'):
                 arg2 = mp.exp(arg2)
                 arg3 = mp.exp(arg3)
                 arg4 = mp.exp(arg4)
-                entry2 = mp.fdiv(arg, entry2)
-                entry3 = mp.fdiv(arg, entry3)
-                entry4 = mp.fdiv(arg, entry4)
-                S_[i, j] = entry + entry2 + entry3 + entry4
-    else:
-        raise ValueError('Invalid type specified. Only COSH and EXP are allowed.')
+                entry2 = mp.fdiv(arg2, entry2)
+                entry3 = mp.fdiv(arg3, entry3)
+                entry4 = mp.fdiv(arg4, entry4)
+                S_[i, j] += entry2 + entry3 + entry4
     return S_
 
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
