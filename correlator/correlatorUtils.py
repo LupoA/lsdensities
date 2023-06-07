@@ -9,9 +9,9 @@ import argparse
 #       from correlatorUtils import effective_mass
 #       effmass = effective_mass(corr, par, type='EXP')
 #       effmass.plot(logscale=False)
-#       print(effmass.avg, '±', effmass.err)
+#       print(effmass.central, '±', effmass.err)
 
-def effective_mass_beta(corr, par, type='COSH'):
+def effective_mass(corr, par, type='COSH'):
     th = int(par.time_extent / 2)
     thm = th - 1
     mass = Obs(T_=thm, nms_=par.num_boot, is_resampled=True)

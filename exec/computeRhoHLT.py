@@ -45,7 +45,7 @@ def main():
     rawcorr.evaluate()
 
     #   Here is the resampling
-    corr = u.Obs(par.time_extent, par.num_boot, tmax_=par.tmax, is_resampled=True)
+    corr = u.Obs(T = par.time_extent, tmax = par.tmax, nms = par.num_boot, is_resampled=True)
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
@@ -62,7 +62,7 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.06, star_at = 1)
+    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.1, star_at = 1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = InverseProblemWrapper(par=par, lambda_config=lambda_bundle, matrix_bundle=matrix_bundle, correlator=corr)

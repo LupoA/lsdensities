@@ -82,20 +82,17 @@ def ranvec(vec, dim, a, b):
 
 
 class Obs:
-    def __init__(self, T_: int, nms_: int = 1, tmax_ : int = 1, is_resampled=False):
-        self.central = np.zeros(T_)  # Central value of the sample
-        self.err = np.zeros(T_)  # Error on the central value
-        self.sigma = np.zeros(T_)  # Variance of the sample
-        self.T = T_
-        self.nms = nms_
-        self.sample = np.zeros((nms_, T_))  # Sample elements
-        self.cov = np.zeros((T_, T_))  # Cov matrix estimated from sample
-        self.corrmat = np.zeros((T_, T_))  # Corr matrix estimated from sample
+    def __init__(self, T: int, tmax : int, nms: int = 1, is_resampled=False):
+        self.central = np.zeros(T)  # Central value of the sample
+        self.err = np.zeros(T)  # Error on the central value
+        self.sigma = np.zeros(T)  # Variance of the sample
+        self.T = T
+        self.tmax = tmax
+        self.nms = nms
+        self.sample = np.zeros((nms, T))  # Sample elements
+        self.cov = np.zeros((T, T))  # Cov matrix estimated from sample
+        self.corrmat = np.zeros((T, T))  # Corr matrix estimated from sample
         self.is_resampled = is_resampled
-        if tmax_ == 1:
-            self.tmax = T_-1
-        else:
-            self.tmax = tmax_
         self.mpsample = mp.matrix(self.nms, self.tmax)
         self.mpcov = mp.matrix(self.tmax, self.tmax)
 
@@ -193,7 +190,7 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
         header_T = int(header.split(" ")[1])
         print(LogMessage(), "Reading file :::", "Time extent ", header_T)
         print(LogMessage(), "Reading file :::", "Measurements ", header_nms)
-        mcorr_ = Obs(header_T, header_nms, is_resampled=resampled)
+        mcorr_ = Obs(T=header_T, tmax=header_T-1, nms=header_nms, is_resampled=resampled)
         # loop over file: read and store
         indx = 0
         for l in file:
@@ -248,7 +245,10 @@ class Inputs:
 
     def assign_values(self):
         if self.tmax==0:
-            self.tmax = self.time_extent - 1
+            if self.periodicity=='EXP':
+                self.tmax = self.time_extent - 1
+            elif self.periodicity=='COSH':
+                self.tmax = int(self.time_extent/2) - 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
