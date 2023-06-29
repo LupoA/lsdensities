@@ -77,41 +77,61 @@ class HLTWrapper:
         print(LogMessage(), "Inverse problem ::: E0 (mp):", self.par.e0, "(", self.e0MP, ")")
 
     def lambdaToRho(self, lambda_, estar_):
-        _Bnorm = (self.correlator.avg[1]*self.correlator.avg[1])/(estar_*estar_)
+        import time
+        assert ( self.A0_is_filled == True)
+        _Bnorm = (self.correlator.central[1]*self.correlator.central[1])/(estar_*estar_)
+        #_Bnorm = (self.correlator.central[1] * self.correlator.central[1]) / 1
         _factor = (lambda_ * self.A0espace_dictionary[estar_]) / _Bnorm
-        _M = self.matrix_bundle.S + self.matrix_bundle.B
+        _M = self.matrix_bundle.S + (_factor*self.matrix_bundle.B)
+        start_time = time.time()
         _Minv = invert_matrix_ge(_M)
+        end_time = time.time()
+        print(LogMessage(), 'lambdaToRho ::: Matrix inverted in ', end_time - start_time, 's')
         _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_)
         rho_estar, drho_estar = y_combine_sample_Eslice_mp(_g_t_estar, self.correlator.sample, self.par)
-        return rho_estar, drho_estar
 
-    def scanLambda(self, estar_):
-        lambda_ = 2
-        lambda_step = 0.1
+        gag_estar = gAg(self.matrix_bundle.S, _g_t_estar, estar_, self.par)
+
+        return rho_estar, drho_estar, gag_estar
+
+    def scanLambda(self, estar_, prec_ = 0.1):
+        lambda_ = 85
+        lambda_step = 1
         rho_list = []
         drho_list = []
+        gAA0g_list = []
         _count = 0
 
-        _this_rho, _this_drho = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
+        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
         rho_list.append(_this_rho)      #   store
         drho_list.append(_this_drho)      #   store
+        gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+        lambda_ -= lambda_step
 
-        while (_count < 5 or lambda_ < 1e-4):
+        while (_count < 5 and lambda_ > 1e-4):
+        #while (lambda_ > 0):
 
-            lambda_ -= lambda_step
-
-            _this_updated_rho, _this_updated_drho = self.lambdaToRho(lambda_, estar_)
+            print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
+            print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
+            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)
             rho_list.append(_this_updated_rho)  #   store
+            print(LogMessage(), 'Scan Lambda ::: Rho = {:1.3e}'.format(float(_this_updated_rho)))
             drho_list.append(_this_updated_drho)    #   store
-
-            if (abs(_this_updated_rho - _this_rho / _this_updated_rho) < _this_updated_drho):
+            gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+            #_residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
+            _residual = abs( (_this_updated_rho - _this_rho)/ _this_rho )
+            print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual))
+            if (_residual < prec_):
                 _count += 1
+                print(LogMessage(), 'Scan Lambda ::: count = ', _count)
             else:
                 _count = 0
 
             _this_rho = _this_updated_rho
+            lambda_ -= lambda_step
 
-        return rho_list, drho_list
+        return rho_list, drho_list, gAA0g_list
 
 
 
