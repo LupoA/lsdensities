@@ -158,6 +158,15 @@ def A0_mp(e_, sigma_, alpha=mpf(0), e0=mpf(0)):
     aux_ = mp.fadd(aux_, 1)
     aux_ = mp.fmul(aux_, aux_)
     res = mp.fdiv(res, aux_)
+    # alpha implementation
+    aux = mp.fmul(alpha,e_) # alpha*e
+    aux2 = mp.fmul(alpha,sigma_) # alpha*sigma
+    aux2 = mp.fmul(aux2, aux2) # (alpha*sigma)^2
+    aux2 = mp.fdiv(aux2,mpf(4)) # (alpha*sigma)^2 / 4
+    aux = mp.fadd(aux, aux2) # (alpha*sigma)^2 / 4 + alpha*e
+    aux = mp.exp(aux)
+    res = mp.fmul(res,aux)
+
     return res
 
 def A0E_mp(espacemp_, par):   #   vector of A0s for each energy
@@ -185,6 +194,14 @@ def A0_float64(e_, sigma_, alpha=0, e0=0):
     aux_ = aux_ + 1
     aux_ = aux_ * aux_
     res = res / aux_
+    # alpha implementation
+    aux = alpha*e_ # alpha*e
+    aux2 = alpha*sigma_ # alpha*sigma
+    aux2 = aux2*aux2 # (alpha*sigma)^2
+    aux2 = aux2/mpf(4) # (alpha*sigma)^2 / 4
+    aux = aux + aux2 # (alpha*sigma)^2 / 4 + alpha*e
+    aux = np.exp(aux)
+    res = res*aux
     return res
 
 def A0E_float64(espace_, par):   #   vector of A0s for each energy
