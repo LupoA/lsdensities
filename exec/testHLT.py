@@ -72,6 +72,11 @@ def main():
 
     rho_l, drho_l, gag_l = HLT.scanLambda(estar)
 
+    _ = HLT.estimate_sys_error(estar)
+
+    assert(HLT.result_is_filled[3] == True)
+    print(LogMessage(), 'rho, drho, sys', HLT.rho_result[3], HLT.drho_result[3],HLT.rho_sys_err[3])
+
     import matplotlib.pyplot as plt
 
     plt.errorbar(

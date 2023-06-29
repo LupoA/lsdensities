@@ -32,17 +32,30 @@ class HLTWrapper:
         self.A0espace_dictionary = {} #   Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
         self.espace_is_filled = False
         self.A0_is_filled = False
-
         #   Lambda utilities
-        self.optimal_lambdas = np.ndarray((self.par.Ne, 2), dtype=np.float64)
+        self.labda_check = self.lambda_config.kfactor
+
+        #self.optimal_lambdas = np.ndarray((self.par.Ne, 2), dtype=np.float64)
         self.optimal_lambdas_is_filled = False
-        #   Result, float64
-        self.rho = np.ndarray(self.par.Ne, dtype = np.float64)
-        self.rho_stat_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        #   Lists of result
+        self.rho_list = []
+        self.drho_list = []
+        self.gAA0g_list = []
+
+        self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.result_is_filled = np.full(par.Ne, False, dtype=bool)
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.rho_kfact_dictionary = {}
-        self.result_is_filled = np.full(par.Ne, False, dtype=bool)
+
+        #   Result, float64
+        #self.rho = np.ndarray(self.par.Ne, dtype = np.float64)
+        #self.rho_stat_err = np.ndarray(self.par.Ne, dtype=np.float64)
+
+        #
+        #self.rho_kfact_dictionary = {}
+
 
     def fillEspaceMP(self):
         for e_id in range(self.par.Ne):
@@ -94,33 +107,35 @@ class HLTWrapper:
 
         return rho_estar, drho_estar, gag_estar
 
-    def scanLambda(self, estar_, prec_ = 0.1):
-        lambda_ = 85
-        lambda_step = 1
-        rho_list = []
-        drho_list = []
-        gAA0g_list = []
+    def scanLambda(self, estar_, prec_ = 0.009):
+        lambda_ = 120
+        lambda_step = 0.5
+        #rho_list = []
+        #drho_list = []
+        #gAA0g_list = []
         _count = 0
+
+        print(LogMessage(), ' --- ')
+        print(LogMessage(), 'Scan Lambda at energy {:2.2e}'.format(estar_))
 
         print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
         _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
-        rho_list.append(_this_rho)      #   store
-        drho_list.append(_this_drho)      #   store
-        gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+        self.rho_list.append(_this_rho)      #   store
+        self.drho_list.append(_this_drho)      #   store
+        self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
         lambda_ -= lambda_step
 
-        while (_count < 5 and lambda_ > 1e-4):
+        while (_count < 6 and lambda_ > 1e-4):
         #while (lambda_ > 0):
 
             print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
             print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
             _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)
-            rho_list.append(_this_updated_rho)  #   store
+            self.rho_list.append(_this_updated_rho)  #   store
             print(LogMessage(), 'Scan Lambda ::: Rho = {:1.3e}'.format(float(_this_updated_rho)))
-            drho_list.append(_this_updated_drho)    #   store
-            gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
-            #_residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
-            _residual = abs( (_this_updated_rho - _this_rho)/ _this_rho )
+            self.drho_list.append(_this_updated_drho)    #   store
+            self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+            _residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual))
             if (_residual < prec_):
                 _count += 1
@@ -131,12 +146,57 @@ class HLTWrapper:
             _this_rho = _this_updated_rho
             lambda_ -= lambda_step
 
-        return rho_list, drho_list, gAA0g_list
+        self.lambda_result[self.espace_dictionary[estar_]] = lambda_
+        self.rho_result[self.espace_dictionary[estar_]] = _this_rho
+        self.drho_result[self.espace_dictionary[estar_]] = _this_updated_drho
+        self.result_is_filled[self.espace_dictionary[estar_]] = True
+
+        print(LogMessage(), 'Scan Lambda ::: Lambda * = ', lambda_)
+
+        return self.rho_list, self.drho_list, self.gAA0g_list
+
+    def estimate_sys_error(self, estar_):
+        assert (self.result_is_filled[self.espace_dictionary[estar_]] == True)
+
+        #_this = self.rho_kfact_dictionary[self.lambda_config.k_star][estar_]  # input: e and lambda* ; out = rho
+
+        _this_y = self.rho_result[self.espace_dictionary[estar_]] #   rho at lambda*
+
+        _that_y, _that_yerr, _that_x = self.lambdaToRho(self.lambda_result[self.espace_dictionary[estar_]] * self.lambda_config.kfactor, estar_)
 
 
+        self.rho_sys_err[self.espace_dictionary[estar_]] = abs(_this_y - _that_y) / 2
+        self.rho_quadrature_err[self.espace_dictionary[estar_]] = np.sqrt(self.rho_sys_err[self.espace_dictionary[estar_]]**2 + self.drho_result[self.espace_dictionary[estar_]]**2)
 
+        return self.rho_sys_err[self.espace_dictionary[estar_]]
 
+    def run(self, show_lambda_scan=False):
+        for e_i in range(self.par.Ne):  # finds solution at a specific lambda
 
+            rho_l, drho_l, gag_l = self.scanLambda(self.espace[e_i])
+
+            _ = self.estimate_sys_error(self.espace[e_i])
+
+            if show_lambda_scan==True:
+                import matplotlib.pyplot as plt
+                plt.errorbar(
+                    x=gag_l,
+                    y=rho_l,
+                    yerr=drho_l,
+                    marker="o",
+                    markersize=1.5,
+                    elinewidth=1.3,
+                    capsize=2,
+                    ls="",
+                    label=r'$\rho({:2.2e)$'.format(self.espace[e_i]) + r'$(\sigma = {:2.2f})$'.format(self.par.sigma / self.par.massNorm) + r'$M_\pi$',
+                    color=u.CB_color_cycle[0],
+                )
+                plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
+                # plt.ylabel("Spectral density", fontdict=u.timesfont)
+                plt.legend(prop={"size": 12, "family": "Helvetica"})
+                plt.grid()
+                plt.tight_layout()
+                plt.show()
 
 
 
@@ -272,17 +332,9 @@ class HLTWrapper:
         plt.tight_layout()
         plt.show()
 
-    def estimate_sys_error(self):
-        assert all(self.result_is_filled)
-        #print(self.rho_kfact_dictionary[self.lambda_config.k_star].values())
-        #print(self.rho_kfact_dictionary[self.lambda_config.kfactor].values())
-        for e_i in range(self.par.Ne):
-            _this = self.rho_kfact_dictionary[self.lambda_config.k_star][self.espace[e_i]]
-            _that = self.rho_kfact_dictionary[self.lambda_config.kfactor][self.espace[e_i]]
-            self.rho_sys_err[e_i] = abs(_this[0] - _that[0]) / 2
-            self.rho_quadrature_err[e_i] = np.sqrt(self.rho_sys_err[e_i]**2 + self.rho_stat_err[e_i]**2)
 
-    def run(self, show_lambda_scan=False):
+
+    def run_deprecated(self, show_lambda_scan=False):
         for e_i in range(self.par.Ne):  # finds solution at a specific lambda
             self.optimal_lambdas[e_i][0] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
                                                                               k_factor=self.lambda_config.k_star)
