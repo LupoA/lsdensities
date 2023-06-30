@@ -62,7 +62,7 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=0, lambdaMax=200, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1)
+    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=0, lambdaMax=12, lambdaStep=0.5, lambdaScanPrec = 0.5, lambdaScanCap=6, kfactor = 0.1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)

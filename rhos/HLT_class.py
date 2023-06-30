@@ -214,7 +214,7 @@ class HLTWrapper:
             print(LogMessage(), 'Setting Alpha ::: First Alpha = ', self.algorithmPar.alphaA)
             _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
             self.rho_list.append(_this_updated_rho)  #   store
-            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaA),  '= {:1.3e}'.format(float(_this_updated_rho)))
+            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaA),  '= {:1.3e}'.format(float(_this_updated_rho)), 'Stat = {:1.3e}'.format(float(_this_updated_drho)))
             self.drho_list.append(_this_updated_drho)    #   store
             self.gAA0g_list.append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
             self.lambda_list.append(lambda_)
@@ -224,16 +224,17 @@ class HLTWrapper:
             print(LogMessage(), 'Setting Alpha ::: Second Alpha = ', self.algorithmPar.alphaB)
             _this_updated_rho2, _this_updated_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
             self.rho_list_alpha2.append(_this_updated_rho2)  # store
-            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaB), '= {:1.3e}'.format(float(_this_updated_rho2)))
+            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaB), '= {:1.3e}'.format(float(_this_updated_rho2)), 'Stat = {:1.3e}'.format(float(_this_updated_drho2)))
             self.drho_list_alpha2.append(_this_updated_drho2)  # store
             self.gAA0g_list_alpha2.append(_this_gAg2 / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  # store
             _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual2))
 
             #comp_quadrature = abs(_this_updated_rho - _this_updated_rho2) /  mp.sqrt( mp.fadd(mp.fmul(_this_updated_drho,_this_updated_drho),mp.fmul(_this_updated_drho2,_this_updated_drho2)) )
-            comp_diff = abs(_this_updated_rho - _this_updated_rho2) - (_this_updated_drho + _this_updated_drho2)/2
-            print(LogMessage(), 'Scan Lambda ::: Alpha Diff ::: ', comp_diff)
-            if (_residual1 < prec_ and _residual2 < prec_ and comp_diff < 0):
+            comp_diff = abs(_this_updated_rho - _this_updated_rho2) - (_this_updated_drho + _this_updated_drho2)
+            print(LogMessage(), 'Scan Lambda ::: Alpha Diff ::: ', float(comp_diff))
+            print(LogMessage(), 'check', -(_this_updated_drho2))
+            if (_residual1 < prec_ and _residual2 < prec_ and comp_diff < -(_this_updated_drho2*0.1)):
                 _count += 1
                 print(LogMessage(), 'Scan Lambda ::: count = ', _count)
             else:
