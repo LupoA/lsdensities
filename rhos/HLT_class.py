@@ -245,7 +245,7 @@ class HLTWrapper:
             lambda_ -= lambda_step
 
         self.lambda_result[self.espace_dictionary[estar_]] = lambda_
-        self.rho_result[self.espace_dictionary[estar_]] = _this_rho
+        self.rho_result[self.espace_dictionary[estar_]] = (_this_rho + _this_rho2) / 2
         self.drho_result[self.espace_dictionary[estar_]] = _this_updated_drho
         self.result_is_filled[self.espace_dictionary[estar_]] = True
 
