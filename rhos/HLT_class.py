@@ -41,6 +41,11 @@ class HLTWrapper:
         self.rho_list = []
         self.drho_list = []
         self.gAA0g_list = []
+#        self.lambda_list = []
+
+        self.rho_list_alpha2 = []
+        self.drho_list_alpha2 = []
+        self.gAA0g_list_alpha2 = []
 
         self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64)
@@ -107,7 +112,7 @@ class HLTWrapper:
 
         return rho_estar, drho_estar, gag_estar
 
-    def scanLambda(self, estar_, prec_ = 0.009):
+    def scanLambda(self, estar_, prec_ = 0.005):
         lambda_ = 120
         lambda_step = 0.5
         #rho_list = []
@@ -123,6 +128,7 @@ class HLTWrapper:
         self.rho_list.append(_this_rho)      #   store
         self.drho_list.append(_this_drho)      #   store
         self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+#        self.lambda_list.append(lambda_)
         lambda_ -= lambda_step
 
         while (_count < 6 and lambda_ > 1e-4):
@@ -135,6 +141,7 @@ class HLTWrapper:
             print(LogMessage(), 'Scan Lambda ::: Rho = {:1.3e}'.format(float(_this_updated_rho)))
             self.drho_list.append(_this_updated_drho)    #   store
             self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+#            self.lambda_list.append(lambda_)
             _residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual))
             if (_residual < prec_):
@@ -154,6 +161,79 @@ class HLTWrapper:
         print(LogMessage(), 'Scan Lambda ::: Lambda * = ', lambda_)
 
         return self.rho_list, self.drho_list, self.gAA0g_list
+
+    def scanLambda_alpha(self, estar_, prec_ = 0.009, alpha1_ = mpf(0.0), alpha2_ = mpf(-1.0)):
+        lambda_ = 120
+        lambda_step = 0.5
+        _count = 0
+
+        print(LogMessage(), ' --- ')
+        print(LogMessage(), 'Scan Lambda at energy {:2.2e}'.format(estar_))
+
+        print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
+        # Setting alpha to the first value
+        print(LogMessage(), 'Setting alpha ::: Alpha1 = ', alpha1_)
+        self.par.alpha = mpf(alpha1_)
+        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        self.rho_list.append(_this_rho)      #   store
+        self.drho_list.append(_this_drho)      #   store
+        self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+
+
+        # Setting alpha to the second value
+        print(LogMessage(), 'Setting alpha ::: Alpha2 = ', alpha2_)
+        self.par.alpha = mpf(alpha2_)
+        _this_rho2, _this_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        self.rho_list_alpha2.append(_this_rho2)      #   store
+        self.drho_list_alpha2.append(_this_drho2)      #   store
+        self.gAA0g_list_alpha2.append(_this_gAg2/self.A0espace_dictionary[estar_])  #   store
+
+        lambda_ -= lambda_step
+
+        while (_count < 6 and lambda_ > 1e-4):
+            print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
+            print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
+
+            print(LogMessage(), 'Setting alpha ::: Alpha1 = ', alpha1_)
+            self.par.alpha = mpf(alpha1_)
+            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)
+            self.rho_list.append(_this_updated_rho)  #   store
+            print(LogMessage(), 'Scan Lambda ::: Rho (alpha1) = {:1.3e}'.format(float(_this_updated_rho)))
+            self.drho_list.append(_this_updated_drho)    #   store
+            self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+            _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
+            print(LogMessage(), 'Scan Lambda ::: Residual(alpha1) = ', float(_residual1))
+
+            print(LogMessage(), 'Setting alpha ::: Alpha2 = ', alpha2_)
+            self.par.alpha = mpf(alpha2_)
+            _this_updated_rho2, _this_updated_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_)
+            self.rho_list_alpha2.append(_this_updated_rho2)  # store
+            print(LogMessage(), 'Scan Lambda ::: Rho (alpha2) = {:1.3e}'.format(float(_this_updated_rho2)))
+            self.drho_list_alpha2.append(_this_updated_drho2)  # store
+            self.gAA0g_list_alpha2.append(_this_gAg2 / self.A0espace_dictionary[estar_])  # store
+            _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
+            print(LogMessage(), 'Scan Lambda ::: Residual(alpha2) = ', float(_residual2))
+
+            comp = abs(_this_updated_rho - _this_updated_rho2)/\
+                   mp.sqrt( mp.fadd(mp.fmul(_this_updated_drho,_this_updated_drho),mp.fmul(_this_updated_drho2,_this_updated_drho2)) )
+            if (_residual1 < prec_ and _residual2 < prec_ and comp < mpf(1.0)):
+                _count += 1
+                print(LogMessage(), 'Scan Lambda ::: count = ', _count)
+            else:
+                _count = 0
+
+            _this_rho = _this_updated_rho
+            _this_rho2 = _this_updated_rho2
+            lambda_ -= lambda_step
+
+        self.lambda_result[self.espace_dictionary[estar_]] = lambda_
+        self.rho_result[self.espace_dictionary[estar_]] = _this_rho
+        self.drho_result[self.espace_dictionary[estar_]] = _this_updated_drho
+        self.result_is_filled[self.espace_dictionary[estar_]] = True
+
+        print(LogMessage(), 'Scan Lambda ::: Lambda * = ', lambda_)
+
+        return self.rho_list, self.drho_list, self.gAA0g_list, self.rho_list_alpha2, self.drho_list_alpha2, self.gAA0g_list_alpha2
 
     def estimate_sys_error(self, estar_):
         assert (self.result_is_filled[self.espace_dictionary[estar_]] == True)
