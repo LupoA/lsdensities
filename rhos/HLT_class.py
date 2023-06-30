@@ -14,12 +14,42 @@ from abw import gAg, gBg
 import scipy.linalg as sp_linalg
 import matplotlib.pyplot as plt
 
+class AlgorithmParameters:
+    def __init__(self, alphaA=0, alphaB=0, alphaC=0, lambdaMax=50, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1):
+        self.alphaA = alphaA
+        self.alphaB = alphaB
+        self.alphaC = alphaC
+        self.lambdaMax = lambdaMax
+        self.lambdaStep = lambdaStep
+        self.lambdaScanPrec = lambdaScanPrec
+        self.lambdaScanCap = lambdaScanCap
+        self.kfactor = kfactor
+        self.alphaAmp = mpf(str(alphaA))
+        self.alphaBmp = mpf(str(alphaB))
+        self.alphaCmp = mpf(str(alphaC))
+
+class A0_t:
+    def __init__(self, par_ : Inputs ,alphaMP_=0, eminMP_=0):
+        self.valute_at_E = mp.matrix(par_.Ne, 1)
+        self.valute_at_E_dictionary = {}  # Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
+        self.is_filled = False
+        self.alphaMP = alphaMP_
+        self.eminMP = eminMP_
+        self.par = par_
+    def evaluate(self, espaceMP_):
+        print(LogMessage(), "Computing A0 at all energies with Alpha = {:2.2e}".format(float(self.alphaMP)))
+        self.valute_at_E = A0E_mp(espaceMP_, self.par, alpha_= self.alphaMP, emin_=self.eminMP)
+        for e_id in range(self.par.Ne):
+            self.valute_at_E_dictionary[float(espaceMP_[e_id])] = self.valute_at_E[e_id]
+        self.is_filled = True
+
 class HLTWrapper:
-    def __init__(self, par: Inputs, lambda_config: LambdaSearchOptions, matrix_bundle: MatrixBundle, correlator : Obs):
+    def __init__(self, par: Inputs, algorithmPar: AlgorithmParameters, matrix_bundle: MatrixBundle, correlator : Obs):
         self.par = par
-        self.lambda_config = lambda_config
         self.correlator = correlator
+        self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
+        #
         self.espace = np.linspace(par.emin, par.emax, par.Ne)
         self.alphaMP = mpf(str(par.alpha))
         self.e0MP = mpf(str(par.e0))
@@ -28,21 +58,22 @@ class HLTWrapper:
         self.emaxMP = mpf(str(par.emax))
         self.eminMP = mpf(str(par.emin))
         self.espace_dictionary = {} #   Auxiliary dictionary: espace_dictionary[espace[n]] = n
-        self.A0espace = mp.matrix(self.par.Ne,1)
-        self.A0espace_dictionary = {} #   Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
+        #
+        self.A0_A = A0_t(alphaMP_=self.algorithmPar.alphaAmp, eminMP_=self.eminMP, par_=self.par)
+        self.A0_B = A0_t(alphaMP_=self.algorithmPar.alphaBmp, eminMP_=self.eminMP, par_=self.par)
+        self.A0_C = A0_t(alphaMP_=self.algorithmPar.alphaCmp, eminMP_=self.eminMP, par_=self.par)
+        self.selectA0 = {}
+        self.selectA0[0] = self.A0_A
+        self.selectA0[-1] = self.A0_B
+        self.selectA0[-1.99] = self.A0_C
+        #
         self.espace_is_filled = False
-        self.A0_is_filled = False
-        #   Lambda utilities
-        self.labda_check = self.lambda_config.kfactor
-
-        #self.optimal_lambdas = np.ndarray((self.par.Ne, 2), dtype=np.float64)
-        self.optimal_lambdas_is_filled = False
+        self.labda_check = self.algorithmPar.kfactor
         #   Lists of result
         self.rho_list = []
         self.drho_list = []
         self.gAA0g_list = []
-#        self.lambda_list = []
-
+        self.lambda_list = []
         self.rho_list_alpha2 = []
         self.drho_list_alpha2 = []
         self.gAA0g_list_alpha2 = []
@@ -54,31 +85,19 @@ class HLTWrapper:
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
 
-        #   Result, float64
-        #self.rho = np.ndarray(self.par.Ne, dtype = np.float64)
-        #self.rho_stat_err = np.ndarray(self.par.Ne, dtype=np.float64)
-
-        #
-        #self.rho_kfact_dictionary = {}
-
-
     def fillEspaceMP(self):
         for e_id in range(self.par.Ne):
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
             self.espace_dictionary[self.espace[e_id]] = e_id
         self.espace_is_filled = True
 
-    def computeA0(self):
-        assert(self.espace_is_filled == True)
-        print(LogMessage(), "Computing A0 at all energies")
-        self.A0espace = A0E_mp(self.espaceMP, self.par)
-        for e_id in range(self.par.Ne):
-            self.A0espace_dictionary[self.espace[e_id]] = self.A0espace[e_id]
-        self.A0_is_filled = True
-
     def prepareHLT(self):
         self.fillEspaceMP()
-        self.computeA0()
+        self.A0_A.evaluate(self.espaceMP)
+        if self.algorithmPar.alphaB != 0:
+            self.A0_B.evaluate(self.espaceMP)
+        if self.algorithmPar.alphaC != 0:
+            self.A0_C.evaluate(self.espaceMP)
 
     def report(self):
         print(LogMessage(), "Inverse problem ::: Time extent:", self.par.time_extent)
@@ -94,30 +113,28 @@ class HLTWrapper:
         print(LogMessage(), "Inverse problem ::: alpha (mp):", self.par.alpha, "(", self.alphaMP, ")")
         print(LogMessage(), "Inverse problem ::: E0 (mp):", self.par.e0, "(", self.e0MP, ")")
 
-    def lambdaToRho(self, lambda_, estar_):
+    def lambdaToRho(self, lambda_, estar_, alpha_=0):
         import time
-        assert ( self.A0_is_filled == True)
+        assert ( self.A0_A.is_filled == True)
         _Bnorm = (self.correlator.central[1]*self.correlator.central[1])/(estar_*estar_)
-        #_Bnorm = (self.correlator.central[1] * self.correlator.central[1]) / 1
-        _factor = (lambda_ * self.A0espace_dictionary[estar_]) / _Bnorm
+        _factor = (lambda_ * self.selectA0[alpha_].valute_at_E_dictionary[estar_]) / _Bnorm
         _M = self.matrix_bundle.S + (_factor*self.matrix_bundle.B)
         start_time = time.time()
         _Minv = invert_matrix_ge(_M)
         end_time = time.time()
         print(LogMessage(), 'lambdaToRho ::: Matrix inverted in ', end_time - start_time, 's')
-        _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_)
+        _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_,  alpha_=alpha_)
         rho_estar, drho_estar = y_combine_sample_Eslice_mp(_g_t_estar, self.correlator.sample, self.par)
 
         gag_estar = gAg(self.matrix_bundle.S, _g_t_estar, estar_, self.par)
 
         return rho_estar, drho_estar, gag_estar
 
-    def scanLambda(self, estar_, prec_ = 0.005):
-        lambda_ = 120
-        lambda_step = 0.5
-        #rho_list = []
-        #drho_list = []
-        #gAA0g_list = []
+    def scanLambda(self, estar_, alpha_=0):
+        lambda_ = self.algorithmPar.lambdaMax
+        lambda_step = self.algorithmPar.lambdaStep
+        prec_ = self.algorithmPar.lambdaScanPrec
+        cap_ = self.algorithmPar.lambdaScanCap
         _count = 0
 
         print(LogMessage(), ' --- ')
@@ -127,20 +144,19 @@ class HLTWrapper:
         _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
         self.rho_list.append(_this_rho)      #   store
         self.drho_list.append(_this_drho)      #   store
-        self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+        self.gAA0g_list.append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
 #        self.lambda_list.append(lambda_)
         lambda_ -= lambda_step
 
-        while (_count < 6 and lambda_ > 1e-4):
-        #while (lambda_ > 0):
+        while (_count < cap_ and lambda_ > 0):
 
             print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
             print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
-            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)
+            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_,  alpha_=alpha_)
             self.rho_list.append(_this_updated_rho)  #   store
             print(LogMessage(), 'Scan Lambda ::: Rho = {:1.3e}'.format(float(_this_updated_rho)))
             self.drho_list.append(_this_updated_drho)    #   store
-            self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+            self.gAA0g_list.append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
 #            self.lambda_list.append(lambda_)
             _residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual))
@@ -162,61 +178,62 @@ class HLTWrapper:
 
         return self.rho_list, self.drho_list, self.gAA0g_list
 
-    def scanLambda_alpha(self, estar_, prec_ = 0.009, alpha1_ = mpf(0.0), alpha2_ = mpf(-1.0)):
-        lambda_ = 120
-        lambda_step = 0.5
+    def scanLambdaAlpha(self, estar_):
+        lambda_ = self.algorithmPar.lambdaMax
+        lambda_step = self.algorithmPar.lambdaStep
+        prec_ = self.algorithmPar.lambdaScanPrec
+        cap_ = self.algorithmPar.lambdaScanCap
         _count = 0
 
         print(LogMessage(), ' --- ')
-        print(LogMessage(), 'Scan Lambda at energy {:2.2e}'.format(estar_))
+        print(LogMessage(), 'At Energy {:2.2e}'.format(estar_))
+        print(LogMessage(), 'Scan Lambda ::: Lambda (0,inf) = {:1.3e}'.format(float(lambda_)))
+        print(LogMessage(), 'Scan Lambda ::: Lambda (0,1) = {:1.3e}'.format(float(lambda_ / (1 + lambda_))))
 
-        print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
         # Setting alpha to the first value
-        print(LogMessage(), 'Setting alpha ::: Alpha1 = ', alpha1_)
-        self.par.alpha = mpf(alpha1_)
-        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        print(LogMessage(), 'Setting Alpha ::: First Alpha = ', float(self.algorithmPar.alphaA))
+        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)   #   _this_drho will remain the first one
         self.rho_list.append(_this_rho)      #   store
         self.drho_list.append(_this_drho)      #   store
-        self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
-
+        self.gAA0g_list.append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
+        self.lambda_list.append(lambda_)    #   store
 
         # Setting alpha to the second value
-        print(LogMessage(), 'Setting alpha ::: Alpha2 = ', alpha2_)
-        self.par.alpha = mpf(alpha2_)
-        _this_rho2, _this_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        print(LogMessage(), 'Setting Alpha ::: Second Alpha = ', float(self.algorithmPar.alphaB))
+        _this_rho2, _this_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_,  self.algorithmPar.alphaBmp)   #   _this_drho will remain the first one
         self.rho_list_alpha2.append(_this_rho2)      #   store
         self.drho_list_alpha2.append(_this_drho2)      #   store
-        self.gAA0g_list_alpha2.append(_this_gAg2/self.A0espace_dictionary[estar_])  #   store
+        self.gAA0g_list_alpha2.append(_this_gAg2/self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  #   store
 
         lambda_ -= lambda_step
 
-        while (_count < 6 and lambda_ > 1e-4):
-            print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
-            print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
+        while (_count < cap_ and lambda_ > 0):
+            print(LogMessage(), 'Scan Lambda ::: Lambda (0,inf) = {:1.3e}'.format(float(lambda_)))
+            print(LogMessage(), 'Scan Lambda ::: Lambda (0,1) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
 
-            print(LogMessage(), 'Setting alpha ::: Alpha1 = ', alpha1_)
-            self.par.alpha = mpf(alpha1_)
-            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)
+            print(LogMessage(), 'Setting Alpha ::: First Alpha = ', self.algorithmPar.alphaA)
+            _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
             self.rho_list.append(_this_updated_rho)  #   store
-            print(LogMessage(), 'Scan Lambda ::: Rho (alpha1) = {:1.3e}'.format(float(_this_updated_rho)))
+            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaA),  '= {:1.3e}'.format(float(_this_updated_rho)))
             self.drho_list.append(_this_updated_drho)    #   store
-            self.gAA0g_list.append(_this_gAg/self.A0espace_dictionary[estar_])  #   store
+            self.gAA0g_list.append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
+            self.lambda_list.append(lambda_)
             _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
-            print(LogMessage(), 'Scan Lambda ::: Residual(alpha1) = ', float(_residual1))
+            print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual1))
 
-            print(LogMessage(), 'Setting alpha ::: Alpha2 = ', alpha2_)
-            self.par.alpha = mpf(alpha2_)
-            _this_updated_rho2, _this_updated_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_)
+            print(LogMessage(), 'Setting Alpha ::: Second Alpha = ', self.algorithmPar.alphaB)
+            _this_updated_rho2, _this_updated_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
             self.rho_list_alpha2.append(_this_updated_rho2)  # store
-            print(LogMessage(), 'Scan Lambda ::: Rho (alpha2) = {:1.3e}'.format(float(_this_updated_rho2)))
+            print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaB), '= {:1.3e}'.format(float(_this_updated_rho2)))
             self.drho_list_alpha2.append(_this_updated_drho2)  # store
-            self.gAA0g_list_alpha2.append(_this_gAg2 / self.A0espace_dictionary[estar_])  # store
+            self.gAA0g_list_alpha2.append(_this_gAg2 / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  # store
             _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
-            print(LogMessage(), 'Scan Lambda ::: Residual(alpha2) = ', float(_residual2))
+            print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual2))
 
-            comp = abs(_this_updated_rho - _this_updated_rho2)/\
-                   mp.sqrt( mp.fadd(mp.fmul(_this_updated_drho,_this_updated_drho),mp.fmul(_this_updated_drho2,_this_updated_drho2)) )
-            if (_residual1 < prec_ and _residual2 < prec_ and comp < mpf(1.0)):
+            #comp_quadrature = abs(_this_updated_rho - _this_updated_rho2) /  mp.sqrt( mp.fadd(mp.fmul(_this_updated_drho,_this_updated_drho),mp.fmul(_this_updated_drho2,_this_updated_drho2)) )
+            comp_diff = abs(_this_updated_rho - _this_updated_rho2) - (_this_updated_drho + _this_updated_drho2)/2
+            print(LogMessage(), 'Scan Lambda ::: Alpha Diff ::: ', comp_diff)
+            if (_residual1 < prec_ and _residual2 < prec_ and comp_diff < 0):
                 _count += 1
                 print(LogMessage(), 'Scan Lambda ::: count = ', _count)
             else:
@@ -238,12 +255,8 @@ class HLTWrapper:
     def estimate_sys_error(self, estar_):
         assert (self.result_is_filled[self.espace_dictionary[estar_]] == True)
 
-        #_this = self.rho_kfact_dictionary[self.lambda_config.k_star][estar_]  # input: e and lambda* ; out = rho
-
         _this_y = self.rho_result[self.espace_dictionary[estar_]] #   rho at lambda*
-
-        _that_y, _that_yerr, _that_x = self.lambdaToRho(self.lambda_result[self.espace_dictionary[estar_]] * self.lambda_config.kfactor, estar_)
-
+        _that_y, _that_yerr, _that_x = self.lambdaToRho(self.lambda_result[self.espace_dictionary[estar_]] * self.algorithmPar.kfactor, estar_)
 
         self.rho_sys_err[self.espace_dictionary[estar_]] = abs(_this_y - _that_y) / 2
         self.rho_quadrature_err[self.espace_dictionary[estar_]] = np.sqrt(self.rho_sys_err[self.espace_dictionary[estar_]]**2 + self.drho_result[self.espace_dictionary[estar_]]**2)
@@ -278,63 +291,12 @@ class HLTWrapper:
                 plt.tight_layout()
                 plt.show()
 
+    def plotRhoOverLambda(self, estar: float):
 
 
-
-
-
-
-    def _aggregate_HLT_lambda_float64(self, lambda_float64: float, estar: float):  #   allows to cast as a funciton of lambda only at each estar
-        factor = (self.A0espace_float_dictionary[estar] * lambda_float64) / ((1 - lambda_float64) * self.bnorm_float)
-        self.W_float = (self.B_float * factor) + self.S_float
-        #Winv = np.linalg.inv(self.W_float)
-        Winv = choelesky_invert_scipy(self.W_float)
-        gt = h_Et_mp_Eslice_float64(Winv, self.par, estar_=estar)
-        _rho, _drho = y_combine_sample_Eslice_float64(gt, self.correlator.sample, self.par)
-        this_A = gAgA0_float64(self.S_float, gt, estar, self.par, self.A0_float[self.espace_dictionary[estar]])
-        this_B = gBg_float64(gt, self.B_float, self.bnorm_float, self.par.tmax)
-        return this_A, this_B, _rho, _drho
-
-    def scanInputLambdaRange_MP(self, estar, eNorm_=False):
-        Wvec = np.zeros(self.lambda_config.ldensity)
-        lstar_ID = 0
-        Wstar = -1
-        if eNorm_==False:
-           Bnorm = self.matrix_bundle.bnorm
-        if eNorm_==True:
-           Bnorm = mp.fdiv(self.matrix_bundle.bnorm, estar)
-           Bnorm = mp.fdiv(Bnorm, estar)
-        for li in range(self.lambda_config.ldensity):
-            mp_l = mpf(str(self.lambda_config.lspace[li]))
-            scale = mpf(str(self.lambda_config.lspace[li]/(1-self.lambda_config.lspace[li])))
-            scale = mp.fdiv(scale, Bnorm)
-            scale = mp.fmul(scale, self.A0espace_dictionary[estar])
-            W = self.matrix_bundle.B * scale
-            W = W + self.matrix_bundle.S
-            invW = W**(-1)  # slow!!!
-            #   given W, get the coefficient
-            gtestar = h_Et_mp_Eslice(invW, self.par, estar)
-            Wvec[li] = float(gWg(self.matrix_bundle.S, self.matrix_bundle.B, gtestar, estar, mp_l, self.A0espace_dictionary[estar], self.matrix_bundle.bnorm, self.par, verbose=True))
-            if Wvec[li] > Wstar:
-                Wstar = Wvec[li]
-                lstar_ID = li
-        print(LogMessage(), 'Lambda ::: ', "Lambda* at E = ", float(estar), ' ::: ', self.lambda_config.lspace[lstar_ID])
-        import matplotlib.pyplot as plt
-        plt.plot(self.lambda_config.lspace, Wvec)
-        plt.show()
-        return self.lambda_config.lspace[lstar_ID]   #l*
-
-    def solveHLT_fromLambdaList_float64(self, estar: float):
-        _rho_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
-        _rho_stat_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
-        _A_l = np.ndarray(self.lambda_config.ldensity, dtype=np.float64)
-        for _l in range(self.lambda_config.ldensity):
-            _A_l[_l], _none, _rho_l[_l], _rho_stat_l[_l] = self._aggregate_HLT_lambda_float64(self.lambda_config.lspace[_l], estar)
 
         fig, ax = plt.subplots(2, 1, figsize=(6, 8))
-        # First subplot with self.lambda_config.lspace
-        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
-            estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm))
+        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm))
         ax[0].axhspan(
             ymin=self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
             ymax=self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
@@ -411,23 +373,3 @@ class HLTWrapper:
 
         plt.tight_layout()
         plt.show()
-
-
-
-    def run_deprecated(self, show_lambda_scan=False):
-        for e_i in range(self.par.Ne):  # finds solution at a specific lambda
-            self.optimal_lambdas[e_i][0] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
-                                                                              k_factor=self.lambda_config.k_star)
-
-        for e_i in range(self.par.Ne):  # finds solution at another lambda
-            self.optimal_lambdas[e_i][1] = self.solveHLT_bisectonSearch_float64(self.espace[e_i],
-                                                                              k_factor=self.lambda_config.kfactor)
-
-        self.optimal_lambdas_is_filled = True
-        assert all(self.result_is_filled)
-
-        self.estimate_sys_error()  # uses both solution to estimate systematics due to lambda
-
-        if show_lambda_scan==True:
-            for e_i in range(self.par.Ne):
-                self.solveHLT_fromLambdaList_float64(self.espace[e_i])

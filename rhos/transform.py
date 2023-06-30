@@ -41,7 +41,9 @@ def h_Et_mp(
     return ht_
 
 
-def h_Et_mp_Eslice(Tinv_, params, estar_):
+def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_=0):
+    if alpha_==0:
+        alpha_ = params.mpalpha
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
         ht_[i] = 0
@@ -49,7 +51,7 @@ def h_Et_mp_Eslice(Tinv_, params, estar_):
             aux_ = mp.fmul(
                 Tinv_[j, i],
                 ft_mp(
-                    estar_, mpf(j + 1), params.mpsigma, params.mpalpha, params.mpe0, type=params.periodicity, T=params.time_extent
+                    estar_, mpf(j + 1), params.mpsigma, alpha_, params.mpe0, type=params.periodicity, T=params.time_extent
                 ),
             )
             ht_[i] = mp.fadd(aux_, ht_[i])

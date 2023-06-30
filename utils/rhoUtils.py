@@ -242,6 +242,7 @@ class Inputs:
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
+        self.mpalpha = mpf('0')
 
     def assign_values(self):
         if self.tmax==0:

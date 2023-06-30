@@ -136,15 +136,17 @@ def an_invertible_matrix():
     A[2, 2] = 32
     return A
 
-
 import copy
 import time
+
+import numpy as np
+import mpmath
 
 mp.dps = 64
 print(LogMessage(), " Binary precision in bit: ", mp.prec)
 print(LogMessage(), " Approximate decimal precision: ", mp.dps)
 
-S = Smatrix_mp(32)
+S = Smatrix_mp(50)
 
 print(LogMessage(), "Condition number is ", mp.cond(S))
 Scopy = copy.deepcopy(S)
@@ -163,52 +165,18 @@ end_time = time.time()
 print(LogMessage(), "LU inverted in",  end_time - start_time, "seconds")
 
 print(LogMessage(), norm2_mp(Scopy*myinv))
+print('\n')
+print(LogMessage(), "Third inverting")
 
+Scopycopy = copy.deepcopy(S)
+
+start_time = time.time()
+# Find the inverse of the S matrix
+Sinv2 = invert_matrix_ge(S)
+end_time = time.time()
+print("Gauss Elimination in ",  end_time - start_time, "seconds")
+
+
+print(LogMessage(), norm2_mp(Scopycopy*Sinv2))
 
 end()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Acopy = copy.deepcopy(A)
-
-import time
-
-print(LogMessage(), "MP inverting")
-start_time = time.time()
-Ainv = A**(-1)
-end_time = time.time()
-print(LogMessage(), "MP inverted in ",  end_time - start_time, "seconds")
-print('\n')
-print(LogMessage(), "LU inverting")
-start_time = time.time()
-myinv = LUinverse(A)
-end_time = time.time()
-print(LogMessage(), "LU inverted in",  end_time - start_time, "seconds")
-
-
-
-assert(norm2_mp(Acopy*myinv) - 1 < 1e-10)

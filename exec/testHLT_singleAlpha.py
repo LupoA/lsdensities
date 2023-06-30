@@ -62,7 +62,7 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=0, lambdaMax=200, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1)
+    hltParams = AlgorithmParameters(alphaA=0, alphaB=0, alphaC=0, lambdaMax=20, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1)
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)
@@ -71,7 +71,7 @@ def main():
     #   Energy
     estar = HLT.espace[3]
 
-    rho_l_a1, drho_l_a1, gag_l_a1, rho_l_a2, drho_l_a2, gag_l_a2= HLT.scanLambdaAlpha(estar)
+    rho_l_a1, drho_l_a1, gag_l_a1 = HLT.scanLambda(estar, alpha_=hltParams.alphaA)
 
     _ = HLT.estimate_sys_error(estar)
 
@@ -79,79 +79,6 @@ def main():
     print(LogMessage(), 'rho, drho, sys', HLT.rho_result[3], HLT.drho_result[3],HLT.rho_sys_err[3])
 
     import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(2, 1, figsize=(6, 8))
-    plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(estar / HLT.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
-        HLT.par.sigma / HLT.par.massNorm))
-    ax[0].errorbar(
-        x=HLT.lambda_list,
-        y=HLT.rho_list,
-        yerr=HLT.drho_list,
-        marker=plot_markers[0],
-        markersize=1.8,
-        elinewidth=1.3,
-        capsize=2,
-        ls="",
-        label=r"$\alpha = {:1.2f}$".format(hltParams.alphaA),
-        color=CB_colors[0],
-    )
-    ax[0].errorbar(
-        x=HLT.lambda_list,
-        y=HLT.rho_list_alpha2,
-        yerr=HLT.drho_list_alpha2,
-        marker=plot_markers[1],
-        markersize=3.8,
-        elinewidth=1.3,
-        capsize=3,
-        ls="",
-        label=r"$\alpha = {:1.2f}$".format(hltParams.alphaB),
-        color=CB_colors[1],
-    )
-    ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-    ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-    ax[0].legend(prop={"size": 12, "family": "Helvetica"})
-    ax[0].grid()
-
-    # Second subplot with A/A_0
-    ax[1].errorbar(
-        x=gag_l_a1,
-        y=HLT.rho_list,
-        yerr=HLT.drho_list,
-        marker=plot_markers[0],
-        markersize=1.8,
-        elinewidth=1.3,
-        capsize=2,
-        ls="",
-        label=r"$\alpha = {:1.2f}$".format(hltParams.alphaA),
-        color=CB_colors[0],
-    )
-    ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-    ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-    ax[1].legend(prop={"size": 12, "family": "Helvetica"})
-    ax[1].grid()
-
-    plt.tight_layout()
-    plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    end()
 
     plt.errorbar(
         x=gag_l_a1,
@@ -170,28 +97,9 @@ def main():
     plt.legend(prop={"size": 12, "family": "Helvetica"})
     plt.grid()
     plt.tight_layout()
-
-    plt.errorbar(
-        x=gag_l_a2,
-        y=rho_l_a2,
-        yerr=drho_l_a2,
-        marker="^",
-        markersize=1.5,
-        elinewidth=1.3,
-        capsize=2,
-        ls="",
-        label=r'$\rho(E_*)$'+r'$(\sigma = {:2.2f})$'.format(par.sigma / par.massNorm)+r'$M_\pi$',
-        color=u.CB_color_cycle[1],
-    )
-    plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
-    #plt.ylabel("Spectral density", fontdict=u.timesfont)
-    plt.legend(prop={"size": 12, "family": "Helvetica"})
-    plt.grid()
-    plt.tight_layout()
     plt.show()
+
     end()
-
-
 
 if __name__ == "__main__":
     main()
