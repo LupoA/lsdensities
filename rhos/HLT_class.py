@@ -70,15 +70,15 @@ class HLTWrapper:
         #
         self.espace_is_filled = False
         self.labda_check = self.algorithmPar.kfactor
-        #   Lists of result
-        self.rho_list = []
-        self.drho_list = []
-        self.gAA0g_list = []
-        self.lambda_list = []
-        self.rho_list_alpha2 = []
-        self.drho_list_alpha2 = []
-        self.gAA0g_list_alpha2 = []
-
+        #   Lists of result as functions of lambda
+        self.rho_list = [[] for _ in range(self.par.Ne)]
+        self.drho_list = [[] for _ in range(self.par.Ne)]
+        self.gAA0g_list = [[] for _ in range(self.par.Ne)]
+        self.lambda_list = [[] for _ in range(self.par.Ne)]
+        self.rho_list_alpha2 = [[] for _ in range(self.par.Ne)]
+        self.drho_list_alpha2 = [[] for _ in range(self.par.Ne)]
+        self.gAA0g_list_alpha2 = [[] for _ in range(self.par.Ne)]
+        #   Results
         self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64)
         self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)
@@ -143,9 +143,9 @@ class HLTWrapper:
 
         print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
         _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
-        self.rho_list.append(_this_rho)      #   store
-        self.drho_list.append(_this_drho)      #   store
-        self.gAA0g_list.append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
+        self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)      #   store
+        self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)      #   store
+        self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
 #        self.lambda_list.append(lambda_)
         lambda_ -= lambda_step
 
@@ -154,10 +154,10 @@ class HLTWrapper:
             print(LogMessage(), 'Scan Lambda ::: Lambda = {:1.3e}'.format(float(lambda_)))
             print(LogMessage(), 'Scan Lambda ::: Lambda (old) = {:1.3e}'.format(float(lambda_/(1+lambda_))))
             _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_,  alpha_=alpha_)
-            self.rho_list.append(_this_updated_rho)  #   store
+            self.rho_list[self.espace_dictionary[estar_]].append(_this_updated_rho)  #   store
             print(LogMessage(), 'Scan Lambda ::: Rho = {:1.3e}'.format(float(_this_updated_rho)))
-            self.drho_list.append(_this_updated_drho)    #   store
-            self.gAA0g_list.append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
+            self.drho_list[self.espace_dictionary[estar_]].append(_this_updated_drho)    #   store
+            self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
 #            self.lambda_list.append(lambda_)
             _residual = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual))
@@ -177,7 +177,7 @@ class HLTWrapper:
 
         print(LogMessage(), 'Scan Lambda ::: Lambda * = ', lambda_)
 
-        return self.rho_list, self.drho_list, self.gAA0g_list
+        return self.rho_list[self.espace_dictionary[estar_]], self.drho_list[self.espace_dictionary[estar_]], self.gAA0g_list[self.espace_dictionary[estar_]]
 
     def scanLambdaAlpha(self, estar_):
         lambda_ = self.algorithmPar.lambdaMax
@@ -194,17 +194,17 @@ class HLTWrapper:
         # Setting alpha to the first value
         print(LogMessage(), 'Setting Alpha ::: First Alpha = ', float(self.algorithmPar.alphaA))
         _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)   #   _this_drho will remain the first one
-        self.rho_list.append(_this_rho)      #   store
-        self.drho_list.append(_this_drho)      #   store
-        self.gAA0g_list.append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
-        self.lambda_list.append(lambda_)    #   store
+        self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)      #   store
+        self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)      #   store
+        self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
+        self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)    #   store
 
         # Setting alpha to the second value
         print(LogMessage(), 'Setting Alpha ::: Second Alpha = ', float(self.algorithmPar.alphaB))
         _this_rho2, _this_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_,  self.algorithmPar.alphaBmp)   #   _this_drho will remain the first one
-        self.rho_list_alpha2.append(_this_rho2)      #   store
-        self.drho_list_alpha2.append(_this_drho2)      #   store
-        self.gAA0g_list_alpha2.append(_this_gAg2/self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  #   store
+        self.rho_list_alpha2[self.espace_dictionary[estar_]].append(_this_rho2)      #   store
+        self.drho_list_alpha2[self.espace_dictionary[estar_]].append(_this_drho2)      #   store
+        self.gAA0g_list_alpha2[self.espace_dictionary[estar_]].append(_this_gAg2/self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  #   store
 
         lambda_ -= lambda_step
 
@@ -214,20 +214,20 @@ class HLTWrapper:
 
             print(LogMessage(), 'Setting Alpha ::: First Alpha = ', self.algorithmPar.alphaA)
             _this_updated_rho, _this_updated_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
-            self.rho_list.append(_this_updated_rho)  #   store
+            self.rho_list[self.espace_dictionary[estar_]].append(_this_updated_rho)  #   store
             print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaA),  '= {:1.3e}'.format(float(_this_updated_rho)), 'Stat = {:1.3e}'.format(float(_this_updated_drho)))
-            self.drho_list.append(_this_updated_drho)    #   store
-            self.gAA0g_list.append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
-            self.lambda_list.append(lambda_)
+            self.drho_list[self.espace_dictionary[estar_]].append(_this_updated_drho)    #   store
+            self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
+            self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
             _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual1))
 
             print(LogMessage(), 'Setting Alpha ::: Second Alpha = ', self.algorithmPar.alphaB)
             _this_updated_rho2, _this_updated_drho2, _this_gAg2 = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
-            self.rho_list_alpha2.append(_this_updated_rho2)  # store
+            self.rho_list_alpha2[self.espace_dictionary[estar_]].append(_this_updated_rho2)  # store
             print(LogMessage(), 'Scan Lambda ::: Rho (Alpha = {:2.2e}) '.format(self.algorithmPar.alphaB), '= {:1.3e}'.format(float(_this_updated_rho2)), 'Stat = {:1.3e}'.format(float(_this_updated_drho2)))
-            self.drho_list_alpha2.append(_this_updated_drho2)  # store
-            self.gAA0g_list_alpha2.append(_this_gAg2 / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  # store
+            self.drho_list_alpha2[self.espace_dictionary[estar_]].append(_this_updated_drho2)  # store
+            self.gAA0g_list_alpha2[self.espace_dictionary[estar_]].append(_this_gAg2 / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  # store
             _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
             print(LogMessage(), 'Scan Lambda ::: Residual = ', float(_residual2))
 
@@ -252,7 +252,7 @@ class HLTWrapper:
 
         print(LogMessage(), 'Scan Lambda ::: Lambda * = ', lambda_)
 
-        return self.rho_list, self.drho_list, self.gAA0g_list, self.rho_list_alpha2, self.drho_list_alpha2, self.gAA0g_list_alpha2
+        return self.rho_list[self.espace_dictionary[estar_]], self.drho_list[self.espace_dictionary[estar_]], self.gAA0g_list[self.espace_dictionary[estar_]], self.rho_list_alpha2[self.espace_dictionary[estar_]], self.drho_list_alpha2[self.espace_dictionary[estar_]], self.gAA0g_list_alpha2[self.espace_dictionary[estar_]]
 
     def estimate_sys_error(self, estar_):
         assert (self.result_is_filled[self.espace_dictionary[estar_]] == True)
@@ -265,123 +265,33 @@ class HLTWrapper:
 
         return self.rho_sys_err[self.espace_dictionary[estar_]]
 
-    def run(self, show_lambda_scan=False, save_plots=True, how_many_alphas = 1):
+    def run(self, save_plots=True, how_many_alphas = 1):
 
         if how_many_alphas == 1:
             for e_i in range(self.par.Ne):
-                rho_l, drho_l, gag_l = self.scanLambda(self.espace[e_i])
+                _, _, _ = self.scanLambda(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
+                self.plotStabilityOne(estar=self.espace[e_i], savePlot=save_plots)
 
-                if show_lambda_scan==True:
-                    plt.errorbar(
-                        x=gag_l,
-                        y=rho_l,
-                        yerr=drho_l,
-                        marker="o",
-                        markersize=1.5,
-                        elinewidth=1.3,
-                        capsize=2,
-                        ls="",
-                        label=r'$\rho({:2.2e)$'.format(self.espace[e_i]) + r'$(\sigma = {:2.2f})$'.format(self.par.sigma / self.par.massNorm) + r'$M_\pi$',
-                        color=u.CB_color_cycle[0],
-                    )
-                    plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
-                    # plt.ylabel("Spectral density", fontdict=u.timesfont)
-                    plt.legend(prop={"size": 12, "family": "Helvetica"})
-                    plt.grid()
-                    plt.tight_layout()
-                    if show_lambda_scan==True:
-                        plt.show()
-                    if save_plots==True:
-                        plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i])+'.png'))
-                    plt.clf()
             return
 
         elif how_many_alphas == 2:
-            fig, ax = plt.subplots(2, 1, figsize=(6, 8))
             for e_i in range(self.par.Ne):
-
-                rho_l_a1, drho_l_a1, gag_l_a1, rho_l_a2, drho_l_a2, gag_l_a2 = self.scanLambdaAlpha(self.espace[e_i])
+                _, _, _, _, _, _ = self.scanLambdaAlpha(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
-                plt.clf()
+                self.plotStabilityTwo(estar=self.espace[e_i], savePlot=save_plots)
 
-                ax[0].cla()
-                ax[1].cla()
-                plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
-                    self.espace[e_i] / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
-                    self.par.sigma / self.par.massNorm))
-                ax[0].errorbar(
-                    x=self.lambda_list,
-                    y=self.rho_list,
-                    yerr=self.drho_list,
-                    marker=plot_markers[0],
-                    markersize=1.8,
-                    elinewidth=1.3,
-                    capsize=2,
-                    ls="",
-                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-                    color=CB_colors[0],
-                )
-                ax[0].errorbar(
-                    x=self.lambda_list,
-                    y=self.rho_list_alpha2,
-                    yerr=self.drho_list_alpha2,
-                    marker=plot_markers[1],
-                    markersize=3.8,
-                    elinewidth=1.3,
-                    capsize=3,
-                    ls="",
-                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-                    color=CB_colors[1],
-                )
-                ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-                ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-                ax[0].legend(prop={"size": 12, "family": "Helvetica"})
-                ax[0].grid()
-
-                # Second subplot with A/A_0
-                ax[1].errorbar(
-                    x=gag_l_a1,
-                    y=self.rho_list,
-                    yerr=self.drho_list,
-                    marker=plot_markers[0],
-                    markersize=1.8,
-                    elinewidth=1.3,
-                    capsize=2,
-                    ls="",
-                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-                    color=CB_colors[0],
-                )
-                ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-                ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-                ax[1].legend(prop={"size": 12, "family": "Helvetica"})
-                ax[1].grid()
-                plt.tight_layout()
-                if show_lambda_scan == True:
-                    plt.show()
-                if save_plots == True:
-                    plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i])+'.png'))
-                plt.clf()
-                plt.close(fig)
-                del rho_l_a1
-                del drho_l_a1
-                del gag_l_a1
-                del rho_l_a2
-                del drho_l_a2
-                del gag_l_a2
-                ax[0].cla()
-                ax[1].cla()
             return
 
         else:
             raise ValueError('how_many_alphas : Invalid value specified. Only 1 and 2 are allowed.')
 
 
-    def plotStabilityOne(self, estar: float, x_, y_, yerr_, show=False, save=True):
+    def plotStabilityOne(self, estar: float, savePlot=True):
         plt.errorbar(
-            x=x_,
-            y=y_,
-            yerr=yerr_,
+            x=self.gAA0g_list[self.espace_dictionary[estar]],
+            y=self.rho_list[self.espace_dictionary[estar]],
+            yerr=self.drho_list[self.espace_dictionary[estar]],
             marker="o",
             markersize=1.5,
             elinewidth=1.3,
@@ -396,22 +306,20 @@ class HLTWrapper:
         plt.legend(prop={"size": 12, "family": "Helvetica"})
         plt.grid()
         plt.tight_layout()
-        if show == True:
-            plt.show()
-        if save == True:
+        if savePlot == True:
             plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(estar) + '.png'))
         plt.clf()
         return
 
-    def plotStabilityTwo(self, estar: float,  x1_, y1_, yerr1_, x2_, y2_, yerr2_, show=False, save=True):
+    def plotStabilityTwo(self, estar: float, savePlot=True):
         fig, ax = plt.subplots(2, 1, figsize=(6, 8))
         plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
             estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
             self.par.sigma / self.par.massNorm))
         ax[0].errorbar(
-            x=self.lambda_list,
-            y=self.rho_list,
-            yerr=self.drho_list,
+            x=self.lambda_list[self.espace_dictionary[estar]],
+            y=self.rho_list[self.espace_dictionary[estar]],
+            yerr=self.drho_list[self.espace_dictionary[estar]],
             marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
@@ -421,9 +329,9 @@ class HLTWrapper:
             color=CB_colors[0],
         )
         ax[0].errorbar(
-            x=self.lambda_list,
-            y=self.rho_list_alpha2,
-            yerr=self.drho_list_alpha2,
+            x=self.lambda_list[self.espace_dictionary[estar]],
+            y=self.rho_list_alpha2[self.espace_dictionary[estar]],
+            yerr=self.drho_list_alpha2[self.espace_dictionary[estar]],
             marker=plot_markers[1],
             markersize=3.8,
             elinewidth=1.3,
@@ -439,9 +347,9 @@ class HLTWrapper:
 
         # Second subplot with A/A_0
         ax[1].errorbar(
-            x=gag_l_a1,
-            y=self.rho_list,
-            yerr=self.drho_list,
+            x=self.gAA0g_list[self.espace_dictionary[estar]],
+            y=self.rho_list[self.espace_dictionary[estar]],
+            yerr=self.drho_list[self.espace_dictionary[estar]],
             marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
@@ -455,10 +363,8 @@ class HLTWrapper:
         ax[1].legend(prop={"size": 12, "family": "Helvetica"})
         ax[1].grid()
         plt.tight_layout()
-        if show_lambda_scan == True:
-            plt.show()
-        if save_plots == True:
-            plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i]) + '.png'))
+        if savePlot == True:
+            plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace_dictionary[estar]) + '.png'))
         plt.clf()
         plt.close(fig)
 
