@@ -1,12 +1,6 @@
 import sys
-
 sys.path.append("..")
 from importall import *
-
-eNorm = False
-
-#TODO at present: float implemented, mp not implemented
-
 
 def init_variables(args_):
     in_ = Inputs()
@@ -15,12 +9,13 @@ def init_variables(args_):
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
+    in_.plotpath, in_.logpath = create_out_paths(in_.outdir)
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
     in_.emax = args_.emax * args_.mpi   #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = args_.mpi / 20   #TODO get this to be input in lattice units for consistence
+        in_.emin = args_.mpi / 20   #TODO get this to be input in lattice units for consistency
     else:
         in_.emin = args_.emin
     in_.e0 = args_.e0
@@ -68,6 +63,9 @@ def main():
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)
     HLT.prepareHLT()
 
+    HLT.run(show_lambda_scan=False, save_plots=True, how_many_alphas=2)
+
+    exit(1)
     #   Energy
     estar = HLT.espace[3]
 

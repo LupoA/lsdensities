@@ -74,6 +74,16 @@ def end():
     print(LogMessage(), "Exit")
     exit()
 
+def create_out_paths(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+    plotpath = os.path.join(path, "Plots")
+    logpath = os.path.join(path, "Logs")
+    if not os.path.exists(plotpath):
+        os.mkdir(plotpath)
+    if not os.path.exists(logpath):
+        os.mkdir(logpath)
+    return plotpath, logpath
 
 def ranvec(vec, dim, a, b):
     for j in range(0, dim):
@@ -224,6 +234,8 @@ class Inputs:
         self.tmax = -1
         self.datapath = "None"
         self.outdir = "None"
+        self.logpath = "None"
+        self.plotpath = "None"
         self.num_boot = -1
         self.num_samples = -1
         self.sigma = -1
@@ -260,6 +272,8 @@ class Inputs:
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
         print(LogMessage(), "Init ::: ", "Output directory:", self.outdir)
+        print(LogMessage(), "Init ::: ", "Log directory:", self.logpath)
+        print(LogMessage(), "Init ::: ", "Plot directory:", self.plotpath)
         print(LogMessage(), "Init ::: ", "Periodicity:", self.periodicity)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
         print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
@@ -276,7 +290,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")")
 
-class LambdaSearchOptions:
+class LambdaSearchOptions:  #TODO: delete?
     def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
         self.lmin = lmin
         self.lmax = lmax

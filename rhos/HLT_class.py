@@ -1,6 +1,7 @@
 from mpmath import mp, mpf
 import sys
 import numpy as np
+import os
 import math
 sys.path.append("../utils")
 from rhoMath import *
@@ -264,80 +265,172 @@ class HLTWrapper:
 
         return self.rho_sys_err[self.espace_dictionary[estar_]]
 
-    def run(self, show_lambda_scan=False):
-        for e_i in range(self.par.Ne):  # finds solution at a specific lambda
+    def run(self, show_lambda_scan=False, save_plots=True, how_many_alphas = 1):
 
-            rho_l, drho_l, gag_l = self.scanLambda(self.espace[e_i])
+        if how_many_alphas == 1:
+            for e_i in range(self.par.Ne):
+                rho_l, drho_l, gag_l = self.scanLambda(self.espace[e_i])
+                _ = self.estimate_sys_error(self.espace[e_i])
 
-            _ = self.estimate_sys_error(self.espace[e_i])
+                if show_lambda_scan==True:
+                    plt.errorbar(
+                        x=gag_l,
+                        y=rho_l,
+                        yerr=drho_l,
+                        marker="o",
+                        markersize=1.5,
+                        elinewidth=1.3,
+                        capsize=2,
+                        ls="",
+                        label=r'$\rho({:2.2e)$'.format(self.espace[e_i]) + r'$(\sigma = {:2.2f})$'.format(self.par.sigma / self.par.massNorm) + r'$M_\pi$',
+                        color=u.CB_color_cycle[0],
+                    )
+                    plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
+                    # plt.ylabel("Spectral density", fontdict=u.timesfont)
+                    plt.legend(prop={"size": 12, "family": "Helvetica"})
+                    plt.grid()
+                    plt.tight_layout()
+                    if show_lambda_scan==True:
+                        plt.show()
+                    if save_plots==True:
+                        plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i])+'.png'))
+                    plt.clf()
+            return
 
-            if show_lambda_scan==True:
-                import matplotlib.pyplot as plt
-                plt.errorbar(
-                    x=gag_l,
-                    y=rho_l,
-                    yerr=drho_l,
-                    marker="o",
-                    markersize=1.5,
+        elif how_many_alphas == 2:
+            fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+            for e_i in range(self.par.Ne):
+
+                rho_l_a1, drho_l_a1, gag_l_a1, rho_l_a2, drho_l_a2, gag_l_a2 = self.scanLambdaAlpha(self.espace[e_i])
+                _ = self.estimate_sys_error(self.espace[e_i])
+                plt.clf()
+
+                ax[0].cla()
+                ax[1].cla()
+                plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
+                    self.espace[e_i] / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
+                    self.par.sigma / self.par.massNorm))
+                ax[0].errorbar(
+                    x=self.lambda_list,
+                    y=self.rho_list,
+                    yerr=self.drho_list,
+                    marker=plot_markers[0],
+                    markersize=1.8,
                     elinewidth=1.3,
                     capsize=2,
                     ls="",
-                    label=r'$\rho({:2.2e)$'.format(self.espace[e_i]) + r'$(\sigma = {:2.2f})$'.format(self.par.sigma / self.par.massNorm) + r'$M_\pi$',
-                    color=u.CB_color_cycle[0],
+                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
+                    color=CB_colors[0],
                 )
-                plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
-                # plt.ylabel("Spectral density", fontdict=u.timesfont)
-                plt.legend(prop={"size": 12, "family": "Helvetica"})
-                plt.grid()
+                ax[0].errorbar(
+                    x=self.lambda_list,
+                    y=self.rho_list_alpha2,
+                    yerr=self.drho_list_alpha2,
+                    marker=plot_markers[1],
+                    markersize=3.8,
+                    elinewidth=1.3,
+                    capsize=3,
+                    ls="",
+                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
+                    color=CB_colors[1],
+                )
+                ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
+                ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+                ax[0].legend(prop={"size": 12, "family": "Helvetica"})
+                ax[0].grid()
+
+                # Second subplot with A/A_0
+                ax[1].errorbar(
+                    x=gag_l_a1,
+                    y=self.rho_list,
+                    yerr=self.drho_list,
+                    marker=plot_markers[0],
+                    markersize=1.8,
+                    elinewidth=1.3,
+                    capsize=2,
+                    ls="",
+                    label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
+                    color=CB_colors[0],
+                )
+                ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
+                ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+                ax[1].legend(prop={"size": 12, "family": "Helvetica"})
+                ax[1].grid()
                 plt.tight_layout()
-                plt.show()
+                if show_lambda_scan == True:
+                    plt.show()
+                if save_plots == True:
+                    plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i])+'.png'))
+                plt.clf()
+                plt.close(fig)
+                del rho_l_a1
+                del drho_l_a1
+                del gag_l_a1
+                del rho_l_a2
+                del drho_l_a2
+                del gag_l_a2
+                ax[0].cla()
+                ax[1].cla()
+            return
 
-    def plotRhoOverLambda(self, estar: float):
+        else:
+            raise ValueError('how_many_alphas : Invalid value specified. Only 1 and 2 are allowed.')
 
 
+    def plotStabilityOne(self, estar: float, x_, y_, yerr_, show=False, save=True):
+        plt.errorbar(
+            x=x_,
+            y=y_,
+            yerr=yerr_,
+            marker="o",
+            markersize=1.5,
+            elinewidth=1.3,
+            capsize=2,
+            ls="",
+            label=r'$\rho({:2.2e)$'.format(estar) + r'$(\sigma = {:2.2f})$'.format(
+                self.par.sigma / self.par.massNorm) + r'$M_\pi$',
+            color=u.CB_color_cycle[0],
+        )
+        plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
+        # plt.ylabel("Spectral density", fontdict=u.timesfont)
+        plt.legend(prop={"size": 12, "family": "Helvetica"})
+        plt.grid()
+        plt.tight_layout()
+        if show == True:
+            plt.show()
+        if save == True:
+            plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(estar) + '.png'))
+        plt.clf()
+        return
 
+    def plotStabilityTwo(self, estar: float,  x1_, y1_, yerr1_, x2_, y2_, yerr2_, show=False, save=True):
         fig, ax = plt.subplots(2, 1, figsize=(6, 8))
-        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm))
-        ax[0].axhspan(
-            ymin=self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
-            ymax=self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
-            alpha=0.3,
-            color=CB_colors[4]
-            )
+        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
+            estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
+            self.par.sigma / self.par.massNorm))
         ax[0].errorbar(
-            x=self.lambda_config.lspace,
-            y=_rho_l,
-            yerr=_rho_stat_l,
+            x=self.lambda_list,
+            y=self.rho_list,
+            yerr=self.drho_list,
             marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
             color=CB_colors[0],
         )
         ax[0].errorbar(
-            x=self.optimal_lambdas[self.espace_dictionary[estar],0],
-            y=self.rho_kfact_dictionary[self.lambda_config.k_star][estar][0],
-            yerr=self.rho_kfact_dictionary[self.lambda_config.k_star][estar][1],
+            x=self.lambda_list,
+            y=self.rho_list_alpha2,
+            yerr=self.drho_list_alpha2,
             marker=plot_markers[1],
             markersize=3.8,
             elinewidth=1.3,
             capsize=3,
             ls="",
-            label=r"$A[g_\lambda] / A_0 = B[g_\lambda] $",
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
             color=CB_colors[1],
-        )
-        ax[0].errorbar(
-            x=self.optimal_lambdas[self.espace_dictionary[estar],1],
-            y=self.rho_kfact_dictionary[self.lambda_config.kfactor][estar][0],
-            yerr=self.rho_kfact_dictionary[self.lambda_config.kfactor][estar][1],
-            marker=plot_markers[2],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=3,
-            ls="",
-            label=r"$A[g_\lambda] / A_0 = {:2.1f} B[g_\lambda] $".format(self.lambda_config.kfactor),
-            color=CB_colors[2],
         )
         ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
         ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
@@ -346,31 +439,26 @@ class HLTWrapper:
 
         # Second subplot with A/A_0
         ax[1].errorbar(
-            x=_A_l,
-            y=_rho_l,
-            yerr=_rho_stat_l,
-            marker="+",
+            x=gag_l_a1,
+            y=self.rho_list,
+            yerr=self.drho_list,
+            marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
-            label=r"$E/M_{\pi}$" + "= {:2.2f}".format(
-                estar / self.par.massNorm) + r"$\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm),
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
             color=CB_colors[0],
         )
         ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
         ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
         ax[1].legend(prop={"size": 12, "family": "Helvetica"})
         ax[1].grid()
-
-        ax[1].axhspan(ymin=self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
-                         ymax=self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
-                         alpha=0.3,
-                         color = CB_colors[4]
-                         )
-       # plt.fill_between(self.rho[self.espace_dictionary[estar]] - self.rho_quadrature_err[self.espace_dictionary[estar]],
-        #                 self.rho[self.espace_dictionary[estar]] + self.rho_quadrature_err[self.espace_dictionary[estar]],
-        #                 color=CB_colors[4], alpha=0.3)
-
         plt.tight_layout()
-        plt.show()
+        if show_lambda_scan == True:
+            plt.show()
+        if save_plots == True:
+            plt.savefig(os.path.join(self.par.plotpath, 'LambdaScanE{:2.2e}'.format(self.espace[e_i]) + '.png'))
+        plt.clf()
+        plt.close(fig)
+
