@@ -492,7 +492,7 @@ class HLTWrapper:
                     (_this_updated_rho3 - _this_rho3) / (_this_updated_drho3)
                 )
                 print(LogMessage(), "Scan Lambda ::: Residual = ", float(_residual3))
-                comp_diff_AC = abs(_this_updated_rho - _this_updated_rho) - (
+                comp_diff_AC = abs(_this_updated_rho - _this_updated_rho3) - (
                     _this_updated_drho + _this_updated_drho3
                 )
                 print(
@@ -503,7 +503,7 @@ class HLTWrapper:
             else:
                 comp_diff_AC = comp_diff_AB
 
-            comp_diff_AB = abs(_this_updated_rho - _this_updated_rho) - (
+            comp_diff_AB = abs(_this_updated_rho - _this_updated_rho2) - (
                 _this_updated_drho + _this_updated_drho2
             )
 
