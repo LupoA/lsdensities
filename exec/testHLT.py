@@ -15,12 +15,13 @@ def init_variables(args_):
     in_.sigma = args_.sigma
     in_.emax = args_.emax * args_.mpi   #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = args_.mpi / 20   #TODO get this to be input in lattice units for consistency
+        in_.emin = (args_.mpi / 20)  * args_.mpi   #TODO get this to be input in lattice units for consistency
     else:
-        in_.emin = args_.emin
+        in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
     in_.Ne = args_.ne
     in_.Na = args_.Na
+    in_.A0cut = args_.A0cut
     return in_
 
 
@@ -56,7 +57,7 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
-    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, lambdaMax=20, lambdaStep=0.5, lambdaScanPrec = 0.5, lambdaScanCap=6, kfactor = 0.1)
+    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=-1.99, lambdaMax=2e+3, lambdaStep=100, lambdaScanPrec = 0.5, lambdaScanCap=4, kfactor = 0.1)
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)
@@ -64,6 +65,7 @@ def main():
 
     HLT.run(how_many_alphas=par.Na)
     HLT.plotParameterScan(how_many_alphas = par.Na, save_plots=True)
+    HLT.plotRhos(savePlot = True)
 
     end()
 

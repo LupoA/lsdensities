@@ -59,7 +59,7 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type='EXP', T=0):
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
-def Smatrix_float64(tmax_: int, alpha_, e0=0, S_in=None, type='EXP', T=0):
+def Smatrix_float64(tmax_: int, alpha_, e0=0, S_in=None, type='EXP', T=0):  #TODO: delete
     if S_in is None:
         S_ = np.ndarray((tmax_, tmax_), dtype=np.float64)
     else:

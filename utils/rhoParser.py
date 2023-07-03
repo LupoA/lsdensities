@@ -172,5 +172,11 @@ def parseArgumentRhoFromData():
         help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
         default='EXP',
     )
+    parser.add_argument(
+        "--A0cut",
+        type=float,
+        help="Minimum value of A/A0 that is accepted, Default=0.1",
+        default=0.1,
+    )
     args = parser.parse_args()
     return args

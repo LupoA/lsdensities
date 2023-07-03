@@ -6,14 +6,6 @@ sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
 
-#   TODO: implement periodic function
-#   TODO: In this we pass params so a function should be
-#         def function(args, params)
-#               ft_mp(..., type=params.periodicity, T=params.time_extent)
-#               ...
-#   TODO: in this way we dont have to specify periodicity when we call h_Et et similia
-#         because it is contained in params
-
 
 def h_Et_mp(
     Tinv_, params, espacemp_
@@ -90,7 +82,7 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
     return averageScalar_mp(rhob)
 
 
-def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params):   #TODO: implement periodic function
+def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params):   #TODO: implement periodic function    #TODO: delete?
     Nb = params.num_boot
     tmax = params.tmax
     mpll = mpf(str(lpar))
@@ -114,7 +106,7 @@ def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params)
 
 import numpy as np
 
-def h_Et_mp_Eslice_float64(Tinv_, params, estar_):
+def h_Et_mp_Eslice_float64(Tinv_, params, estar_):    #TODO: delete
     ht_ = np.ndarray(params.tmax, dtype=np.float64)
     for i in range(params.tmax):
         ht_[i] = 0
@@ -123,7 +115,7 @@ def h_Et_mp_Eslice_float64(Tinv_, params, estar_):
             ht_[i] += aux_
     return ht_
 
-def y_combine_sample_Eslice_float64(ht_sliced, matrix_of_correlators, params):
+def y_combine_sample_Eslice_float64(ht_sliced, matrix_of_correlators, params):    #TODO: delete
     num_boot, tmax = params.num_boot, params.tmax
     rhob = np.zeros(num_boot, dtype=np.float64)
 
@@ -133,7 +125,7 @@ def y_combine_sample_Eslice_float64(ht_sliced, matrix_of_correlators, params):
 
     return np.mean(rhob), np.std(rhob)
 
-def y_combine_sample_Eslice_float64_vectorised(ht_sliced, matrix_of_correlators):
+def y_combine_sample_Eslice_float64_vectorised(ht_sliced, matrix_of_correlators):     #TODO: delete
     rhob = np.sum(ht_sliced * matrix_of_correlators, axis=1)
 
     avg_of_rhob = np.mean(rhob)

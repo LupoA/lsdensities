@@ -246,6 +246,7 @@ class Inputs:
         self.e0 = 0
         self.massNorm = 1.0
         self.periodicity = 'EXP'
+        self.A0cut = 0
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
@@ -287,6 +288,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emin (mp) [lattice unit]", self.emin, "(", self.mpemin, ")")
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
+        print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
 
 class LambdaSearchOptions:  #TODO: delete?
     def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
