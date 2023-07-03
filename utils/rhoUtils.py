@@ -241,7 +241,7 @@ class Inputs:
         self.sigma = -1
         self.emax = -1
         self.Ne = 1
-        self.alpha = 0
+        self.Na = 0
         self.emin = 0
         self.e0 = 0
         self.massNorm = 1.0
@@ -254,7 +254,6 @@ class Inputs:
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
-        self.mpalpha = mpf('0')
 
     def assign_values(self):
         if self.tmax==0:
@@ -265,7 +264,6 @@ class Inputs:
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
-        self.mpalpha = mpf(str(self.alpha))
         self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
 
@@ -288,7 +286,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emax [mass units]", self.emax / self.massNorm)
         print(LogMessage(), "Init ::: ", "Emin (mp) [lattice unit]", self.emin, "(", self.mpemin, ")")
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
-        print(LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")")
+        print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
 
 class LambdaSearchOptions:  #TODO: delete?
     def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
@@ -300,8 +298,7 @@ class LambdaSearchOptions:  #TODO: delete?
         self.lspace = np.linspace(lmin, lmax, ldensity)
 
 class MatrixBundle:
-    def __init__(self, Smatrix: mp.matrix, Bmatrix: mp.matrix, bnorm = mpf(1)):
-        self.S = Smatrix
+    def __init__(self, Bmatrix: mp.matrix, bnorm = mpf(1)):
         self.B = Bmatrix
         self.bnorm = bnorm
 
@@ -315,7 +312,7 @@ def adjust_precision(tmax: int):
     #   number of S
     #   If the starting prec is too small the function might
     #   too small of a value which results in a warning
-    S_ = Smatrix_mp(tmax)
+    S_ = Smatrix_mp(tmax, alpha_ = 0)
     condS = mp.cond(S_)
     n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
     print(
@@ -325,7 +322,7 @@ def adjust_precision(tmax: int):
     )
     print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
     init_precision(n_prec)
-    S_ = Smatrix_mp(tmax)
+    S_ = Smatrix_mp(tmax, alpha_ = 0)
     condS = mp.cond(S_)
     n_prec_post = math.ceil(math.log10(condS)) + 3
     if n_prec_post != n_prec:

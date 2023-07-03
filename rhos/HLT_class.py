@@ -10,13 +10,14 @@ from rhoUtils import *
 from transform import *
 from abw import *
 from core import *
-from core import A0E_mp, A0E_float64
+from core import A0E_mp
 from abw import gAg, gBg
-import scipy.linalg as sp_linalg
 import matplotlib.pyplot as plt
 
 class AlgorithmParameters:
-    def __init__(self, alphaA=0, alphaB=0, alphaC=0, lambdaMax=50, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1):
+    def __init__(self, alphaA=0, alphaB=-1, alphaC=-1.99, lambdaMax=50, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1):
+        assert(alphaA != alphaB)
+        assert (alphaA != alphaC)
         self.alphaA = alphaA
         self.alphaB = alphaB
         self.alphaC = alphaC
@@ -52,7 +53,6 @@ class HLTWrapper:
         self.matrix_bundle = matrix_bundle
         #
         self.espace = np.linspace(par.emin, par.emax, par.Ne)
-        self.alphaMP = mpf(str(par.alpha))
         self.e0MP = mpf(str(par.e0))
         self.espaceMP = mp.matrix(par.Ne, 1)
         self.sigmaMP = mpf(str(par.sigma))
@@ -64,12 +64,11 @@ class HLTWrapper:
         self.A0_B = A0_t(alphaMP_=self.algorithmPar.alphaBmp, eminMP_=self.eminMP, par_=self.par)
         self.A0_C = A0_t(alphaMP_=self.algorithmPar.alphaCmp, eminMP_=self.eminMP, par_=self.par)
         self.selectA0 = {}
-        self.selectA0[0] = self.A0_A
-        self.selectA0[-1] = self.A0_B
-        self.selectA0[-1.99] = self.A0_C
+        self.selectA0[algorithmPar.alphaA] = self.A0_A
+        self.selectA0[algorithmPar.alphaB] = self.A0_B
+        self.selectA0[algorithmPar.alphaC] = self.A0_C
         #
         self.espace_is_filled = False
-        self.labda_check = self.algorithmPar.kfactor
         #   Lists of result as functions of lambda
         self.rho_list = [[] for _ in range(self.par.Ne)]
         self.drho_list = [[] for _ in range(self.par.Ne)]
@@ -114,12 +113,13 @@ class HLTWrapper:
         print(LogMessage(), "Inverse problem ::: alpha (mp):", self.par.alpha, "(", self.alphaMP, ")")
         print(LogMessage(), "Inverse problem ::: E0 (mp):", self.par.e0, "(", self.e0MP, ")")
 
-    def lambdaToRho(self, lambda_, estar_, alpha_=0):
+    def lambdaToRho(self, lambda_, estar_, alpha_):
         import time
         assert ( self.A0_A.is_filled == True)
         _Bnorm = (self.correlator.central[1]*self.correlator.central[1])/(estar_*estar_)
         _factor = (lambda_ * self.selectA0[alpha_].valute_at_E_dictionary[estar_]) / _Bnorm
-        _M = self.matrix_bundle.S + (_factor*self.matrix_bundle.B)
+        S_ = Smatrix_mp(tmax_=self.par.tmax, alpha_=alpha_, e0_=self.par.mpe0, type='EXP', T=0)
+        _M = S_ + (_factor*self.matrix_bundle.B)
         start_time = time.time()
         _Minv = invert_matrix_ge(_M)
         end_time = time.time()
@@ -127,11 +127,11 @@ class HLTWrapper:
         _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_,  alpha_=alpha_)
         rho_estar, drho_estar = y_combine_sample_Eslice_mp(_g_t_estar, self.correlator.sample, self.par)
 
-        gag_estar = gAg(self.matrix_bundle.S, _g_t_estar, estar_, self.par)
+        gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
 
         return rho_estar, drho_estar, gag_estar
 
-    def scanLambda(self, estar_, alpha_=0):
+    def scanLambda(self, estar_, alpha_):
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
         prec_ = self.algorithmPar.lambdaScanPrec
@@ -142,7 +142,7 @@ class HLTWrapper:
         print(LogMessage(), 'Scan Lambda at energy {:2.2e}'.format(estar_))
 
         print(LogMessage(), 'Scan Lambda ::: Lambda = ', lambda_)
-        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_)   #   _this_drho will remain the first one
+        _this_rho, _this_drho, _this_gAg = self.lambdaToRho(lambda_, estar_, alpha_=alpha_)   #   _this_drho will remain the first one
         self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)      #   store
         self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)      #   store
         self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/self.selectA0[alpha_].valute_at_E_dictionary[estar_])  #   store
@@ -234,7 +234,6 @@ class HLTWrapper:
             #comp_quadrature = abs(_this_updated_rho - _this_updated_rho2) /  mp.sqrt( mp.fadd(mp.fmul(_this_updated_drho,_this_updated_drho),mp.fmul(_this_updated_drho2,_this_updated_drho2)) )
             comp_diff = abs(_this_updated_rho - _this_updated_rho2) - (_this_updated_drho + _this_updated_drho2)
             print(LogMessage(), 'Scan Lambda ::: Alpha Diff ::: ', float(comp_diff))
-            print(LogMessage(), 'check', -(_this_updated_drho2))
             if (_residual1 < prec_ and _residual2 < prec_ and comp_diff < -(_this_updated_drho2*0.1)):
                 _count += 1
                 print(LogMessage(), 'Scan Lambda ::: count = ', _count)
@@ -258,36 +257,45 @@ class HLTWrapper:
         assert (self.result_is_filled[self.espace_dictionary[estar_]] == True)
 
         _this_y = self.rho_result[self.espace_dictionary[estar_]] #   rho at lambda*
-        _that_y, _that_yerr, _that_x = self.lambdaToRho(self.lambda_result[self.espace_dictionary[estar_]] * self.algorithmPar.kfactor, estar_)
+        _that_y, _that_yerr, _that_x = self.lambdaToRho(self.lambda_result[self.espace_dictionary[estar_]] * self.algorithmPar.kfactor, estar_, alpha_=0)
 
         self.rho_sys_err[self.espace_dictionary[estar_]] = abs(_this_y - _that_y) / 2
         self.rho_quadrature_err[self.espace_dictionary[estar_]] = np.sqrt(self.rho_sys_err[self.espace_dictionary[estar_]]**2 + self.drho_result[self.espace_dictionary[estar_]]**2)
 
         return self.rho_sys_err[self.espace_dictionary[estar_]]
 
-    def run(self, save_plots=True, how_many_alphas = 1):
+    def run(self, how_many_alphas = 1):
 
         if how_many_alphas == 1:
             for e_i in range(self.par.Ne):
                 _, _, _ = self.scanLambda(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
-                self.plotStabilityOne(estar=self.espace[e_i], savePlot=save_plots)
-
             return
-
         elif how_many_alphas == 2:
             for e_i in range(self.par.Ne):
                 _, _, _, _, _, _ = self.scanLambdaAlpha(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
-                self.plotStabilityTwo(estar=self.espace[e_i], savePlot=save_plots)
-
             return
-
         else:
             raise ValueError('how_many_alphas : Invalid value specified. Only 1 and 2 are allowed.')
 
+    def plotParameterScan(self, how_many_alphas = 1, save_plots=True):
+        assert (all(self.result_is_filled) == True)
+        if how_many_alphas == 1:
+            for e_i in range(self.par.Ne):
+                self.plotStabilityOne(estar=self.espace[e_i], savePlot=save_plots)
+            return
+        elif how_many_alphas == 2:
+            for e_i in range(self.par.Ne):
+                self.plotStabilityTwo(estar=self.espace[e_i], savePlot=save_plots)
+            return
+        else:
+            raise ValueError('how_many_alphas : Invalid value specified. Only 1 and 2 are allowed.')
 
-    def plotStabilityOne(self, estar: float, savePlot=True):
+    def plotRhos(self):
+        return
+
+    def plotStabilityOne(self, estar: float, savePlot=True):    #TODO: fix
         plt.errorbar(
             x=self.gAA0g_list[self.espace_dictionary[estar]],
             y=self.rho_list[self.espace_dictionary[estar]],
@@ -297,11 +305,13 @@ class HLTWrapper:
             elinewidth=1.3,
             capsize=2,
             ls="",
-            label=r'$\rho({:2.2e)$'.format(estar) + r'$(\sigma = {:2.2f})$'.format(
-                self.par.sigma / self.par.massNorm) + r'$M_\pi$',
-            color=u.CB_color_cycle[0],
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
+            color=CB_color_cycle[0],
         )
-        plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
+        plt.title(r"$E/M_{\pi}$" + "= {:2.2f}  ".format(
+            estar / self.par.massNorm) + r" $\sigma$" + " = {:2.2f} Mpi".format(
+            self.par.sigma / self.par.massNorm))
+        plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
         # plt.ylabel("Spectral density", fontdict=u.timesfont)
         plt.legend(prop={"size": 12, "family": "Helvetica"})
         plt.grid()

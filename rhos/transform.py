@@ -41,9 +41,7 @@ def h_Et_mp(
     return ht_
 
 
-def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_=0):
-    if alpha_==0:
-        alpha_ = params.mpalpha
+def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
         ht_[i] = 0

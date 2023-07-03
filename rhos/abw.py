@@ -8,7 +8,7 @@ from core import *
 
 #   Functionals A, B and W
 
-def gAg(smat, gt, estar, params):
+def gAg(smat, gt, estar, alpha, params):
     tmax = params.tmax
     term1 = mpf(0)
     vt_ = mp.matrix(tmax,1)
@@ -21,12 +21,12 @@ def gAg(smat, gt, estar, params):
         term1 = mp.fadd(term1, aux_)
     #   term 1 = g^T S g
 
-    term2 = A0_mp(e_=estar, sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0)
+    term2 = A0_mp(e_=estar, sigma_=params.mpsigma, alpha=alpha, e0=params.mpe0)
     #   term 2 = A0
 
     term3 = mpf(0)
     for t in range(tmax):
-        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=params.mpalpha, e0=params.mpe0, type=params.periodicity, T=params.time_extent), gt[t])
+        aux_ = mp.fmul(ft_mp(e=estar, t=mpf(t+1), sigma_=params.mpsigma, alpha=alpha, e0=params.mpe0, type=params.periodicity, T=params.time_extent), gt[t])
         term3 = mp.fadd(term3, aux_)
     term3 = mp.fmul(mpf(2), term3)
     #   term 3 = 2 sum_t f_t g_t
@@ -35,33 +35,7 @@ def gAg(smat, gt, estar, params):
     res = mp.fadd(res, term2)
     return res  #    term1 + term2 - term3
 
-def gAg_float64(smat, gt, estar, params):
-    tmax = params.tmax
-    term1 = 0
-    vt_ = np.ndarray(tmax, dtype=np.float64)
-    for t in range(tmax):
-        vt_[t]=0
-        for r in range(tmax):
-            aux_  = gt[r]*smat[t,r]
-            vt_[t] = vt_[t]+aux_
-        aux_ = gt[t] * vt_[t]
-        term1 += aux_
-    #   term 1 = g^T S g
-
-    term2 = A0_float64(e_=estar, sigma_=params.sigma, alpha=params.alpha, e0=params.e0)
-    #   term 2 = A0
-
-    term3 = 0
-    for t in range(tmax):
-        aux_ = ft_float64(e=estar, t=t+1, sigma_=params.sigma, alpha=params.alpha, e0=params.e0, type=params.periodicity, T=params.time_extent) * gt[t]
-        term3 = term3 + aux_
-    term3 *= 2
-    #   term 3 = 2 sum_t f_t g_t
-
-    res = term1 - term3 + term2
-    return res  #    term1 + term2 - term3
-
-def gAgA0(smat, gt, estar, params, a0):
+def gAgA0(smat, gt, estar, alpha, params, a0):
     tmax = params.tmax
     term1 = mpf(0)
     vt_ = mp.matrix(tmax, 1)
@@ -90,23 +64,6 @@ def gAgA0(smat, gt, estar, params, a0):
     res = mp.fsub(term1, term3)
     res = mp.fadd(res, term2)
     return res  # term1 + term2 - term3
-
-def gAgA0_float64(smat, gt, estar, params, a0):
-    return gAg_float64(smat, gt, estar, params) / a0
-
-def gBg_float64(gt, bmat, bnorm, tmax):
-    res = 0
-    vt_ = np.ndarray(tmax, dtype=np.float64)
-    for t in range(tmax):
-        vt_[t]=0
-        for r in range(tmax):
-            aux_ = gt[r] * bmat[r,t]
-            vt_[t] = aux_ + vt_[t]
-        aux_ = gt[t] * vt_[t]
-        res += aux_
-    res /= bnorm
-    #   res = g B g / bnorm
-    return res
 
 def gBg(gt, bmat, bnorm):
     res = mpf(0)

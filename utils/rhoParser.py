@@ -67,11 +67,11 @@ def parseArgumentPeak():
         default=0.0,
     )
     parser.add_argument(
-        "--alpha",
-        metavar="Alpha",
-        type=float,
-        help="alpha parameter defining different measure in the functional A. Default=0",
-        default=0.0,
+        "--Na",
+        metavar="NAlpha",
+        type=int,
+        help="Number of alpha parameters defining different measure in the functional A. The default value, n_alpha=1, performs with alpha=0. n_alpha=2 uses alpha = 0, -1. Default=1.",
+        default=1,
     )
     parser.add_argument(
         "--ne",
@@ -154,11 +154,11 @@ def parseArgumentRhoFromData():
         default=0.0,
     )
     parser.add_argument(
-        "--alpha",
-        metavar="Alpha",
-        type=float,
-        help="alpha parameter defining different measure in the functional A. Default=0",
-        default=0.0,
+        "--Na",
+        metavar="NAlpha",
+        type=int,
+        help="Number of alpha parameters defining different measure in the functional A. The default value, n_alpha=1, performs with alpha=0. n_alpha=2 uses alpha = 0, -1. Default=1.",
+        default=1,
     )
     parser.add_argument(
         "--ne",

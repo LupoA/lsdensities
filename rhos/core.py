@@ -19,7 +19,7 @@ def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemente
     return S_
 
 
-def Smatrix_mp(tmax_: int, alpha_=mpf(0), e0_=mpf(0), type='EXP', T=0):    #   TODO: rename emin into e0
+def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type='EXP', T=0):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):
@@ -59,7 +59,7 @@ def Smatrix_mp(tmax_: int, alpha_=mpf(0), e0_=mpf(0), type='EXP', T=0):    #   T
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
-def Smatrix_float64(tmax_: int, alpha_=0, e0=0, S_in=None, type='EXP', T=0):
+def Smatrix_float64(tmax_: int, alpha_, e0=0, S_in=None, type='EXP', T=0):
     if S_in is None:
         S_ = np.ndarray((tmax_, tmax_), dtype=np.float64)
     else:
@@ -88,7 +88,7 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     return res_
 
 
-def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type='EXP', T=0):
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma_, sigma_)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -139,7 +139,7 @@ def ft_mp(e, t, sigma_, alpha=mpf("0"), e0=mpf("0"), type='EXP', T=0):
         res += res2
     return res
 
-def A0_mp(e_, sigma_, alpha=mpf(0), e0=mpf(0)):
+def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
     aux = mp.fmul(sigma_, sigma_)
     aux = mp.fdiv(aux, mpf(2))
     aux = mp.fmul(aux, alpha)
@@ -169,98 +169,10 @@ def A0_mp(e_, sigma_, alpha=mpf(0), e0=mpf(0)):
 
     return res
 
-def A0E_mp(espacemp_, par, alpha_=0, emin_=0):   #   vector of A0s for each energy
-    if alpha_==0:
-        alpha_ = par.mpalpha
+def A0E_mp(espacemp_, par, alpha_, emin_=0):   #   vector of A0s for each energy
     if emin_==0:
         emin_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):
         a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=emin_)
     return a0_e
-
-import scipy.special
-
-def A0_float64(e_, sigma_, alpha=0, e0=0):
-    aux = sigma_**2 / 2
-    aux = aux * alpha
-    aux = e_ + aux - e0
-    res = aux / sigma_
-    res = scipy.special.erf(res)
-    res = 1 + res
-    aux_ = math.sqrt(np.pi)
-    res = res / aux_
-    res = res / sigma_
-    aux_ = math.sqrt(2)
-    aux_ = e_ / aux_
-    aux_ = aux_ / sigma_
-    aux_ = scipy.special.erf(aux_)
-    aux_ = aux_ + 1
-    aux_ = aux_ * aux_
-    res = res / aux_
-    # alpha implementation
-    aux = alpha*e_ # alpha*e
-    aux2 = alpha*sigma_ # alpha*sigma
-    aux2 = aux2*aux2 # (alpha*sigma)^2
-    aux2 = aux2/mpf(4) # (alpha*sigma)^2 / 4
-    aux = aux + aux2 # (alpha*sigma)^2 / 4 + alpha*e
-    aux = np.exp(aux)
-    res = res*aux
-    return res
-
-def A0E_float64(espace_, par):   #   vector of A0s for each energy
-    a0_e = np.ndarray(par.Ne, dtype = np.float64)
-    for ei in range(par.Ne):
-        a0_e[ei] = A0_float64(e_=espace_[ei], sigma_=par.sigma, alpha=par.alpha, e0=par.e0)
-    return a0_e
-
-def ft_float64(e, t, sigma_, alpha=0, e0=0, type='EXP', T=0):
-    newt = t - alpha
-    aux = sigma_**2
-    arg = aux * newt
-    aux = arg * newt
-    aux = aux * 0.5
-    res = np.exp(aux)
-    aux = -newt
-    aux = e * aux
-    aux = np.exp(aux)
-    res = res * aux
-    arg = arg + e0
-    arg = arg - e
-    arg = arg / sigma_
-    aux = math.sqrt(2)
-    arg = arg / aux
-    arg = scipy.special.erfc(arg)
-    res = res * arg
-    aux = e / aux
-    aux = aux / sigma_
-    aux = scipy.special.erf(aux)
-    aux = 1 + aux
-    res = res / aux
-    if type=='COSH':
-        assert(T>0)
-        newt2 = t + alpha  # alpha+t
-        newt2 = newt2 - T  # alpha+t-T
-        aux2 = sigma_**2   # s^2
-        arg2 = aux2*newt2  # s^2 (t+alpha-T)
-        aux2 = arg2*newt2  # s^2 (alpha+t-T)^2
-        aux2 = aux2*0.5  # s^2 (alpha+t-T)^2 /2
-        res2 = np.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
-        aux2 = newt2  # alpha+t-T
-        aux2 = e*aux2  # e(alpha+t-T)
-        aux2 = np.exp(aux2)
-        res2 = res2*aux2  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
-        arg2 = e0-arg2
-        arg2 = arg2-e
-        arg2 = arg2/sigma_
-        aux2 = math.sqrt(2)
-        arg2 = arg2/aux2
-        arg2 = scipy.special.erfc(arg2)  # this is the COMPLEMENTARY erf
-        res2 = res2*arg2
-        aux2 = e / aux2
-        aux2 = aux2 / sigma_
-        aux2 = scipy.special.erf(aux2)
-        aux2 = 1 + aux2
-        res2 = res2 / aux2
-        res += res2
-    return res

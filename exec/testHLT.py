@@ -20,7 +20,7 @@ def init_variables(args_):
         in_.emin = args_.emin
     in_.e0 = args_.e0
     in_.Ne = args_.ne
-    in_.alpha = args_.alpha
+    in_.Na = args_.Na
     return in_
 
 
@@ -56,14 +56,14 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
-    S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=0, lambdaMax=12, lambdaStep=0.5, lambdaScanPrec = 0.5, lambdaScanCap=6, kfactor = 0.1)
-    matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
+    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, lambdaMax=20, lambdaStep=0.5, lambdaScanPrec = 0.5, lambdaScanCap=6, kfactor = 0.1)
+    matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)
     HLT.prepareHLT()
 
-    HLT.run(save_plots=True, how_many_alphas=2)
+    HLT.run(how_many_alphas=par.Na)
+    HLT.plotParameterScan(how_many_alphas = par.Na, save_plots=True)
 
     end()
 
