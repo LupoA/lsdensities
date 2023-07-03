@@ -40,29 +40,41 @@ def main():
     #   Here is the correlator
     rawcorr.evaluate()
 
+    #   Symmetrise
+    if par.periodicity == 'COSH':
+        print(LogMessage(), "Folding correlator")
+        foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled = False)
+
     #   Here is the resampling
-    corr = u.Obs(T = par.time_extent, tmax = par.tmax, nms = par.num_boot, is_resampled=True)
+    if par.periodicity == 'EXP':
+        corr = u.Obs(T = par.time_extent, tmax = par.tmax, nms = par.num_boot, is_resampled=True)
+    if par.periodicity == 'COSH':
+        corr = u.Obs(T=int(par.time_extent/2)+1, tmax=par.tmax, nms=par.num_boot, is_resampled=True)
+        assert(par.tmax < int(par.time_extent/2)+1)
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
 
+    #   Covariance
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    #   make it into a mp sample
+    #   Make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
     #mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
-    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=-1.99, lambdaMax=2e+3, lambdaStep=100, lambdaScanPrec = 0.5, lambdaScanCap=4, kfactor = 0.1)
+    hltParams = AlgorithmParameters(alphaA=0, alphaB=-1, alphaC=-1.99, lambdaMax=500, lambdaStep=10, lambdaScanPrec = 0.5, lambdaScanCap=4, kfactor = 0.1)
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
+
     #   Wrapper for the Inverse Problem
     HLT = HLTWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr)
     HLT.prepareHLT()
 
+    #   Run
     HLT.run(how_many_alphas=par.Na)
     HLT.plotParameterScan(how_many_alphas = par.Na, save_plots=True)
     HLT.plotRhos(savePlot = True)

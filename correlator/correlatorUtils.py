@@ -25,6 +25,17 @@ def effective_mass(corr, par, type='COSH'):
     mass.evaluate()
     return mass
 
+def foldPeriodicCorrelator(corr, par, is_resampled = False):
+    assert(par.periodicity=='COSH')
+    halfT = int(par.time_extent / 2)
+    foldedCorr = Obs(T=halfT+1, tmax=par.tmax, nms=par.num_samples, is_resampled=is_resampled)
+    for n in range(par.num_samples):
+        foldedCorr.sample[n, 0] = corr.sample[n, 0]
+        for t in range(1, halfT+1):
+            foldedCorr.sample[n,t] = (corr.sample[n,t] + corr.sample[n,par.time_extent-t])/2
+
+    return foldedCorr
+
 class InputsCorrelatorAnalysis:
     def __init__(self, time_extent: int=0, datapath=".", outdir=".", num_boot: int=0, num_samples: int=0):
         if not isinstance(time_extent, int):
@@ -38,6 +49,8 @@ class InputsCorrelatorAnalysis:
         self.outdir = outdir
         self.num_boot = num_boot
         self.num_samples = num_samples
+        self.periodicity = 'EXP'
+        self.tmax = 0
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
@@ -64,6 +77,12 @@ def parseArgumentCorrelatorAnalysis():
         type=int,
         help="Number of bootstrap samples. Default=300",
         default=300,
+    )
+    parser.add_argument(
+        "--periodicity",
+        type=str,
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        default='EXP',
     )
     args = parser.parse_args()
     return args

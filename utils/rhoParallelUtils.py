@@ -8,7 +8,7 @@ import multiprocessing as multiprocessing
 from typing import List
 
 class ParallelBootstrapLoop:
-    def __init__(self, par: Inputs, in_: np.ndarray):
+    def __init__(self, par: Inputs, in_: np.ndarray, is_folded = False):
         self.par = par
         self.looplen = par.num_boot
         self.vlen = par.time_extent
@@ -20,13 +20,17 @@ class ParallelBootstrapLoop:
         self.out_array = multiprocessing.Array('d', self.looplen * self.vlen)
         self.out_ = np.frombuffer(self.out_array.get_obj()).reshape((self.looplen, self.vlen))
         self.processes: List[multiprocessing.Process] = []
+        self.is_folded = is_folded
 
     def run(self) -> np.ndarray:
         for i in range(self.num_processes):
             start = i * self.chunk_size
             end = min(start + self.chunk_size, self.looplen)
-            process = multiprocessing.Process(target=parallel_bootstrap_compact_fp,
-                                               args=(self.par, self.inputsample, self.out_, start, end))
+            if self.is_folded==False:
+                process = multiprocessing.Process(target=parallel_bootstrap_compact_fp, args=(self.par, self.inputsample, self.out_, start, end))
+            if self.is_folded==True:
+                process = multiprocessing.Process(target=parallel_bootstrap_compact_fp,
+                                                  args=(self.par, self.inputsample, self.out_, start, end, self.is_folded))
             try:
                 process.start()
             except Exception as e:

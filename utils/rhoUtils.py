@@ -96,8 +96,8 @@ class Obs:
         self.central = np.zeros(T)  # Central value of the sample
         self.err = np.zeros(T)  # Error on the central value
         self.sigma = np.zeros(T)  # Variance of the sample
-        self.T = T
-        self.tmax = tmax
+        self.T = T  # number of time slices
+        self.tmax = tmax # Max t we use
         self.nms = nms
         self.sample = np.zeros((nms, T))  # Sample elements
         self.cov = np.zeros((T, T))  # Cov matrix estimated from sample
