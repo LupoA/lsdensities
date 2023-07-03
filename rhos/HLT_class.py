@@ -14,6 +14,8 @@ from core import A0E_mp
 from abw import gAg, gBg
 import matplotlib.pyplot as plt
 
+_big = 100
+
 class AlgorithmParameters:
     def __init__(self, alphaA=0, alphaB=-1, alphaC=-1.99, lambdaMax=50, lambdaStep=0.5, lambdaScanPrec = 0.1, lambdaScanCap=6, kfactor = 0.1):
         assert(alphaA != alphaB)
@@ -192,6 +194,8 @@ class HLTWrapper:
         lambda_flag = 0
         rho_flag = 0
         drho_flag = 0
+        comp_diff_AC = _big
+        comp_diff_AB = _big
 
         print(LogMessage(), ' --- ')
         print(LogMessage(), 'At Energy {:2.2e}'.format(estar_))
