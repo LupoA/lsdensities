@@ -290,15 +290,6 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
         print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
 
-class LambdaSearchOptions:  #TODO: delete?
-    def __init__(self, lmin: float = 0.01, lmax: float = 0.6, ldensity: int = 20, kfactor = 10, star_at = 1):
-        self.lmin = lmin
-        self.lmax = lmax
-        self.ldensity = ldensity
-        self.k_star = star_at  # Meaning lambda is found at A = k_star B.
-        self.kfactor = kfactor  #   Meaning lambda dependence is checked at A = kfactor B
-        self.lspace = np.linspace(lmin, lmax, ldensity)
-
 class MatrixBundle:
     def __init__(self, Bmatrix: mp.matrix, bnorm = mpf(1)):
         self.B = Bmatrix

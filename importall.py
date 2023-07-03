@@ -21,7 +21,6 @@ from rhoUtils import end
 from rhoUtils import Obs
 from rhoUtils import adjust_precision
 from rhoUtils import Inputs
-from rhoUtils import LambdaSearchOptions
 from rhoUtils import *
 from rhoStat import *
 from rhoMath import *

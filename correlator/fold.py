@@ -41,5 +41,7 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
+    exit(1)
+
 if __name__ == "__main__":
     main()

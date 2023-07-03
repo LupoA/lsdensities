@@ -5,7 +5,7 @@ import os
 import math
 sys.path.append("../utils")
 from rhoMath import *
-from rhoUtils import LogMessage, Inputs, LambdaSearchOptions, MatrixBundle
+from rhoUtils import LogMessage, Inputs, MatrixBundle
 from rhoUtils import *
 from transform import *
 from abw import *

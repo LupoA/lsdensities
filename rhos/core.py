@@ -59,22 +59,6 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type='EXP', T=0):
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
-def Smatrix_float64(tmax_: int, alpha_, e0=0, S_in=None, type='EXP', T=0):  #TODO: delete
-    if S_in is None:
-        S_ = np.ndarray((tmax_, tmax_), dtype=np.float64)
-    else:
-        S_ = S_in
-    for i in range(tmax_):
-        for j in range(tmax_):
-            S_[i, j] = np.exp(-(i+j+2)*e0) / (i+j+2-alpha_)
-            if type == 'COSH':
-                assert (T > 0)
-                aux = np.exp(-(T+i-j)*e0) / (T+i-j-alpha_)
-                aux2 = np.exp(-(T+j-i)*e0) / (T+j-i-alpha_)
-                aux3 = np.exp(-(2*T-j-i-2)*e0) / (2*T-j-i-2-alpha_)
-                S_[i, j] += aux + aux2 + aux3
-    return S_
-
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     fact_ = mp.sqrt(2)
     res_ = mp.fdiv(estar_, fact_)
