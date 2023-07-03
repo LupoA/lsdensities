@@ -63,7 +63,7 @@ def main():
             nms=par.num_boot,
             is_resampled=True,
         )
-        assert par.tmax < int(par.time_extent / 2) + 1
+        assert par.tmax <= int(par.time_extent / 2) + 1
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
