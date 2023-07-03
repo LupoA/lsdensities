@@ -66,73 +66,62 @@ def main():
 
     #   Prepare
     S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    lambda_bundle = LambdaSearchOptions(
-        lmin=0.01, lmax=0.99, ldensity=20, kfactor=0.1, star_at=1
+    hltParams = AlgorithmParameters(
+        alphaA=0,
+        alphaB=0,
+        alphaC=0,
+        lambdaMax=20,
+        lambdaStep=0.5,
+        lambdaScanPrec=0.1,
+        lambdaScanCap=6,
+        kfactor=0.1,
     )
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
-    HLT = InverseProblemWrapper(
-        par=par,
-        lambda_config=lambda_bundle,
-        matrix_bundle=matrix_bundle,
-        correlator=corr,
+    HLT = HLTWrapper(
+        par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
     HLT.prepareHLT()
-    HLT.init_float64()
 
-    if 0:  #   select library for linear algebra
-        for e_i in range(HLT.par.Ne):
-            HLT.computeMinimumPrecision(HLT.espace[e_i])
+    #   Energy
+    estar = HLT.espace[3]
 
-    HLT.run(show_lambda_scan=True)
+    rho_l_a1, drho_l_a1, gag_l_a1 = HLT.scanLambda(estar, alpha_=hltParams.alphaA)
+
+    _ = HLT.estimate_sys_error(estar)
+
+    assert HLT.result_is_filled[3] == True
+    print(
+        LogMessage(),
+        "rho, drho, sys",
+        HLT.rho_result[3],
+        HLT.drho_result[3],
+        HLT.rho_sys_err[3],
+    )
 
     import matplotlib.pyplot as plt
 
     plt.errorbar(
-        x=HLT.espace / par.massNorm,
-        y=HLT.rho,
-        yerr=HLT.rho_stat_err,
+        x=gag_l_a1,
+        y=rho_l_a1,
+        yerr=drho_l_a1,
         marker="o",
         markersize=1.5,
         elinewidth=1.3,
         capsize=2,
         ls="",
-        label="Stat error only (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
+        label=r"$\rho(E_*)$"
+        + r"$(\sigma = {:2.2f})$".format(par.sigma / par.massNorm)
+        + r"$M_\pi$",
         color=u.CB_color_cycle[0],
     )
-    plt.errorbar(
-        x=HLT.espace / par.massNorm,
-        y=HLT.rho,
-        yerr=HLT.rho_sys_err,
-        marker="o",
-        markersize=1.5,
-        elinewidth=1.3,
-        capsize=2,
-        ls="",
-        label="Sys error only (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
-        color=u.CB_color_cycle[1],
-    )
-    plt.errorbar(
-        x=HLT.espace / par.massNorm,
-        y=HLT.rho,
-        yerr=HLT.rho_quadrature_err,
-        marker="o",
-        markersize=1.5,
-        elinewidth=1.3,
-        capsize=2,
-        ls="",
-        label="Quadrature sum (sigma = {:2.2f} Mpi)".format(par.sigma / par.massNorm),
-        color=u.CB_color_cycle[2],
-    )
-
-    plt.xlabel("Energy/Mpi", fontdict=u.timesfont)
-    plt.ylabel("Spectral density", fontdict=u.timesfont)
+    plt.xlabel(r"$A[g_\lambda] / A_0$", fontdict=u.timesfont)
+    # plt.ylabel("Spectral density", fontdict=u.timesfont)
     plt.legend(prop={"size": 12, "family": "Helvetica"})
     plt.grid()
     plt.tight_layout()
     plt.show()
 
-    #   ciao!
     end()
 
 

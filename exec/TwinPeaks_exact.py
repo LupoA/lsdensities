@@ -47,7 +47,7 @@ def main():
     #   Generate corr
     corr = mp.matrix(tmax, 1)
     for t in range(tmax):
-        corr[t] = mp.exp(-mpf(t+1) * MpiA_mp) + mp.exp(-mpf(t+1) * MpiB_mp)
+        corr[t] = mp.exp(-mpf(t + 1) * MpiA_mp) + mp.exp(-mpf(t + 1) * MpiB_mp)
 
     S = Smatrix_mp(tmax)
     invS = S ** (-1)

@@ -14,14 +14,28 @@ def main():
 
     #   Reading datafile, storing correlator
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
+    par.periodicity = args.periodicity
+    if args.periodicity == "EXP":
+        par.tmax = par.time_extent - 1
+    elif args.periodicity == "COSH":
+        par.tmax = int(par.time_extent / 2) + 1
+    else:
+        raise ValueError("Invalid type specified. Only COSH and EXP are allowed.")
+
     par.report()
 
     #   Here is the correlator
     rawcorr.evaluate()
+    rawcorr.plot(label="raw data")
+
+    #   Here is the folding
+    foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled=False)
+    foldedCorr.evaluate()
+    foldedCorr.plot(label="folded")
 
     #   Here is the resampling
-    corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
-    resample = ParallelBootstrapLoop(par, rawcorr.sample)
+    corr = u.Obs(int(par.time_extent / 2) + 1, par.num_boot, is_resampled=True)
+    resample = ParallelBootstrapLoop(par, foldedCorr.sample, is_folded=True)
     corr.sample = resample.run()
     corr.evaluate()
     corr.plot(show=True, label="Correlator (bootstrap)")
@@ -29,6 +43,8 @@ def main():
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
+
+    exit(1)
 
 
 if __name__ == "__main__":
