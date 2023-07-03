@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import math
+
 sys.path.append("../utils")
 from rhoUtils import *
 import argparse
@@ -11,33 +12,50 @@ import argparse
 #       effmass.plot(logscale=False)
 #       print(effmass.central, '±', effmass.err)
 
-def effective_mass(corr, par, type='COSH'):
+
+def effective_mass(corr, par, type="COSH"):
     th = int(par.time_extent / 2)
     thm = th - 1
     mass = Obs(T_=thm, nms_=par.num_boot, is_resampled=True)
-    if type == 'COSH':
-        mass.sample[:, :] = np.arccosh((corr.sample[:, 2:th+1] + corr.sample[:, 0:th-1]) / (2 * corr.sample[:, 1:th]))
-    elif type == 'EXP':
-        mass.sample[:, :] = -np.log(corr.sample[:, 1:th] / corr.sample[:, 0:th-1])
+    if type == "COSH":
+        mass.sample[:, :] = np.arccosh(
+            (corr.sample[:, 2 : th + 1] + corr.sample[:, 0 : th - 1])
+            / (2 * corr.sample[:, 1:th])
+        )
+    elif type == "EXP":
+        mass.sample[:, :] = -np.log(corr.sample[:, 1:th] / corr.sample[:, 0 : th - 1])
     else:
-        raise ValueError('Invalid type specified. Only COSH and EXP are allowed.')
+        raise ValueError("Invalid type specified. Only COSH and EXP are allowed.")
 
     mass.evaluate()
     return mass
 
-def foldPeriodicCorrelator(corr, par, is_resampled = False):
-    assert(par.periodicity=='COSH')
+
+def foldPeriodicCorrelator(corr, par, is_resampled=False):
+    assert par.periodicity == "COSH"
     halfT = int(par.time_extent / 2)
-    foldedCorr = Obs(T=halfT+1, tmax=par.tmax, nms=par.num_samples, is_resampled=is_resampled)
+    foldedCorr = Obs(
+        T=halfT + 1, tmax=par.tmax, nms=par.num_samples, is_resampled=is_resampled
+    )
     for n in range(par.num_samples):
         foldedCorr.sample[n, 0] = corr.sample[n, 0]
-        for t in range(1, halfT+1):
-            foldedCorr.sample[n,t] = (corr.sample[n,t] + corr.sample[n,par.time_extent-t])/2
+        for t in range(1, halfT + 1):
+            foldedCorr.sample[n, t] = (
+                corr.sample[n, t] + corr.sample[n, par.time_extent - t]
+            ) / 2
 
     return foldedCorr
 
+
 class InputsCorrelatorAnalysis:
-    def __init__(self, time_extent: int=0, datapath=".", outdir=".", num_boot: int=0, num_samples: int=0):
+    def __init__(
+        self,
+        time_extent: int = 0,
+        datapath=".",
+        outdir=".",
+        num_boot: int = 0,
+        num_samples: int = 0,
+    ):
         if not isinstance(time_extent, int):
             raise TypeError("time_extent must be an integer")
         if not isinstance(num_samples, int):
@@ -49,7 +67,7 @@ class InputsCorrelatorAnalysis:
         self.outdir = outdir
         self.num_boot = num_boot
         self.num_samples = num_samples
-        self.periodicity = 'EXP'
+        self.periodicity = "EXP"
         self.tmax = 0
 
     def report(self):
@@ -58,6 +76,7 @@ class InputsCorrelatorAnalysis:
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
         print(LogMessage(), "Init ::: ", "Samples :", self.num_samples)
         print(LogMessage(), "Init ::: ", "Bootstrap samples :", self.num_boot)
+
 
 def parseArgumentCorrelatorAnalysis():
     parser = argparse.ArgumentParser()
@@ -82,7 +101,7 @@ def parseArgumentCorrelatorAnalysis():
         "--periodicity",
         type=str,
         help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
-        default='EXP',
+        default="EXP",
     )
     args = parser.parse_args()
     return args

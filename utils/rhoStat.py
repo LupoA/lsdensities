@@ -39,10 +39,14 @@ def bootstrap_compact_fp(par_, in_):
             out_[b][i] /= par_.num_samples
     return out_
 
-def parallel_bootstrap_compact_fp_DEPRECATED(par_, in_, out_, start, end):    #   old slower version but more explicit
+
+def parallel_bootstrap_compact_fp_DEPRECATED(
+    par_, in_, out_, start, end
+):  #   old slower version but more explicit
     print("Function is deprecated.")
     exit(1)
     from rhoUtils import ranvec
+
     randv = np.zeros(par_.num_samples)
     for b in range(start, end):
         randv = ranvec(randv, par_.num_samples, 0, par_.num_samples)
@@ -52,19 +56,26 @@ def parallel_bootstrap_compact_fp_DEPRECATED(par_, in_, out_, start, end):    # 
                 out_[b][i] += in_[int(randv[j])][i]
             out_[b][i] /= par_.num_samples
 
+
 def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
     import rhoUtils
+
     randv = np.zeros(par_.num_samples)
-    if is_folded==False:
+    if is_folded == False:
         for b in range(start, end):
-            randv = rhoUtils.ranvec(randv, par_.num_samples, 0, par_.num_samples).astype(int)
+            randv = rhoUtils.ranvec(
+                randv, par_.num_samples, 0, par_.num_samples
+            ).astype(int)
             for i in range(par_.time_extent):
                 out_[b][i] = np.mean(in_[randv[:], i])
-    if is_folded==True:
+    if is_folded == True:
         for b in range(start, end):
-            randv = rhoUtils.ranvec(randv, par_.num_samples, 0, par_.num_samples).astype(int)
-            for i in range(int(par_.time_extent/2)+1):
+            randv = rhoUtils.ranvec(
+                randv, par_.num_samples, 0, par_.num_samples
+            ).astype(int)
+            for i in range(int(par_.time_extent / 2) + 1):
                 out_[b][i] = np.mean(in_[randv[:], i])
+
 
 def bootstrap_fp(T_, nms_, Nb_, in_, out_):
     from rhoUtils import ranvec
@@ -136,9 +147,9 @@ def averageVector_mp(in_, bootstrap=True):
 
 
 def averageScalar_mp(in_, bootstrap=True):
-    if (in_.rows==1):
+    if in_.rows == 1:
         samplesize_ = in_.cols
-    if (in_.cols==1):
+    if in_.cols == 1:
         samplesize_ = in_.rows
     out_ = mp.matrix(2, 1)
     out_[0] = 0

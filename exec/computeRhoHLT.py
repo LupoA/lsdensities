@@ -5,7 +5,7 @@ from importall import *
 
 eNorm = False
 
-#TODO at present: float implemented, mp not implemented
+# TODO at present: float implemented, mp not implemented
 
 
 def init_variables(args_):
@@ -18,9 +18,13 @@ def init_variables(args_):
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = args_.emax * args_.mpi   #   we pass it in unit of Mpi, here to turn it into lattice (working) units
+    in_.emax = (
+        args_.emax * args_.mpi
+    )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = args_.mpi / 20   #TODO get this to be input in lattice units for consistence
+        in_.emin = (
+            args_.mpi / 20
+        )  # TODO get this to be input in lattice units for consistence
     else:
         in_.emin = args_.emin
     in_.e0 = args_.e0
@@ -45,7 +49,7 @@ def main():
     rawcorr.evaluate()
 
     #   Here is the resampling
-    corr = u.Obs(T = par.time_extent, tmax = par.tmax, nms = par.num_boot, is_resampled=True)
+    corr = u.Obs(T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True)
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
@@ -56,20 +60,27 @@ def main():
 
     #   make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
-    #mpcorr_sample = mp.matrix(par.num_boot, tmax)
+    # mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
     S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
-    lambda_bundle = LambdaSearchOptions(lmin = 0.01, lmax = 0.99, ldensity = 20, kfactor = 0.1, star_at = 1)
+    lambda_bundle = LambdaSearchOptions(
+        lmin=0.01, lmax=0.99, ldensity=20, kfactor=0.1, star_at=1
+    )
     matrix_bundle = MatrixBundle(Smatrix=S, Bmatrix=corr.mpcov, bnorm=cNorm)
     #   Wrapper for the Inverse Problem
-    HLT = InverseProblemWrapper(par=par, lambda_config=lambda_bundle, matrix_bundle=matrix_bundle, correlator=corr)
+    HLT = InverseProblemWrapper(
+        par=par,
+        lambda_config=lambda_bundle,
+        matrix_bundle=matrix_bundle,
+        correlator=corr,
+    )
     HLT.prepareHLT()
     HLT.init_float64()
 
-    if(0):  #   select library for linear algebra
+    if 0:  #   select library for linear algebra
         for e_i in range(HLT.par.Ne):
             HLT.computeMinimumPrecision(HLT.espace[e_i])
 
@@ -123,6 +134,7 @@ def main():
 
     #   ciao!
     end()
+
 
 if __name__ == "__main__":
     main()

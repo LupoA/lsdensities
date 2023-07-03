@@ -1,12 +1,16 @@
 import sys
+
 sys.path.append("..")
 from importall import *
 from correlatorUtils import *
 
+
 def main():
     print(LogMessage(), "Initialising")
     args = parseArgumentCorrelatorAnalysis()
-    par = InputsCorrelatorAnalysis(datapath=args.datapath, outdir=args.outdir, num_boot=args.nboot)
+    par = InputsCorrelatorAnalysis(
+        datapath=args.datapath, outdir=args.outdir, num_boot=args.nboot
+    )
 
     #   Reading datafile, storing correlator
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
@@ -20,11 +24,12 @@ def main():
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()
-    corr.plot(show=True, label='Correlator (bootstrap)')
+    corr.plot(show=True, label="Correlator (bootstrap)")
 
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
+
 
 if __name__ == "__main__":
     main()

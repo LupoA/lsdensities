@@ -2,10 +2,12 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 import numpy as np
+
 sys.path.append("../utils")
 import math
 
-def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemented
+
+def Smatrix_sigma_mp(tmax_, sigma_):  # for gaussian processes once implemented
     exit(0)
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
@@ -19,20 +21,20 @@ def Smatrix_sigma_mp(tmax_, sigma_):    # for gaussian processes once implemente
     return S_
 
 
-def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type='EXP', T=0):
+def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
         for j in range(tmax_):
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
-            entry = mp.fsub(arg, alpha_)    # i+j+2-a
+            entry = mp.fsub(arg, alpha_)  # i+j+2-a
             arg = mp.fneg(arg)
             arg = mp.fmul(arg, e0_)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
             S_[i, j] = entry
-            if type == 'COSH':
-                assert (T > 0)
+            if type == "COSH":
+                assert T > 0
                 entry2 = mp.fsub(mpf(i), mpf(j))
                 entry3 = mp.fsub(mpf(j), mpf(i))
                 entry4 = mp.fneg(mpf(i))
@@ -59,6 +61,7 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type='EXP', T=0):
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
+
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     fact_ = mp.sqrt(2)
     res_ = mp.fdiv(estar_, fact_)
@@ -72,7 +75,7 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     return res_
 
 
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type='EXP', T=0):
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma_, sigma_)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -95,8 +98,8 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type='EXP', T=0):
     aux = mp.erf(aux)
     aux = mp.fadd(mpf(1), aux)
     res = mp.fdiv(res, aux)
-    if type=='COSH':
-        assert(T>0)
+    if type == "COSH":
+        assert T > 0
         newt2 = mp.fadd(t, alpha)  # alpha+t
         newt2 = mp.fsub(newt2, mpf(T))  # alpha+t-T
         aux2 = mp.fmul(sigma_, sigma_)  # s^2
@@ -123,6 +126,7 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type='EXP', T=0):
         res += res2
     return res
 
+
 def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
     aux = mp.fmul(sigma_, sigma_)
     aux = mp.fdiv(aux, mpf(2))
@@ -143,18 +147,19 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
     aux_ = mp.fmul(aux_, aux_)
     res = mp.fdiv(res, aux_)
     # alpha implementation
-    aux = mp.fmul(alpha,e_) # alpha*e
-    aux2 = mp.fmul(alpha,sigma_) # alpha*sigma
-    aux2 = mp.fmul(aux2, aux2) # (alpha*sigma)^2
-    aux2 = mp.fdiv(aux2,mpf(4)) # (alpha*sigma)^2 / 4
-    aux = mp.fadd(aux, aux2) # (alpha*sigma)^2 / 4 + alpha*e
+    aux = mp.fmul(alpha, e_)  # alpha*e
+    aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+    aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
+    aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
+    aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
     aux = mp.exp(aux)
-    res = mp.fmul(res,aux)
+    res = mp.fmul(res, aux)
 
     return res
 
-def A0E_mp(espacemp_, par, alpha_, emin_=0):   #   vector of A0s for each energy
-    if emin_==0:
+
+def A0E_mp(espacemp_, par, alpha_, emin_=0):  #   vector of A0s for each energy
+    if emin_ == 0:
         emin_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):

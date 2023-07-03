@@ -2,6 +2,7 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 from core import *
+
 sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
@@ -26,7 +27,7 @@ def h_Et_mp(
                         params.mpalpha,
                         params.mpe0,
                         type=params.periodicity,
-                        T=params.time_extent
+                        T=params.time_extent,
                     ),
                 )
                 ht_[e, i] = mp.fadd(aux_, ht_[e, i])
@@ -41,11 +42,18 @@ def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
             aux_ = mp.fmul(
                 Tinv_[j, i],
                 ft_mp(
-                    estar_, mpf(j + 1), params.mpsigma, alpha_, params.mpe0, type=params.periodicity, T=params.time_extent
+                    estar_,
+                    mpf(j + 1),
+                    params.mpsigma,
+                    alpha_,
+                    params.mpe0,
+                    type=params.periodicity,
+                    T=params.time_extent,
                 ),
             )
             ht_[i] = mp.fadd(aux_, ht_[i])
     return ht_
+
 
 def y_combine_central_mp(ht_, corr_, params):
     rho = mp.matrix(params.Ne, 1)
@@ -69,13 +77,14 @@ def y_combine_sample_mp(ht_, corrtype_, params):
                 rhob[e, b] = mp.fadd(rhob[e, b], aux_)
     return averageVector_mp(rhob)
 
+
 def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
-    rhob = mp.matrix(params.num_boot,1)
+    rhob = mp.matrix(params.num_boot, 1)
     for b in range(params.num_boot):
-        y = mpmatrix[b,:]
+        y = mpmatrix[b, :]
         rhob[b] = 0
         for i in range(params.tmax):
             aux_ = mp.fmul(ht_sliced[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
-    #print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
+    # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)

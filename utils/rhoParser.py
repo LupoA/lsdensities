@@ -83,10 +83,11 @@ def parseArgumentPeak():
         "--periodicity",
         type=str,
         help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
-        default='EXP',
+        default="EXP",
     )
     args = parser.parse_args()
     return args
+
 
 def parseArgumentRhoFromData():
     parser = argparse.ArgumentParser()
@@ -170,7 +171,7 @@ def parseArgumentRhoFromData():
         "--periodicity",
         type=str,
         help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
-        default='EXP',
+        default="EXP",
     )
     parser.add_argument(
         "--A0cut",

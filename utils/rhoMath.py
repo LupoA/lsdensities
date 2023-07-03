@@ -3,6 +3,7 @@ from numpy import linalg as LA
 import math
 import scipy.linalg as sp_linalg
 
+
 def kronecker_fp(a, b):
     if a == b:
         return 1
@@ -35,16 +36,22 @@ def norm2_fp(matrix):  # for square matrices only
     assert matrix.shape[0] == matrix.shape[1]
     return LA.norm(matrix) / np.sqrt(matrix.shape[0])
 
-def choelesky_invert_scipy(in_):    # invert positive definite matrix. wee faster than numpy
+
+def choelesky_invert_scipy(
+    in_,
+):  # invert positive definite matrix. wee faster than numpy
     _L, _lower = sp_linalg.cho_factor(in_)
     out_ = sp_linalg.cho_solve((_L, _lower), np.eye(in_.shape[0]))
     return out_
 
+
 from mpmath import mp, mpf
+
 
 def norm2_mp(matrix):  # for square matrices only
     assert matrix.cols == matrix.rows
     return mp.norm(matrix) / mp.sqrt(matrix.cols)
+
 
 def invert_matrix_ge(mp_matrix):
     matrix = mp_matrix.tolist()
@@ -54,9 +61,9 @@ def invert_matrix_ge(mp_matrix):
         raise ValueError("Matrix must be square.")
 
     # Create augmented matrix [A | I]
-    augmented_matrix = [row + [0]*n for row in matrix]
+    augmented_matrix = [row + [0] * n for row in matrix]
     for i in range(n):
-        augmented_matrix[i][n+i] = 1
+        augmented_matrix[i][n + i] = 1
 
     # Perform Gaussian elimination with partial pivoting
     for i in range(n):
@@ -65,19 +72,22 @@ def invert_matrix_ge(mp_matrix):
 
         # Swap rows if necessary
         if pivot_row != i:
-            augmented_matrix[i], augmented_matrix[pivot_row] = augmented_matrix[pivot_row], augmented_matrix[i]
+            augmented_matrix[i], augmented_matrix[pivot_row] = (
+                augmented_matrix[pivot_row],
+                augmented_matrix[i],
+            )
 
         pivot = augmented_matrix[i][i]
 
         # Divide pivot row by pivot element
-        for j in range(n*2):
+        for j in range(n * 2):
             augmented_matrix[i][j] /= pivot
 
         # Subtract multiples of pivot row from other rows
         for k in range(n):
             if k != i:
                 factor = augmented_matrix[k][i]
-                for j in range(n*2):
+                for j in range(n * 2):
                     augmented_matrix[k][j] -= factor * augmented_matrix[i][j]
 
     # Extract inverse matrix from augmented matrix

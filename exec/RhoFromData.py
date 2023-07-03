@@ -7,6 +7,7 @@ eNorm = False
 
 #   Example without the wrapper
 
+
 def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
@@ -16,7 +17,9 @@ def init_variables(args_):
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = args_.emax * args_.mpi   #   we pass it in unit of Mpi, here to turn it into lattice (working) units
+    in_.emax = (
+        args_.emax * args_.mpi
+    )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
         in_.emin = args_.mpi / 20
     else:
