@@ -2,6 +2,7 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 from core import *
+
 sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
@@ -24,14 +25,16 @@ def h_Et_mp(
                         mpf(j + 1),
                         params.mpsigma,
                         params.mpalpha,
-                        params.mpemin,
+                        params.mpe0,
+                        type=params.periodicity,
+                        T=params.time_extent,
                     ),
                 )
                 ht_[e, i] = mp.fadd(aux_, ht_[e, i])
     return ht_
 
 
-def h_Et_mp_Eslice(Tinv_, params, estar_):
+def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
         ht_[i] = 0
@@ -39,7 +42,13 @@ def h_Et_mp_Eslice(Tinv_, params, estar_):
             aux_ = mp.fmul(
                 Tinv_[j, i],
                 ft_mp(
-                    estar_, mpf(j + 1), params.mpsigma, params.mpalpha, params.mpemin
+                    estar_,
+                    mpf(j + 1),
+                    params.mpsigma,
+                    alpha_,
+                    params.mpe0,
+                    type=params.periodicity,
+                    T=params.time_extent,
                 ),
             )
             ht_[i] = mp.fadd(aux_, ht_[i])
@@ -68,36 +77,14 @@ def y_combine_sample_mp(ht_, corrtype_, params):
                 rhob[e, b] = mp.fadd(rhob[e, b], aux_)
     return averageVector_mp(rhob)
 
+
 def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
-    rhob = mp.matrix(params.num_boot,1)
+    rhob = mp.matrix(params.num_boot, 1)
     for b in range(params.num_boot):
-        y = mpmatrix[b,:]
+        y = mpmatrix[b, :]
         rhob[b] = 0
         for i in range(params.tmax):
             aux_ = mp.fmul(ht_sliced[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
-    print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
+    # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)
-
-
-def getRho_dynamicL_samples(Smat, CovD, bnorm, lpar, corr_sample, estar, params):
-    Nb = params.num_boot
-    tmax = params.tmax
-    mpll = mpf(str(lpar))
-
-    a0 = A0_mp(estar, params.mpsigma, alpha=params.alpha, emin=params.emin)
-    scale = mp.fmul(a0, mpll)
-    scale = mp.fdiv(scale, bnorm)
-
-    W = scale * CovD
-    W = W + Smat
-    invW = W ** (-1)
-
-    gtE = h_Et_mp_Eslice(invW, params, estar)
-    rhoEb = mp.matrix(Nb, 1)
-    for b in range(Nb):
-        for t in range(tmax):
-            aux_ = mp.fmul(gtE[t], corr_sample[b, t + 1])
-            rhoEb[b] = mp.fadd(rhoEb[b], aux_)
-    rhoE = averageScalar_mp(rhoEb)
-    return rhoE[0], rhoE[1]

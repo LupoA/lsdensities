@@ -1,6 +1,8 @@
 import sys
+
 sys.path.append("..")
 from importall import *
+
 
 def init_precision():
     print(LogMessage(), " Initialising...")
@@ -8,19 +10,20 @@ def init_precision():
     print(LogMessage(), " Binary precision in bit: ", mp.prec)
     print(LogMessage(), " Approximate decimal precision: ", mp.dps)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     init_precision()
     tmax = 15
-    sigma_mp = mpf('0.066')
+    sigma_mp = mpf("0.066")
 
     S = Smatrix_mp(tmax)
 
-    invS = S**(-1)
+    invS = S ** (-1)
 
     identity = S * invS
 
     shouldbeone = norm2_mp(identity)
-    print(LogMessage(), 'norm( S Sinv ) - 1 = ', shouldbeone - 1)
-    print(LogMessage(), 'Target decimal precision was', mp.dps)
-    assert(shouldbeone - 1 < mp.dps/2)
+    print(LogMessage(), "norm( S Sinv ) - 1 = ", shouldbeone - 1)
+    print(LogMessage(), "Target decimal precision was", mp.dps)
+    assert shouldbeone - 1 < mp.dps / 2
     exit(1)

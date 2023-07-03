@@ -7,6 +7,7 @@ from rhoStat import averageVector_fp, getCovMatrix_fp
 from core import Smatrix_mp
 from rhoMath import norm2_mp
 import time
+import mpmath as mp
 
 target_result_precision = 1e-8
 
@@ -35,6 +36,19 @@ CB_color_cycle = [
     "#dede00",
 ]
 
+CB_colors = [
+    "#1f77b4",  # Dark Blue
+    "#ff7f0e",  # Orange
+    "#2ca02c",  # Light Green
+    "#d62728",  # Reddish Purple
+    "#9467bd",  # Light Blue
+    "#8c564b",  # Dark Yellow
+    "#e377c2",  # Cyan
+    "#7f7f7f",  # Olive Green
+]
+
+plot_markers = ["o", "s", "D", "v", "^", "p", "*", "h"]
+
 timesfont = {
     "family": "Times",
     "color": "black",
@@ -61,6 +75,18 @@ def end():
     exit()
 
 
+def create_out_paths(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+    plotpath = os.path.join(path, "Plots")
+    logpath = os.path.join(path, "Logs")
+    if not os.path.exists(plotpath):
+        os.mkdir(plotpath)
+    if not os.path.exists(logpath):
+        os.mkdir(logpath)
+    return plotpath, logpath
+
+
 def ranvec(vec, dim, a, b):
     for j in range(0, dim):
         vec[j] = rd.randint(a, b - 1)
@@ -68,16 +94,19 @@ def ranvec(vec, dim, a, b):
 
 
 class Obs:
-    def __init__(self, T_: int, nms_: int = 1, is_resampled=False):
-        self.central = np.zeros(T_)  # Central value of the sample
-        self.err = np.zeros(T_)  # Error on the central value
-        self.sigma = np.zeros(T_)  # Variance of the sample
-        self.T = T_
-        self.nms = nms_
-        self.sample = np.zeros((nms_, T_))  # Sample elements
-        self.cov = np.zeros((T_, T_))  # Cov matrix estimated from sample
-        self.corrmat = np.zeros((T_, T_))  # Corr matrix estimated from sample
+    def __init__(self, T: int, tmax: int, nms: int = 1, is_resampled=False):
+        self.central = np.zeros(T)  # Central value of the sample
+        self.err = np.zeros(T)  # Error on the central value
+        self.sigma = np.zeros(T)  # Variance of the sample
+        self.T = T  # number of time slices
+        self.tmax = tmax  # Max t we use
+        self.nms = nms
+        self.sample = np.zeros((nms, T))  # Sample elements
+        self.cov = np.zeros((T, T))  # Cov matrix estimated from sample
+        self.corrmat = np.zeros((T, T))  # Corr matrix estimated from sample
         self.is_resampled = is_resampled
+        self.mpsample = mp.matrix(self.nms, self.tmax)
+        self.mpcov = mp.matrix(self.tmax, self.tmax)
 
     def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
@@ -112,6 +141,16 @@ class Obs:
             plt.colorbar()
             plt.show()
             plt.clf()
+
+    def fill_mp_sample(self):
+        for n in range(self.nms):
+            for i in range(self.tmax):
+                self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
+        #   Get cov for B matrix
+        self.mpcov = mp.matrix(self.tmax)
+        for i in range(self.tmax):
+            for j in range(self.tmax):
+                self.mpcov[i, j] = mpf(str(self.cov[i + 1][j + 1]))
 
     def plot(self, show=True, logscale=True, label=None, yscale=1):
         plt.tight_layout()
@@ -163,7 +202,9 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
         header_T = int(header.split(" ")[1])
         print(LogMessage(), "Reading file :::", "Time extent ", header_T)
         print(LogMessage(), "Reading file :::", "Measurements ", header_nms)
-        mcorr_ = Obs(header_T, header_nms, is_resampled=resampled)
+        mcorr_ = Obs(
+            T=header_T, tmax=header_T - 1, nms=header_nms, is_resampled=resampled
+        )
         # loop over file: read and store
         indx = 0
         for l in file:
@@ -197,33 +238,46 @@ class Inputs:
         self.tmax = -1
         self.datapath = "None"
         self.outdir = "None"
+        self.logpath = "None"
+        self.plotpath = "None"
         self.num_boot = -1
         self.num_samples = -1
         self.sigma = -1
         self.emax = -1
         self.Ne = 1
-        self.alpha = 0
+        self.Na = 0
         self.emin = 0
+        self.e0 = 0
         self.massNorm = 1.0
+        self.periodicity = "EXP"
+        self.A0cut = 0
         # self.l = -1
         self.prec = -1
         self.mpsigma = mpf("0")
         self.mpemax = mpf("0")
+        self.mpemin = mpf("0")
+        self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
 
     def assign_values(self):
-        if self.tmax==0:
-            self.tmax = self.time_extent - 1
+        if self.tmax == 0:
+            if self.periodicity == "EXP":
+                self.tmax = self.time_extent - 1
+            elif self.periodicity == "COSH":
+                self.tmax = int(self.time_extent / 2) - 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
-        self.mpalpha = mpf(str(self.alpha))
         self.mpemin = mpf(str(self.emin))
+        self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
         print(LogMessage(), "Init ::: ", "Output directory:", self.outdir)
+        print(LogMessage(), "Init ::: ", "Log directory:", self.logpath)
+        print(LogMessage(), "Init ::: ", "Plot directory:", self.plotpath)
+        print(LogMessage(), "Init ::: ", "Periodicity:", self.periodicity)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
         print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)
@@ -236,25 +290,42 @@ class Inputs:
         print(
             LogMessage(),
             "Init ::: ",
-            "Emax (mp) (lattice unit)",
+            "Emax (mp) [lattice unit]",
             self.emax,
             self.mpemax,
         )
-        print(LogMessage(), "Init ::: ", "Emax (mass units)", self.emax / self.massNorm)
+        print(LogMessage(), "Init ::: ", "Emax [mass units]", self.emax / self.massNorm)
         print(
-            LogMessage(), "Init ::: ", "alpha (mp)", self.alpha, "(", self.mpalpha, ")"
+            LogMessage(),
+            "Init ::: ",
+            "Emin (mp) [lattice unit]",
+            self.emin,
+            "(",
+            self.mpemin,
+            ")",
         )
-        print(LogMessage(), "Init ::: ", "Emin (mp)", self.emin, "(", self.mpemin, ")")
+        print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
+        print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
+        print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
 
 
-#   This function should *reduce* the numerical precision
-#   from the large input value
-#   to a value suggested by the condition
-#   number of S
-#   If the starting prec is too small the function might
-#   too small of a value which results in a warning
+class MatrixBundle:
+    def __init__(self, Bmatrix: mp.matrix, bnorm=mpf(1)):
+        self.B = Bmatrix
+        self.bnorm = bnorm
+
+    def compute_W(self, l, a0):
+        return self.S + (l * a0) / ((1 - l) * self.bnorm) * self.B
+
+
 def adjust_precision(tmax: int):
-    S_ = Smatrix_mp(tmax)
+    #   This function should *reduce* the numerical precision
+    #   from the large input value
+    #   to a value suggested by the condition
+    #   number of S
+    #   If the starting prec is too small the function might
+    #   too small of a value which results in a warning
+    S_ = Smatrix_mp(tmax, alpha_=0)
     condS = mp.cond(S_)
     n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
     print(
@@ -264,7 +335,7 @@ def adjust_precision(tmax: int):
     )
     print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
     init_precision(n_prec)
-    S_ = Smatrix_mp(tmax)
+    S_ = Smatrix_mp(tmax, alpha_=0)
     condS = mp.cond(S_)
     n_prec_post = math.ceil(math.log10(condS)) + 3
     if n_prec_post != n_prec:

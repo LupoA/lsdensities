@@ -7,6 +7,7 @@ from scipy import integrate
 
 ## TODO: A0 currently doesnt support non-zero alpha due to a typo
 
+
 def main():
     init_precision(128)
     print(LogMessage(), "Testing functions at specific values")
@@ -31,15 +32,15 @@ def main():
         < 1e-12
     )
     assert (
-            abs(
-                float(
-                    mp.fsub(
-                        ft_mp(e=0.8, t=3, sigma_=0.1),
-                        mpf(str("0.0948935")),
-                    )
+        abs(
+            float(
+                mp.fsub(
+                    ft_mp(e=0.8, t=3, sigma_=0.1),
+                    mpf(str("0.0948935")),
                 )
             )
-            < 1e-6
+        )
+        < 1e-6
     )
     assert (
         abs(float(mp.fsub(ft_mp(e=1.2, sigma_=0.2, t=7), mpf(str("0.000599148")))))
@@ -47,13 +48,17 @@ def main():
     )
     print(LogMessage(), "ft_mp ok")
     assert (
-            abs(float(mp.fsub(A0_mp(e_=1.2, sigma_=0.3, alpha=mpf(-0.99), emin=mpf(0.25)), mpf(str("0.940372")))))
-            < 1e-5
+        abs(
+            float(
+                mp.fsub(
+                    A0_mp(e_=1.2, sigma_=0.3, alpha=mpf(-0.99), emin=mpf(0.25)),
+                    mpf(str("0.940372")),
+                )
+            )
+        )
+        < 1e-5
     )
-    assert (
-            abs(float(mp.fsub(A0_mp(e_=3, sigma_=0.2), mpf(str("1.41047")))))
-            < 1e-5
-    )
+    assert abs(float(mp.fsub(A0_mp(e_=3, sigma_=0.2), mpf(str("1.41047"))))) < 1e-5
     print(LogMessage(), "A0_mp ok")
 
     v = mp.matrix(1, 5)
@@ -110,7 +115,6 @@ def main():
         lambda x: gauss_fp(x, 0.5, 1, norm="Full"), -np.inf, np.inf
     )
     print(LogMessage(), "Integrate in (-inf,inf) ", I[0], "+/-", I[1])
-
 
 
 if __name__ == "__main__":

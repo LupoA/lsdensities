@@ -11,6 +11,13 @@ def parseArgumentPeak():
         required=True,
     )
     parser.add_argument(
+        "--tmax",
+        metavar="Tmax",
+        type=int,
+        help="The reconstruction will be performed using correlators c(0), c(1), ... c(tmax). If not specified, tmax will be set to the largest correlator available.",
+        default=0,
+    )
+    parser.add_argument(
         "--prec",
         metavar="NumericalPrecision",
         type=int,
@@ -50,15 +57,21 @@ def parseArgumentPeak():
     parser.add_argument(
         "--emin",
         type=float,
+        help="Maximum energy at which the spectral density is evaluated in unity of Mpi, which is set into main(), Default=0",
+        default=0.0,
+    )
+    parser.add_argument(
+        "--0",
+        type=float,
         help="Lower integration bound for functional A, Default=0",
         default=0.0,
     )
     parser.add_argument(
-        "--alpha",
-        metavar="Alpha",
-        type=float,
-        help="alpha parameter defining different measure in the functional A. Default=0",
-        default=0.0,
+        "--Na",
+        metavar="NAlpha",
+        type=int,
+        help="Number of alpha parameters defining different measure in the functional A. The default value, n_alpha=1, performs with alpha=0. n_alpha=2 uses alpha = 0, -1. Default=1.",
+        default=1,
     )
     parser.add_argument(
         "--ne",
@@ -67,13 +80,14 @@ def parseArgumentPeak():
         default=50,
     )
     parser.add_argument(
-        "--plots",
-        type=bool,
-        help="Show a shitton of plots. Default=False.",
-        default=False,
+        "--periodicity",
+        type=str,
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        default="EXP",
     )
     args = parser.parse_args()
     return args
+
 
 def parseArgumentRhoFromData():
     parser = argparse.ArgumentParser()
@@ -131,15 +145,21 @@ def parseArgumentRhoFromData():
     parser.add_argument(
         "--emin",
         type=float,
+        help="Maximum energy at which the spectral density is evaluated in unity of Mpi, which is set into main(), Default=Mpi/20",
+        default=0.0,
+    )
+    parser.add_argument(
+        "--e0",
+        type=float,
         help="Lower integration bound for functional A, Default=0",
         default=0.0,
     )
     parser.add_argument(
-        "--alpha",
-        metavar="Alpha",
-        type=float,
-        help="alpha parameter defining different measure in the functional A. Default=0",
-        default=0.0,
+        "--Na",
+        metavar="NAlpha",
+        type=int,
+        help="Number of alpha parameters defining different measure in the functional A. The default value, n_alpha=1, performs with alpha=0. n_alpha=2 uses alpha = 0, -1. Default=1.",
+        default=1,
     )
     parser.add_argument(
         "--ne",
@@ -148,10 +168,16 @@ def parseArgumentRhoFromData():
         default=50,
     )
     parser.add_argument(
-        "--plots",
-        type=bool,
-        help="Show a shitton of plots. Default=False.",
-        default=False,
+        "--periodicity",
+        type=str,
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        default="EXP",
+    )
+    parser.add_argument(
+        "--A0cut",
+        type=float,
+        help="Minimum value of A/A0 that is accepted, Default=0.1",
+        default=0.1,
     )
     args = parser.parse_args()
     return args
