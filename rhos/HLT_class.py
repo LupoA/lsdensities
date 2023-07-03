@@ -268,7 +268,7 @@ class HLTWrapper:
 
         if how_many_alphas == 1:
             for e_i in range(self.par.Ne):
-                _, _, _ = self.scanLambda(self.espace[e_i])
+                _, _, _ = self.scanLambda(self.espace[e_i],  alpha_ = self.algorithmPar.alphaAmp)
                 _ = self.estimate_sys_error(self.espace[e_i])
             return
         elif how_many_alphas == 2:
