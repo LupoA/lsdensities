@@ -232,9 +232,11 @@ class HLTWrapper:
     def scanLambda(self, estar_, alpha_):
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
+        resize = 4
         prec_ = self.algorithmPar.lambdaScanPrec
         cap_ = self.algorithmPar.lambdaScanCap
         _count = 0
+        lambda_lower_limit = 0.0001
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "Scan Lambda at energy {:2.2e}".format(estar_))
@@ -251,7 +253,7 @@ class HLTWrapper:
         #        self.lambda_list.append(lambda_)
         lambda_ -= lambda_step
 
-        while _count < cap_ and lambda_ > 0:
+        while _count < cap_ and lambda_ > lambda_lower_limit:
             print(
                 LogMessage(), "Scan Lambda ::: Lambda = {:1.3e}".format(float(lambda_))
             )
@@ -289,6 +291,17 @@ class HLTWrapper:
             _this_rho = _this_updated_rho
             lambda_ -= lambda_step
 
+            if lambda_ <= 0:
+                print(LogMessage(), "Resize LambdaStep")
+                lambda_step /= resize
+                lambda_ += lambda_step * (resize - 1 / resize)
+
+            if lambda_ < lambda_lower_limit:
+                print(
+                    LogMessage(),
+                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
+                )
+
         self.lambda_result[self.espace_dictionary[estar_]] = lambda_
         self.rho_result[self.espace_dictionary[estar_]] = _this_rho
         self.drho_result[self.espace_dictionary[estar_]] = _this_updated_drho
@@ -314,6 +327,7 @@ class HLTWrapper:
         drho_flag = 0
         comp_diff_AC = _big
         comp_diff_AB = _big
+        lambda_lower_limit = 0.0001
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "At Energy {:2.2e}".format(estar_))
@@ -388,7 +402,7 @@ class HLTWrapper:
 
         lambda_ -= lambda_step
 
-        while _count < cap_ and lambda_ > 0:
+        while _count < cap_ and lambda_ > lambda_lower_limit:
             print(
                 LogMessage(),
                 "Scan Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
@@ -458,6 +472,7 @@ class HLTWrapper:
             )  # store
             _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
             print(LogMessage(), "Scan Lambda ::: Residual = ", float(_residual2))
+
 
             if how_many_alphas == 3:
                 print(
@@ -544,10 +559,16 @@ class HLTWrapper:
             _this_rho2 = _this_updated_rho2
             lambda_ -= lambda_step
 
-            if lambda_ <= 0:
-                print(LogMessage(), "Resize LambdaStep")
-                lambda_step /= resize
-                lambda_ += lambda_step * (resize - 1 / resize)
+        if lambda_ <= 0:
+            print(LogMessage(), "Resize LambdaStep")
+            lambda_step /= resize
+            lambda_ += lambda_step * (resize - 1 / resize)
+
+        if lambda_ < lambda_lower_limit:
+            print(
+                LogMessage(),
+                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
+            )
 
         if rho_flag != 0:
             self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
@@ -556,7 +577,7 @@ class HLTWrapper:
         else:
             print(
                 LogMessage(),
-                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda",
+                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda through plateau",
             )
             self.lambda_result[self.espace_dictionary[estar_]] = lambda_
             self.rho_result[self.espace_dictionary[estar_]] = _this_rho
@@ -668,8 +689,8 @@ class HLTWrapper:
     def plotRhos(self, savePlot=True):
         plt.errorbar(
             x=self.espace / self.par.massNorm,
-            y=self.rho_result,
-            yerr=self.drho_result,
+            y=np.array(self.rho_result, dtype=float),
+            yerr=np.array(self.drho_result, dtype=float),
             marker="o",
             markersize=1.5,
             elinewidth=1.3,
@@ -681,8 +702,8 @@ class HLTWrapper:
 
         plt.errorbar(
             x=self.espace / self.par.massNorm,
-            y=self.rho_result,
-            yerr=self.rho_sys_err,
+            y=np.array(self.rho_result, dtype=float),
+            yerr=np.array(self.rho_sys_err, dtype=float),
             marker="o",
             markersize=1.5,
             elinewidth=1.3,
@@ -694,8 +715,8 @@ class HLTWrapper:
 
         plt.errorbar(
             x=self.espace / self.par.massNorm,
-            y=self.rho_result,
-            yerr=self.rho_quadrature_err,
+            y=np.array(self.rho_result, dtype=float),
+            yerr=np.array(self.rho_quadrature_err, dtype=float),
             marker="o",
             markersize=1.5,
             elinewidth=1.3,
@@ -728,9 +749,9 @@ class HLTWrapper:
 
     def plotStability(self, estar: float, savePlot=True):
         plt.errorbar(
-            x=self.gAA0g_list[self.espace_dictionary[estar]],
-            y=self.rho_list[self.espace_dictionary[estar]],
-            yerr=self.drho_list[self.espace_dictionary[estar]],
+            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker="o",
             markersize=1.5,
             elinewidth=1.3,
@@ -769,9 +790,9 @@ class HLTWrapper:
             + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
         ax[0].errorbar(
-            x=self.lambda_list[self.espace_dictionary[estar]],
-            y=self.rho_list[self.espace_dictionary[estar]],
-            yerr=self.drho_list[self.espace_dictionary[estar]],
+            x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
@@ -781,9 +802,9 @@ class HLTWrapper:
             color=CB_colors[0],
         )
         ax[0].errorbar(
-            x=self.lambda_list[self.espace_dictionary[estar]],
-            y=self.rho_list_alpha2[self.espace_dictionary[estar]],
-            yerr=self.drho_list_alpha2[self.espace_dictionary[estar]],
+            x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[1],
             markersize=3.8,
             elinewidth=1.3,
@@ -794,9 +815,9 @@ class HLTWrapper:
         )
         if nalphas == 3:
             ax[0].errorbar(
-                x=self.lambda_list[self.espace_dictionary[estar]],
-                y=self.rho_list_alpha3[self.espace_dictionary[estar]],
-                yerr=self.drho_list_alpha3[self.espace_dictionary[estar]],
+                x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
+                y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
+                yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[1],
                 markersize=3.8,
                 elinewidth=1.3,
@@ -807,10 +828,10 @@ class HLTWrapper:
             )
 
         ax[0].axhspan(
-            ymin=self.rho_result[self.espace_dictionary[estar]]
-            - self.drho_result[self.espace_dictionary[estar]],
-            ymax=self.rho_result[self.espace_dictionary[estar]]
-            + self.drho_result[self.espace_dictionary[estar]],
+            ymin=float(self.rho_result[self.espace_dictionary[estar]]
+            - self.drho_result[self.espace_dictionary[estar]]),
+            ymax=float(self.rho_result[self.espace_dictionary[estar]]
+            + self.drho_result[self.espace_dictionary[estar]]),
             alpha=0.3,
             color=CB_colors[4],
         )
@@ -821,9 +842,9 @@ class HLTWrapper:
 
         # Second subplot with A/A_0
         ax[1].errorbar(
-            x=self.gAA0g_list[self.espace_dictionary[estar]],
-            y=self.rho_list[self.espace_dictionary[estar]],
-            yerr=self.drho_list[self.espace_dictionary[estar]],
+            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
             markersize=1.8,
             elinewidth=1.3,
@@ -833,10 +854,10 @@ class HLTWrapper:
             color=CB_colors[0],
         )
         ax[1].axhspan(
-            ymin=self.rho_result[self.espace_dictionary[estar]]
-            - self.drho_result[self.espace_dictionary[estar]],
-            ymax=self.rho_result[self.espace_dictionary[estar]]
-            + self.drho_result[self.espace_dictionary[estar]],
+            ymin=float(self.rho_result[self.espace_dictionary[estar]]
+            - self.drho_result[self.espace_dictionary[estar]]),
+            ymax=float(self.rho_result[self.espace_dictionary[estar]]
+            + self.drho_result[self.espace_dictionary[estar]]),
             alpha=0.3,
             color=CB_colors[4],
         )

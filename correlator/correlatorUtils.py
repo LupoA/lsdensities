@@ -16,7 +16,7 @@ import argparse
 def effective_mass(corr, par, type="COSH"):
     th = int(par.time_extent / 2)
     thm = th - 1
-    mass = Obs(T_=thm, nms_=par.num_boot, is_resampled=True)
+    mass = Obs(T=thm, nms=par.num_boot, is_resampled=True, tmax=thm)
     if type == "COSH":
         mass.sample[:, :] = np.arccosh(
             (corr.sample[:, 2 : th + 1] + corr.sample[:, 0 : th - 1])

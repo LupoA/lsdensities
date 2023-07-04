@@ -84,11 +84,11 @@ def main():
         alphaA=0,
         alphaB=-1,
         alphaC=-1.99,
-        lambdaMax=500,
-        lambdaStep=10,
+        lambdaMax=10,
+        lambdaStep=0.5,
         lambdaScanPrec=0.5,
         lambdaScanCap=4,
-        kfactor=0.1,
+        kfactor=10,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
