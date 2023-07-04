@@ -198,13 +198,8 @@ class HLTWrapper:
     def lambdaToRho(self, lambda_, estar_, alpha_):
         import time
 
-        assert self.A0_A.is_filled == True
-        _Bnorm = (self.correlator.central[1] * self.correlator.central[1]) / (
-            estar_ * estar_
-        )
-        _factor = (
-            lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]
-        ) / _Bnorm
+        _Bnorm = (self.correlator.central[1] * self.correlator.central[1]) / (estar_ * estar_)
+        _factor = (lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]) / _Bnorm
         S_ = Smatrix_mp(
             tmax_=self.par.tmax,
             alpha_=alpha_,
@@ -228,6 +223,13 @@ class HLTWrapper:
         )
 
         gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
+
+        gBg_estar = gBg(_g_t_estar, self.matrix_bundle.B, _Bnorm)
+
+        if alpha_==self.algorithmPar.alphaA:
+
+            print(LogMessage(), "B / Bnorm = ", float(gBg_estar))
+            print(LogMessage(), "A / A0 = ", gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])
 
         return rho_estar, drho_estar, gag_estar
 
@@ -352,7 +354,7 @@ class HLTWrapper:
         )
         _this_rho, _this_drho, _this_gAg = self.lambdaToRho(
             lambda_, estar_, self.algorithmPar.alphaAmp
-        )  #   _this_drho will remain the first one
+        )
         self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)  #   store
         self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)  #   store
         self.gAA0g_list[self.espace_dictionary[estar_]].append(
@@ -529,24 +531,14 @@ class HLTWrapper:
                 "Scan Lambda ::: Alpha Diff (0 : -1) ::: ",
                 float(comp_diff_AB),
             )
-            print(
-                LogMessage(),
-                "Scan Lambda ::: A / A0 = ",
-                float(
-                    _this_gAg
-                    / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[
-                        estar_
-                    ]
-                ),
-            )
             if (
                 _this_gAg
                 / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
                 < self.par.A0cut
                 and _residual1 < prec_
                 and _residual2 < prec_
-                and comp_diff_AB < -(_this_updated_drho2 * 0.1)
-                and comp_diff_AC < -(_this_updated_drho * 0.1)
+                and comp_diff_AB < 0#-(_this_updated_drho2 * 0.1)
+                and comp_diff_AC < 0#-(_this_updated_drho * 0.1)
             ):
                 if _count == 1:
                     lambda_flag = lambda_
@@ -561,18 +553,22 @@ class HLTWrapper:
             _this_rho2 = _this_updated_rho2
             lambda_ -= lambda_step
 
-        if lambda_ <= 0:
-            print(LogMessage(), "Resize LambdaStep")
-            lambda_step /= resize
-            lambda_ += lambda_step * (resize - 1 / resize)
+            print(LogMessage(), "Ending while loop with lambda = ", lambda_ , "lambdaMin = ", self.algorithmPar.lambdaMin)
 
-        if lambda_ < self.algorithmPar.lambdaMin:
-            print(
-                LogMessage(),
-                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
-            )
+            if lambda_ <= 0:
+                lambda_step /= resize
+                lambda_ += lambda_step * (resize - 1 / resize)
+                print(LogMessage(), "Resize LambdaStep to ", lambda_step, "Setting Lambda = ", lambda_)
 
-        if rho_flag != 0:
+            if lambda_ < self.algorithmPar.lambdaMin:
+                print(
+                    LogMessage(),
+                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
+                )
+
+        #   while loop ends here
+
+        if rho_flag != 0:   #   if count was at filled at least once
             self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
             self.rho_result[self.espace_dictionary[estar_]] = rho_flag
             self.drho_result[self.espace_dictionary[estar_]] = drho_flag
@@ -582,8 +578,8 @@ class HLTWrapper:
                 f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda through plateau",
             )
             self.lambda_result[self.espace_dictionary[estar_]] = lambda_
-            self.rho_result[self.espace_dictionary[estar_]] = _this_rho
-            self.drho_result[self.espace_dictionary[estar_]] = _this_updated_drho
+            self.rho_result[self.espace_dictionary[estar_]] =  self.rho_list[self.espace_dictionary[estar_]][-1] #_this_rho
+            self.drho_result[self.espace_dictionary[estar_]] = self.drho_list[self.espace_dictionary[estar_]][-1]#_this_drho
 
         print(
             LogMessage(),
@@ -597,7 +593,6 @@ class HLTWrapper:
             float(self.lambda_result[self.espace_dictionary[estar_]]),
         )
 
-        self.drho_result[self.espace_dictionary[estar_]] = drho_flag
         self.result_is_filled[self.espace_dictionary[estar_]] = True
 
         print(

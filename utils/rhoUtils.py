@@ -307,6 +307,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
         print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
+        print(LogMessage(), "Init :::", "A integral from E0 = ", float(self.mpe0))
 
 
 class MatrixBundle:
