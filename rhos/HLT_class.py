@@ -27,6 +27,7 @@ class AlgorithmParameters:
         lambdaScanPrec=0.1,
         lambdaScanCap=6,
         kfactor=0.1,
+        lambdaMin=0.
     ):
         assert alphaA != alphaB
         assert alphaA != alphaC
@@ -41,6 +42,7 @@ class AlgorithmParameters:
         self.alphaAmp = mpf(str(alphaA))
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
+        self.lambdaMin = lambdaMin
 
 
 class A0_t:
@@ -236,7 +238,7 @@ class HLTWrapper:
         prec_ = self.algorithmPar.lambdaScanPrec
         cap_ = self.algorithmPar.lambdaScanCap
         _count = 0
-        lambda_lower_limit = 0.0001
+
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "Scan Lambda at energy {:2.2e}".format(estar_))
@@ -253,7 +255,7 @@ class HLTWrapper:
         #        self.lambda_list.append(lambda_)
         lambda_ -= lambda_step
 
-        while _count < cap_ and lambda_ > lambda_lower_limit:
+        while _count < cap_ and lambda_ > self.algorithmPar.lambdaMin:
             print(
                 LogMessage(), "Scan Lambda ::: Lambda = {:1.3e}".format(float(lambda_))
             )
@@ -296,7 +298,7 @@ class HLTWrapper:
                 lambda_step /= resize
                 lambda_ += lambda_step * (resize - 1 / resize)
 
-            if lambda_ < lambda_lower_limit:
+            if lambda_ < self.algorithmPar.lambdaMin:
                 print(
                     LogMessage(),
                     f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
@@ -327,7 +329,7 @@ class HLTWrapper:
         drho_flag = 0
         comp_diff_AC = _big
         comp_diff_AB = _big
-        lambda_lower_limit = 0.0001
+
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "At Energy {:2.2e}".format(estar_))
@@ -402,7 +404,7 @@ class HLTWrapper:
 
         lambda_ -= lambda_step
 
-        while _count < cap_ and lambda_ > lambda_lower_limit:
+        while _count < cap_ and lambda_ > self.algorithmPar.lambdaMin:
             print(
                 LogMessage(),
                 "Scan Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
@@ -564,7 +566,7 @@ class HLTWrapper:
             lambda_step /= resize
             lambda_ += lambda_step * (resize - 1 / resize)
 
-        if lambda_ < lambda_lower_limit:
+        if lambda_ < self.algorithmPar.lambdaMin:
             print(
                 LogMessage(),
                 f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",

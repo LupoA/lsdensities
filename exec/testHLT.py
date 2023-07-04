@@ -89,6 +89,7 @@ def main():
         lambdaScanPrec=0.5,
         lambdaScanCap=4,
         kfactor=10,
+        lambdaMin=0.01
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
