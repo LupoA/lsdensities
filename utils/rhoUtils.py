@@ -144,7 +144,7 @@ class Obs:
 
     def fill_mp_sample(self):
         for n in range(self.nms):
-            for i in range(self.tmax):
+            for i in range(self.tmax):  # tmax = T/2 if folded otherwise T-1
                 self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
         #   Get cov for B matrix
         self.mpcov = mp.matrix(self.tmax)
@@ -263,9 +263,13 @@ class Inputs:
     def assign_values(self):
         if self.tmax == 0:
             if self.periodicity == "EXP":
-                self.tmax = self.time_extent - 1
+                self.tmax = self.time_extent - 1    # Can't use c[0]
             elif self.periodicity == "COSH":
-                self.tmax = int(self.time_extent / 2) - 1
+                self.tmax = int(self.time_extent / 2)   #Can't use C[0] but can use c[T/2]
+        if self.periodicity == "EXP":
+            assert(self.tmax) < self.time_extent
+        if self.periodicity == "COSH":
+            assert(self.tmax) < self.time_extent / 2 + 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
@@ -307,6 +311,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
         print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
+        print(LogMessage(), "Init :::", "A integral from E0 = ", float(self.mpe0))
 
 
 class MatrixBundle:
