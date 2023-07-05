@@ -226,10 +226,10 @@ class HLTWrapper:
 
         gBg_estar = gBg(_g_t_estar, self.matrix_bundle.B, _Bnorm)
 
-        if alpha_==self.algorithmPar.alphaA:
+        #if alpha_==self.algorithmPar.alphaA:
 
-            print(LogMessage(), "B / Bnorm = ", float(gBg_estar))
-            print(LogMessage(), "A / A0 = ", gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])
+        print(LogMessage(), "alpha = ", float(alpha_), "B / Bnorm = ", float(gBg_estar))
+        print(LogMessage(), "alpha = ", float(alpha_), "A / A0 = ", gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])
 
         return rho_estar, drho_estar, gag_estar
 
@@ -446,7 +446,9 @@ class HLTWrapper:
             )  #   store
             self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
             _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
-            print(LogMessage(), "Scan Lambda ::: Residual = ", float(_residual1))
+            print(LogMessage(), "Scan Lambda ::: " + f"{bcolors.OKBLUE}Residual{bcolors.ENDC}" + " = ",
+                  float(_residual1))
+#
 
             print(
                 LogMessage(),
@@ -545,7 +547,7 @@ class HLTWrapper:
                     rho_flag = _this_updated_rho
                     drho_flag = _this_updated_drho
                 _count += 1
-                print(LogMessage(), "Scan Lambda ::: count = ", _count)
+                print(LogMessage(), "Scan Lambda ::: ", f"{bcolors.OKGREEN}Counting{bcolors.ENDC}", _count)
             else:
                 _count = 0
 
@@ -835,6 +837,7 @@ class HLTWrapper:
         ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
         ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
         ax[0].legend(prop={"size": 12, "family": "Helvetica"})
+        ax[0].set_xscale('log')
         ax[0].grid()
 
         # Second subplot with A/A_0
