@@ -21,7 +21,7 @@ def init_variables(args_):
     if args_.emin == 0:
         in_.emin = (
             args_.mpi / 20
-        ) * args_.mpi  # TODO get this to be input in lattice units for consistency
+        ) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -41,7 +41,6 @@ def main():
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
     par.assign_values()
     par.report()
-    tmax = par.tmax
     adjust_precision(par.tmax)
     #   Here is the correlator
     rawcorr.evaluate()
@@ -58,13 +57,17 @@ def main():
         )
     if par.periodicity == "COSH":
         corr = u.Obs(
-            T=int(par.time_extent / 2) + 1,
-            tmax=par.tmax,
+            T=foldedCorr.T,
+            tmax=foldedCorr.tmax,
             nms=par.num_boot,
             is_resampled=True,
         )
-        assert par.tmax <= int(par.time_extent / 2) + 1
-    resample = ParallelBootstrapLoop(par, rawcorr.sample)
+
+    if par.periodicity == "COSH":
+        resample = ParallelBootstrapLoop(par, foldedCorr.sample, is_folded=True)
+    if par.periodicity == "EXP":
+        resample = ParallelBootstrapLoop(par, foldedCorr.sample, is_folded=False)
+
     corr.sample = resample.run()
     corr.evaluate()
 
@@ -85,7 +88,7 @@ def main():
         alphaB=-1,
         alphaC=-1.99,
         lambdaMax=10,
-        lambdaStep=0.5,
+        lambdaStep=0.25,
         lambdaScanPrec=0.5,
         lambdaScanCap=4,
         kfactor=10,
