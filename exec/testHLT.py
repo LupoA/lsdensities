@@ -41,7 +41,7 @@ def main():
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
     par.assign_values()
     par.report()
-    adjust_precision(par.tmax)
+
     #   Here is the correlator
     rawcorr.evaluate()
     rawcorr.tmax = par.tmax
@@ -49,8 +49,6 @@ def main():
     #   Symmetrise
     if par.periodicity == "COSH":
         print(LogMessage(), "Folding correlator")
-        #foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled=False)
-        #foldedCorr.evaluate()
         symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
         symCorr.evaluate()
 
@@ -68,9 +66,8 @@ def main():
         )
 
     if par.periodicity == "COSH":
-        #resample = ParallelBootstrapLoop(par, foldedCorr.sample, is_folded=True)    # it should be but doesnt work
         #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
-        resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)      # it should be but doesnt work
+        resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
     if par.periodicity == "EXP":
         resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
 
@@ -78,21 +75,22 @@ def main():
     corr.evaluate()
 
     #   Plot all correlators
-    plt.tight_layout()
-    plt.grid(alpha=0.1)
-    plt.yscale("log")
-    plt.errorbar(
-        x=list(range(0, rawcorr.T)),
-        y=rawcorr.central,
-        yerr=rawcorr.err,
-        marker=plot_markers[0],
-        markersize=1.5,
-        elinewidth=1,
-        ls="",
-        label='Input Data',
-        color=CB_color_cycle[0],
-    )
-    plt.errorbar(
+    if (0):
+        plt.tight_layout()
+        plt.grid(alpha=0.1)
+        plt.yscale("log")
+        plt.errorbar(
+            x=list(range(0, rawcorr.T)),
+            y=rawcorr.central,
+            yerr=rawcorr.err,
+            marker=plot_markers[0],
+            markersize=1.5,
+          elinewidth=1,
+            ls="",
+           label='Input Data',
+           color=CB_color_cycle[0],
+        )
+        plt.errorbar(
         x=list(range(0, symCorr.T)),
         y=symCorr.central,
         yerr=symCorr.err,
@@ -102,22 +100,22 @@ def main():
         ls="",
         label='Symmetrised Data',
         color=CB_color_cycle[1],
-    )
-    plt.errorbar(
-        x=list(range(0, corr.T)),
-        y=corr.central,
-        yerr=corr.err,
-        marker=plot_markers[2],
-        markersize=2.5,
-        elinewidth=1,
-        ls="",
-        label='Resampled Data (symmetrised)',
-        color=CB_color_cycle[2],
-    )
-    plt.legend(prop={"size": 12, "family": "Helvetica"})
-    plt.tight_layout()
-    #plt.show()
-    plt.clf()
+        )
+        plt.errorbar(
+            x=list(range(0, corr.T)),
+            y=corr.central,
+            yerr=corr.err,
+            marker=plot_markers[2],
+            markersize=2.5,
+            elinewidth=1,
+            ls="",
+            label='Resampled Data (symmetrised)',
+            color=CB_color_cycle[2],
+        )
+        plt.legend(prop={"size": 12, "family": "Helvetica"})
+        plt.tight_layout()
+        plt.show()
+        plt.clf()
 
     #   Covariance
     print(LogMessage(), "Evaluate covariance")
@@ -128,19 +126,23 @@ def main():
     print(LogMessage(), "Converting correlator into mpmath type")
     # mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
+    print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
+
     cNorm = mpf(str(corr.central[1] ** 2))
+
+    lambdaMax = 1e+6
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
         alphaB=-1,
         alphaC=-1.99,
-        lambdaMax=100,
-        lambdaStep=5,
+        lambdaMax=lambdaMax,
+        lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
         lambdaScanCap=5,
         kfactor=10,
-        lambdaMin=10
+        lambdaMin=1e-6
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 

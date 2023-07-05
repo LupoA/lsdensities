@@ -198,7 +198,7 @@ class HLTWrapper:
     def lambdaToRho(self, lambda_, estar_, alpha_):
         import time
 
-        _Bnorm = (self.correlator.central[1] * self.correlator.central[1]) / (estar_ * estar_)
+        _Bnorm = (self.matrix_bundle.bnorm / (estar_ * estar_))
         _factor = (lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]) / _Bnorm
         S_ = Smatrix_mp(
             tmax_=self.par.tmax,
@@ -219,17 +219,15 @@ class HLTWrapper:
         )
         _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_, alpha_=alpha_)
         rho_estar, drho_estar = y_combine_sample_Eslice_mp(
-            _g_t_estar, self.correlator.sample, self.par
+            _g_t_estar, self.correlator.mpsample, self.par
         )
 
         gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
 
         gBg_estar = gBg(_g_t_estar, self.matrix_bundle.B, _Bnorm)
 
-        #if alpha_==self.algorithmPar.alphaA:
-
         print(LogMessage(), "alpha = ", float(alpha_), "B / Bnorm = ", float(gBg_estar))
-        print(LogMessage(), "alpha = ", float(alpha_), "A / A0 = ", gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])
+        print(LogMessage(), "alpha = ", float(alpha_), "A / A0 = ", float(gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]))
 
         return rho_estar, drho_estar, gag_estar
 
@@ -240,7 +238,6 @@ class HLTWrapper:
         prec_ = self.algorithmPar.lambdaScanPrec
         cap_ = self.algorithmPar.lambdaScanCap
         _count = 0
-
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "Scan Lambda at energy {:2.2e}".format(estar_))
@@ -331,7 +328,6 @@ class HLTWrapper:
         drho_flag = 0
         comp_diff_AC = _big
         comp_diff_AB = _big
-
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "At Energy {:2.2e}".format(estar_))
@@ -846,12 +842,36 @@ class HLTWrapper:
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=1.8,
+            markersize=2.2,
             elinewidth=1.3,
             capsize=2,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
             color=CB_colors[0],
+        )
+        ax[1].errorbar(
+            x=np.array(self.gAA0g_list_alpha2[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
+            marker=plot_markers[1],
+            markersize=2,
+            elinewidth=1.3,
+            capsize=2,
+            ls="",
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
+            color=CB_colors[1],
+        )
+        ax[1].errorbar(
+            x=np.array(self.gAA0g_list_alpha3[self.espace_dictionary[estar]], dtype=float),
+            y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
+            yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
+            marker=plot_markers[2],
+            markersize=2,
+            elinewidth=1.3,
+            capsize=2,
+            ls="",
+            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
+            color=CB_colors[2],
         )
         ax[1].axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
@@ -861,6 +881,7 @@ class HLTWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
+        ax[1].set_xscale('log')
         ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
         ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
         ax[1].legend(prop={"size": 12, "family": "Helvetica"})
@@ -874,5 +895,6 @@ class HLTWrapper:
                 ),
                 dpi=300,
             )
+        plt.show()
         plt.clf()
         plt.close(fig)
