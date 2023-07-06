@@ -64,7 +64,7 @@ class A0_t:
             ),
         )
         self.valute_at_E = A0E_mp(
-            espaceMP_, self.par, alpha_=self.alphaMP, emin_=self.eminMP
+            espaceMP_, self.par, alpha_=self.alphaMP, e0_=self.par.mpe0
         )
         for e_id in range(self.par.Ne):
             self.valute_at_E_dictionary[float(espaceMP_[e_id])] = self.valute_at_E[e_id]

@@ -158,10 +158,10 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
     return res
 
 
-def A0E_mp(espacemp_, par, alpha_, emin_=0):  #   vector of A0s for each energy
-    if emin_ == 0:
-        emin_ = par.e0
+def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
+    if e0_ == 0:
+        e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):
-        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=emin_)
+        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_)
     return a0_e
