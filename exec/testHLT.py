@@ -11,7 +11,6 @@ def init_variables(args_):
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
-    in_.plotpath, in_.logpath = create_out_paths(in_.outdir)
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
@@ -21,7 +20,7 @@ def init_variables(args_):
     if args_.emin == 0:
         in_.emin = (
             args_.mpi / 20
-        ) * args_.mpi  # TODO get this to be input in lattice units for consistency
+        ) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -41,15 +40,17 @@ def main():
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
     par.assign_values()
     par.report()
-    tmax = par.tmax
-    adjust_precision(par.tmax)
+    par.plotpath, par.logpath = create_out_paths(par)
+
     #   Here is the correlator
     rawcorr.evaluate()
+    rawcorr.tmax = par.tmax
 
     #   Symmetrise
     if par.periodicity == "COSH":
         print(LogMessage(), "Folding correlator")
-        foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled=False)
+        symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
+        symCorr.evaluate()
 
     #   Here is the resampling
     if par.periodicity == "EXP":
@@ -58,13 +59,18 @@ def main():
         )
     if par.periodicity == "COSH":
         corr = u.Obs(
-            T=int(par.time_extent / 2) + 1,
-            tmax=par.tmax,
+            T=symCorr.T,
+            tmax=symCorr.tmax,
             nms=par.num_boot,
             is_resampled=True,
         )
-        assert par.tmax <= int(par.time_extent / 2) + 1
-    resample = ParallelBootstrapLoop(par, rawcorr.sample)
+
+    if par.periodicity == "COSH":
+        #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
+    if par.periodicity == "EXP":
+        resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+
     corr.sample = resample.run()
     corr.evaluate()
 
@@ -77,18 +83,23 @@ def main():
     print(LogMessage(), "Converting correlator into mpmath type")
     # mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
+    print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
+
     cNorm = mpf(str(corr.central[1] ** 2))
+
+    lambdaMax = 1e+5
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
         alphaB=-1,
         alphaC=-1.99,
-        lambdaMax=500,
-        lambdaStep=10,
-        lambdaScanPrec=0.5,
-        lambdaScanCap=4,
+        lambdaMax=lambdaMax,
+        lambdaStep=lambdaMax/2,
+        lambdaScanPrec=1,
+        lambdaScanCap=20,
         kfactor=0.1,
+        lambdaMin=1e-6
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 

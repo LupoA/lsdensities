@@ -75,11 +75,14 @@ def end():
     exit()
 
 
-def create_out_paths(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
-    plotpath = os.path.join(path, "Plots")
-    logpath = os.path.join(path, "Logs")
+def create_out_paths(par):
+    if not os.path.exists(par.outdir):
+        os.mkdir(par.outdir)
+    dir = os.path.join(par.outdir, par.directoryName)
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    plotpath = os.path.join(dir, "Plots")
+    logpath = os.path.join(dir, "Logs")
     if not os.path.exists(plotpath):
         os.mkdir(plotpath)
     if not os.path.exists(logpath):
@@ -144,7 +147,7 @@ class Obs:
 
     def fill_mp_sample(self):
         for n in range(self.nms):
-            for i in range(self.tmax):
+            for i in range(self.tmax):  # tmax = T/2 if folded otherwise T-1
                 self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
         #   Get cov for B matrix
         self.mpcov = mp.matrix(self.tmax)
@@ -259,18 +262,25 @@ class Inputs:
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
+        self.directoryName = '.'
 
     def assign_values(self):
         if self.tmax == 0:
             if self.periodicity == "EXP":
-                self.tmax = self.time_extent - 1
+                self.tmax = self.time_extent - 1    # Can't use c[0]
             elif self.periodicity == "COSH":
-                self.tmax = int(self.time_extent / 2) - 1
+                self.tmax = int(self.time_extent / 2)   #Can't use C[0] but can use c[T/2]
+        if self.periodicity == "EXP":
+            assert(self.tmax) < self.time_extent
+        if self.periodicity == "COSH":
+            assert(self.tmax) < self.time_extent / 2 + 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
         self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
+        self.directoryName = dirname = 'tmax' + str(self.tmax) + 'sigma' + str(self.sigma) + 'Ne' + str(self.Ne) + 'nboot' + str(
+            self.num_boot) + 'mNorm' + str(self.massNorm) + 'prec' + str(self.prec)
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
@@ -307,6 +317,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
         print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
+        print(LogMessage(), "Init :::", "A integral from E0 = ", float(self.mpe0))
 
 
 class MatrixBundle:
