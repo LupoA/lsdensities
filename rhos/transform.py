@@ -88,3 +88,16 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
             rhob[b] = mp.fadd(rhob[b], aux_)
     # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)
+
+def y_combine_sample_Eslice_mp_ToFile(file, ht_sliced, mpmatrix, params):
+    rhob = mp.matrix(params.num_boot, 1)
+    with open(file, "w") as output:
+        for b in range(params.num_boot):
+            y = mpmatrix[b, :]
+            rhob[b] = 0
+            for i in range(params.tmax):
+                aux_ = mp.fmul(ht_sliced[i], y[i])
+                rhob[b] = mp.fadd(rhob[b], aux_)
+            print(b, float(rhob[b]), file=output)
+        # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
+    return averageScalar_mp(rhob)
