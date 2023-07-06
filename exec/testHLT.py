@@ -11,7 +11,6 @@ def init_variables(args_):
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
-    in_.plotpath, in_.logpath = create_out_paths(in_.outdir)
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
@@ -41,6 +40,7 @@ def main():
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
     par.assign_values()
     par.report()
+    par.plotpath, par.logpath = create_out_paths(par)
 
     #   Here is the correlator
     rawcorr.evaluate()
@@ -74,49 +74,6 @@ def main():
     corr.sample = resample.run()
     corr.evaluate()
 
-    #   Plot all correlators
-    if (0):
-        plt.tight_layout()
-        plt.grid(alpha=0.1)
-        plt.yscale("log")
-        plt.errorbar(
-            x=list(range(0, rawcorr.T)),
-            y=rawcorr.central,
-            yerr=rawcorr.err,
-            marker=plot_markers[0],
-            markersize=1.5,
-          elinewidth=1,
-            ls="",
-           label='Input Data',
-           color=CB_color_cycle[0],
-        )
-        plt.errorbar(
-        x=list(range(0, symCorr.T)),
-        y=symCorr.central,
-        yerr=symCorr.err,
-        marker=plot_markers[1],
-        markersize=3.5,
-        elinewidth=3,
-        ls="",
-        label='Symmetrised Data',
-        color=CB_color_cycle[1],
-        )
-        plt.errorbar(
-            x=list(range(0, corr.T)),
-            y=corr.central,
-            yerr=corr.err,
-            marker=plot_markers[2],
-            markersize=2.5,
-            elinewidth=1,
-            ls="",
-            label='Resampled Data (symmetrised)',
-            color=CB_color_cycle[2],
-        )
-        plt.legend(prop={"size": 12, "family": "Helvetica"})
-        plt.tight_layout()
-        plt.show()
-        plt.clf()
-
     #   Covariance
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
@@ -130,7 +87,7 @@ def main():
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+6
+    lambdaMax = 1e+5
 
     #   Prepare
     hltParams = AlgorithmParameters(
@@ -140,8 +97,8 @@ def main():
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
-        lambdaScanCap=5,
-        kfactor=10,
+        lambdaScanCap=20,
+        kfactor=0.1,
         lambdaMin=1e-6
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
