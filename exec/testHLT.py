@@ -97,7 +97,7 @@ def main():
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
-        lambdaScanCap=10,
+        lambdaScanCap=20,
         kfactor=0.1,
         lambdaMin=1e-6
     )
