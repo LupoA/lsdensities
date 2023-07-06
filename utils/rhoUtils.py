@@ -75,11 +75,14 @@ def end():
     exit()
 
 
-def create_out_paths(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
-    plotpath = os.path.join(path, "Plots")
-    logpath = os.path.join(path, "Logs")
+def create_out_paths(par):
+    if not os.path.exists(par.outdir):
+        os.mkdir(par.outdir)
+    dir = os.path.join(par.outdir, par.directoryName)
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    plotpath = os.path.join(dir, "Plots")
+    logpath = os.path.join(dir, "Logs")
     if not os.path.exists(plotpath):
         os.mkdir(plotpath)
     if not os.path.exists(logpath):
@@ -259,6 +262,7 @@ class Inputs:
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
+        self.directoryName = '.'
 
     def assign_values(self):
         if self.tmax == 0:
@@ -275,6 +279,8 @@ class Inputs:
         self.mpemin = mpf(str(self.emin))
         self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
+        self.directoryName = dirname = 'tmax' + str(self.tmax) + 'sigma' + str(self.sigma) + 'Ne' + str(self.Ne) + 'nboot' + str(
+            self.num_boot) + 'mNorm' + str(self.massNorm) + 'prec' + str(self.prec)
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
