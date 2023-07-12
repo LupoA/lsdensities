@@ -110,6 +110,7 @@ class Obs:
         self.is_resampled = is_resampled
         self.mpsample = mp.matrix(self.nms, self.tmax)
         self.mpcov = mp.matrix(self.tmax, self.tmax)
+        self.mpcentral = mp.matrix(self.tmax, 1)
 
     def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
@@ -152,6 +153,7 @@ class Obs:
         #   Get cov for B matrix
         self.mpcov = mp.matrix(self.tmax)
         for i in range(self.tmax):
+            self.mpcentral[i] = self.central[i+1]
             for j in range(self.tmax):
                 self.mpcov[i, j] = mpf(str(self.cov[i + 1][j + 1]))
 
