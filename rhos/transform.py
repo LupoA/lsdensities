@@ -8,32 +8,6 @@ from rhoUtils import LogMessage
 from rhoStat import *
 
 
-def h_Et_mp(
-    Tinv_, params, espacemp_
-):  #     h(t,E) = sum_{r=0}    Tinv[t][r] * b[r+1,E]
-    ht_ = mp.matrix(
-        params.Ne, params.tmax
-    )  #     r+1 only in b, since T is already shifted
-    for e in range(params.Ne):
-        for i in range(params.tmax):
-            ht_[e, i] = 0
-            for j in range(params.tmax):
-                aux_ = mp.fmul(
-                    Tinv_[j, i],
-                    ft_mp(
-                        espacemp_[e],
-                        mpf(j + 1),
-                        params.mpsigma,
-                        params.mpalpha,
-                        params.mpe0,
-                        type=params.periodicity,
-                        T=params.time_extent,
-                    ),
-                )
-                ht_[e, i] = mp.fadd(aux_, ht_[e, i])
-    return ht_
-
-
 def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
@@ -42,11 +16,11 @@ def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
             aux_ = mp.fmul(
                 Tinv_[j, i],
                 ft_mp(
-                    estar_,
-                    mpf(j + 1),
-                    params.mpsigma,
-                    alpha_,
-                    params.mpe0,
+                    e=estar_,
+                    t=mpf(j + 1),
+                    sigma_=params.mpsigma,
+                    alpha=alpha_,
+                    e0=params.mpe0,
                     type=params.periodicity,
                     T=params.time_extent,
                 ),
@@ -86,5 +60,42 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
         for i in range(params.tmax):
             aux_ = mp.fmul(ht_sliced[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
-    # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)
+
+def y_combine_central_Eslice_mp(ht_sliced, y, params):
+    rho = 0
+    for i in range(params.tmax):
+        aux_ = mp.fmul(ht_sliced[i], y[i])
+        rho = mp.fadd(rho, aux_)
+    return rho
+
+def combine_fMf_Eslice(ht_sliced, params, estar_, alpha_): #   Compute f Minv f = g_t * f_t
+    out_ = 0
+    for i in range(params.tmax):
+        aux_ = mp.fmul(ht_sliced[i],
+                       ft_mp(
+                           estar_,
+                           mpf(i + 1),
+                           sigma_=params.mpsigma,
+                           alpha=alpha_,
+                           e0=params.mpe0,
+                           type=params.periodicity,
+                           T=params.time_extent,
+                       )
+                       )
+        out_ = mp.fadd(out_, aux_)
+    return out_
+
+import numpy as np
+
+def combine_base(ht_sliced, params, ne_=20):
+    _energies = np.linspace(params.emin, params.emax, ne_)
+    out_ = mp.matrix(ne_, 1)
+    for _e in range(ne_):
+        out_[_e] = 0
+        for i in range(params.tmax):
+            aux_ = mp.fmul(ht_sliced[i],
+                        gte(T=params.time_extent,t=mpf(i),e=mpf(str(_energies[_e])),periodicity=params.periodicty)
+                        )
+            out_[_e] = mp.fadd(out_, aux_)
+        return out_

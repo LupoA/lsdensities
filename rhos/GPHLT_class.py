@@ -71,7 +71,7 @@ class A0_t:
         self.is_filled = True
 
 
-class HLTWrapper:
+class HLTWGPrapper:
     def __init__(
         self,
         par: Inputs,
@@ -196,12 +196,14 @@ class HLTWrapper:
         )
 
 
-    def lambdaToRho(self, lambda_, estar_, alpha_):
+
+    def lambdaToRho(self, lambda_, estar_, alpha_, enableGPerr_=True):
         import time
 
         _Bnorm = (self.matrix_bundle.bnorm / (estar_ * estar_))
         _factor = (lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]) / _Bnorm
         print(LogMessage(), "Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
+
         S_ = Smatrix_mp(
             tmax_=self.par.tmax,
             alpha_=alpha_,
@@ -209,15 +211,27 @@ class HLTWrapper:
             type=self.par.periodicity,
             T=self.par.time_extent,
         )
+
         _M = S_ + (_factor * self.matrix_bundle.B)
         start_time = time.time()
         _Minv = invert_matrix_ge(_M)
         end_time = time.time()
         print(LogMessage(), "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format( end_time - start_time), "s")
+
         _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_, alpha_=alpha_)
-        rho_estar, drho_estar = y_combine_sample_Eslice_mp(
-            _g_t_estar, self.correlator.mpsample, self.par
-        )
+
+        rho_estar = y_combine_central_Eslice_mp(_g_t_estar, self.correlator.mpcentral, self.par)
+
+        if enableGPerr_==True:
+            varianceRho = combine_fMf_Eslice(ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_)
+            print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
+            print(LogMessage(), '\t\t A0 is ', float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]))
+            varianceRho = mp.fsub(float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]), varianceRho)
+            print(LogMessage(), "\t\t A0 - gt ft = {:2.2e}".format( float(varianceRho)))
+            varianceRho = mp.fdiv(varianceRho, _factor)
+            drho_estar = varianceRho
+            print(LogMessage(), "\t \t lambdaToRho ::: Bayesian central = {:2.4e}".format(float(rho_estar)))
+            print(LogMessage(), "\t \t lambdaToRho ::: Bayesian variance = {:2.4e}".format(float(drho_estar)))
 
         gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
 
@@ -309,7 +323,7 @@ class HLTWrapper:
             if lambda_ < self.algorithmPar.lambdaMin:
                 print(
                     LogMessage(),
-                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
+                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit for Lambda",
                 )
 
         #   while loop ends here
@@ -321,7 +335,7 @@ class HLTWrapper:
         else:
             print(
                 LogMessage(),
-                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda through plateau",
+                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find a plateau",
             )
             self.lambda_result[self.espace_dictionary[estar_]] = lambda_
             self.rho_result[self.espace_dictionary[estar_]] = self.rho_list[self.espace_dictionary[estar_]][
@@ -532,12 +546,8 @@ class HLTWrapper:
         assert self.result_is_filled[self.espace_dictionary[estar_]] == True
 
         _this_y = self.rho_result[self.espace_dictionary[estar_]]  #   rho at lambda*
-        _that_y, _that_yerr, _that_x = self.lambdaToRho(
-            self.lambda_result[self.espace_dictionary[estar_]]
-            * self.algorithmPar.kfactor,
-            estar_,
-            alpha_=0,
-        )
+
+        _that_y, _that_yerr, _that_x = self.lambdaToRho(float(self.lambda_result[self.espace_dictionary[estar_]]* self.algorithmPar.kfactor), estar_, alpha_=0, enableGPerr_=True)
 
         self.rho_sys_err[self.espace_dictionary[estar_]] = abs(_this_y - _that_y) / 2
         self.rho_quadrature_err[self.espace_dictionary[estar_]] = np.sqrt(

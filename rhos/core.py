@@ -2,6 +2,7 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 import numpy as np
+import time
 
 sys.path.append("../utils")
 import math
@@ -165,3 +166,43 @@ def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
     for ei in range(par.Ne):
         a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_)
     return a0_e
+
+
+def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
+
+    _res = ft_mp(e=e1, t=t2, sigma_=s, alpha=alpha, e0=E0, type=par.periodicity, T=par.time_extent)
+    if par.periodicity == 'EXP':
+        _res = _res * mp.exp(-t1 * e1)
+    if par.periodicity == 'COSH':
+        _res = _res * (mp.exp(-t1 * e1) + mp.exp((-par.time_extent + t1) * e1))
+    return _res
+
+def integrandSigmaMat_DEBUG(e1, alpha, s, t1, t2, E0, periodicity, T):
+
+    _res = ft_mp(e=e1, t=t2, sigma_=s, alpha=alpha, e0=E0, type=periodicity, T=T)
+    if periodicity=='EXP':
+        _res = _res * mp.exp(-t1*e1)
+    if periodicity == 'COSH':
+        _res = mp.fmul(_res,  mp.fadd( mp.exp(-t1*e1),  mp.exp((-T+t1)*e1)))
+
+    return _res
+
+
+def SigmaMat(alpha, s, e0, par):
+    SigmaMat_ = mp.matrix(par.tmax, par.tmax)
+
+    for i in range(par.tmax):
+        for j in range(par.tmax):
+            entry = mp.quad(
+                lambda x: integrandSigmaMat(x, alpha, s, i, j, e0, par),
+                [e0, mp.inf],
+                error=True,
+            )
+            SigmaMat_[i, j] = entry[0]
+    return SigmaMat_
+
+def gte(T,t,e,periodicity):
+    if periodicity=='COSH':
+        return mp.fadd( mp.exp((-T+t)*e) , mp.exp(-t*e))
+    if periodicity == 'EXP':
+        return  mp.exp(-t*e)
