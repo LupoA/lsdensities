@@ -3,6 +3,7 @@ import sys
 sys.path.append("..")
 from importall import *
 
+read_SIGMA_ = True
 
 def init_variables(args_):
     in_ = Inputs()
@@ -79,45 +80,39 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    with open(os.path.join(par.outdir,'corrmatrix.txt'), "w") as output:
-        for i in range(par.time_extent):
-            for j in range(par.time_extent):
-                print(i, j, corr.corrmat[i,j], file=output)
-
     #   Make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
-    # mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
     print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+4
+    lambdaMax = 1e+6
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
         alphaB=-1.99,
-        alphaC=+1.99,
+        alphaC=1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
-        lambdaScanCap=6,
+        lambdaScanCap=7,
         kfactor=0.1,
-        lambdaMin=1e-6
+        lambdaMin=1e-4
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
-    HLT = HLTWrapper(
-        par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
+    GP = GaussianProcessWrapper(
+        par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, read_SIGMA=read_SIGMA_
     )
-    HLT.prepareHLT()
+    GP.prepareGP()
 
     #   Run
-    HLT.run(how_many_alphas=par.Na)
-    HLT.plotParameterScan(how_many_alphas=par.Na, save_plots=True, plot_live=False)
-    HLT.plotRhos(savePlot=True)
+    GP.run(how_many_alphas=par.Na)
+    GP.plotParameterScan(how_many_alphas=par.Na, save_plots=True)
+    GP.plotRhos(savePlot=True)
 
     end()
 

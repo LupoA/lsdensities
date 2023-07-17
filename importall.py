@@ -30,6 +30,8 @@ from transform import *
 from abw import *
 from rhoParallelUtils import *
 from HLT_class import *
+from GPHLT_class import *
+from GP_class import *
 from correlatorUtils import foldPeriodicCorrelator
 from correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf

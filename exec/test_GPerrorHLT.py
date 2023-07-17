@@ -87,17 +87,17 @@ def main():
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+7
+    lambdaMax = 1e+4
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=-1,
-        alphaC=-1.99,
+        alphaB=-1.99,
+        alphaC=+1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
-        lambdaScanCap=8,
+        lambdaScanCap=10,
         kfactor=0.1,
         lambdaMin=1e-5
     )
@@ -110,7 +110,7 @@ def main():
     HLTGP.prepareHLT()
 
     #   Run
-    HLTGP.run(how_many_alphas=par.Na, plot_live=True)
+    HLTGP.run(how_many_alphas=par.Na, plot_live=True, enableBootErr=True)
     HLTGP.plotParameterScan(how_many_alphas=par.Na, save_plots=True)
     HLTGP.plotRhos(savePlot=True)
 
