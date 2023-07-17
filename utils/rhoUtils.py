@@ -63,6 +63,13 @@ helveticafont = {
     "size": 16,
 }
 
+tnr = {
+    "family": "Times New Roman",
+    "color": "black",
+    "weight": "normal",
+    "size": 16,
+}
+
 start_time = time.time()
 
 

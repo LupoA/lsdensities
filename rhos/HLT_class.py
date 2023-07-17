@@ -20,8 +20,8 @@ class AlgorithmParameters:
     def __init__(
         self,
         alphaA=0,
-        alphaB=-1,
-        alphaC=-1.99,
+        alphaB=-1.99,
+        alphaC=1.99,
         lambdaMax=50,
         lambdaStep=0.5,
         lambdaScanPrec=0.1,
@@ -605,7 +605,7 @@ class HLTWrapper:
         elif how_many_alphas == 2 or how_many_alphas == 3:
             for e_i in range(self.par.Ne):
                 self.plotStabilityMultipleAlpha(
-                    estar=self.espace[e_i], savePlot=save_plots, nalphas=how_many_alphas
+                    estar=self.espace[e_i], savePlot=save_plots, nalphas=how_many_alphas, plot_live=plot_live
                 )
             return
         else:
@@ -751,23 +751,27 @@ class HLTWrapper:
 
     def plotStabilityMultipleAlpha(self, estar: float, savePlot=True, nalphas=2, plot_live=False):
         fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+        #fig, ax = plt.subplots(figsize=(6, 8))
         plt.title(
             r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
             + r" $\sigma$"
             + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
+
         ax[0].errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=1.8,
+            markersize=3.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color=CB_colors[0],
+            color='black',
+            ecolor=CB_colors[0],
+            markerfacecolor=CB_colors[0],
         )
         ax[0].errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
@@ -779,72 +783,82 @@ class HLTWrapper:
             capsize=3,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-            color=CB_colors[1],
+            color='black',
+            ecolor=CB_colors[1],
+            markerfacecolor=CB_colors[1],
         )
         if nalphas == 3:
             ax[0].errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-                marker=plot_markers[1],
+                marker=plot_markers[2],
                 markersize=3.8,
                 elinewidth=1.3,
                 capsize=3,
                 ls="",
                 label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
-                color=CB_colors[2],
+                color='black',
+                ecolor=CB_colors[2],
+                markerfacecolor=CB_colors[2],
             )
 
         ax[0].axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
-            - self.drho_result[self.espace_dictionary[estar]]),
+            - self.rho_quadrature_err[self.espace_dictionary[estar]]),
             ymax=float(self.rho_result[self.espace_dictionary[estar]]
-            + self.drho_result[self.espace_dictionary[estar]]),
+            + self.rho_quadrature_err[self.espace_dictionary[estar]]),
             alpha=0.3,
             color=CB_colors[4],
         )
         ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
         ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[0].legend(prop={"size": 12, "family": "Helvetica"})
+        ax[0].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
         ax[0].set_xscale('log')
-        ax[0].grid()
 
+        #ax[0].grid()
         # Second subplot with A/A_0
         ax[1].errorbar(
             x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=2.2,
+            markersize=3.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color=CB_colors[0],
+            color='black',
+            ecolor=CB_colors[0],
+            markerfacecolor=CB_colors[0],
         )
         ax[1].errorbar(
             x=np.array(self.gAA0g_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[1],
-            markersize=2,
+            markersize=3.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-            color=CB_colors[1],
+            color='black',
+            ecolor=CB_colors[1],
+            markerfacecolor=CB_colors[1],
         )
         ax[1].errorbar(
             x=np.array(self.gAA0g_list_alpha3[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[2],
-            markersize=2,
+            markersize=3.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
-            color=CB_colors[2],
+            color='black',
+            ecolor=CB_colors[2],
+            markerfacecolor=CB_colors[2],
         )
         ax[1].axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
@@ -855,10 +869,10 @@ class HLTWrapper:
             color=CB_colors[4],
         )
         ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[1].legend(prop={"size": 12, "family": "Helvetica"})
-        ax[1].grid()
+        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=tnr)
+        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=tnr)
+        ax[1].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+        #ax[1].grid()
         plt.tight_layout()
         if savePlot == True:
             plt.savefig(
