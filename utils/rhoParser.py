@@ -119,7 +119,7 @@ def parseArgumentRhoFromData():
         "--sigma",
         metavar="GaussianWidth",
         type=float,
-        help="Radius of the smearing kernel",
+        help="Radius of the smearing kernel in lattice units. Default= 0.1.",
         default=0.1,
     )
     parser.add_argument(
@@ -158,19 +158,19 @@ def parseArgumentRhoFromData():
         "--Na",
         metavar="NAlpha",
         type=int,
-        help="Number of alpha parameters defining different measure in the functional A. The default value, n_alpha=1, performs with alpha=0. n_alpha=2 uses alpha = 0, -1. Default=1.",
-        default=1,
+        help="Number of alpha parameters to be used. Default=3.",
+        default=3,
     )
     parser.add_argument(
         "--ne",
         type=int,
-        help="Number of points in energy at which the reconstruction is evaluated, between 0 and emax. Default=50",
-        default=50,
+        help="Number of points in energy at which the reconstruction is evaluated, between 0 and emax. Default=8",
+        default=8,
     )
     parser.add_argument(
         "--periodicity",
         type=str,
-        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open. Default='EXP'",
         default="EXP",
     )
     parser.add_argument(
