@@ -8,20 +8,6 @@ sys.path.append("../utils")
 import math
 
 
-def Smatrix_sigma_mp(tmax_, sigma_):  # for gaussian processes once implemented
-    exit(0)
-    S_ = mp.matrix(tmax_, tmax_)
-    for i in range(tmax_):
-        for j in range(tmax_):
-            entry = mp.quad(
-                lambda x: b_times_exp_mp(x, i + 1, j + 1, sigma_),
-                [0, mp.inf],
-                error=True,
-            )
-            S_[i, j] = entry[0]
-    return S_
-
-
 def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
@@ -155,7 +141,6 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
     aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
     aux = mp.exp(aux)
     res = mp.fmul(res, aux)
-
     return res
 
 
@@ -177,16 +162,6 @@ def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
         _res = _res * (mp.exp(-t1 * e1) + mp.exp((-par.time_extent + t1) * e1))
     return _res
 
-def integrandSigmaMat_DEBUG(e1, alpha, s, t1, t2, E0, periodicity, T):
-
-    _res = ft_mp(e=e1, t=t2, sigma_=s, alpha=alpha, e0=E0, type=periodicity, T=T)
-    if periodicity=='EXP':
-        _res = _res * mp.exp(-t1*e1)
-    if periodicity == 'COSH':
-        _res = mp.fmul(_res,  mp.fadd( mp.exp(-t1*e1),  mp.exp((-T+t1)*e1)))
-
-    return _res
-
 
 def SigmaMat(alpha, s, e0, par):
     SigmaMat_ = mp.matrix(par.tmax, par.tmax)
@@ -203,6 +178,6 @@ def SigmaMat(alpha, s, e0, par):
 
 def gte(T,t,e,periodicity):
     if periodicity=='COSH':
-        return mp.fadd( mp.exp((-T+t)*e) , mp.exp(-t*e))
+        return mp.fadd(mp.exp((-T+t)*e), mp.exp(-t*e))
     if periodicity == 'EXP':
-        return  mp.exp(-t*e)
+        return mp.exp(-t*e)

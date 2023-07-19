@@ -88,14 +88,12 @@ def combine_fMf_Eslice(ht_sliced, params, estar_, alpha_): #   Compute f Minv f 
 
 import numpy as np
 
-def combine_base(ht_sliced, params, ne_=20):
-    _energies = np.linspace(params.emin, params.emax, ne_)
-    out_ = mp.matrix(ne_, 1)
-    for _e in range(ne_):
-        out_[_e] = 0
-        for i in range(params.tmax):
-            aux_ = mp.fmul(ht_sliced[i],
-                        gte(T=params.time_extent,t=mpf(i),e=mpf(str(_energies[_e])),periodicity=params.periodicty)
-                        )
-            out_[_e] = mp.fadd(out_, aux_)
-        return out_
+def combine_base_Eslice(ht_sliced, params, estar):
+
+    out_ = 0
+    for i in range(params.tmax):
+        aux_ = mp.fmul(ht_sliced[i],
+                    gte(T=params.time_extent, t=mpf(i+1), e=mpf(str(estar)), periodicity=params.periodicity)
+                    )
+        out_ = mp.fadd(out_, aux_)
+    return out_
