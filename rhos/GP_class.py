@@ -20,7 +20,7 @@ class AlgorithmParameters:
     def __init__(
         self,
         alphaA=0,
-        alphaB=-1.99,
+        alphaB=0.5,
         alphaC=1.99,
         lambdaMax=50,
         lambdaStep=0.5,
@@ -866,7 +866,12 @@ class GaussianProcessWrapper:
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(self, estar: float, savePlot=True, nalphas=2, plot_live=False):
-        fig, ax = plt.subplots(1, 1, figsize=(6, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams['mathtext.fontset'] = 'cm'
+        plt.rc('xtick', labelsize=22)
+        plt.rc('ytick', labelsize=22)
+        plt.rcParams.update({'font.size': 22})
         plt.title(
             r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
@@ -878,7 +883,7 @@ class GaussianProcessWrapper:
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
@@ -892,7 +897,7 @@ class GaussianProcessWrapper:
             y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[1],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=3,
             ls="",
@@ -907,7 +912,7 @@ class GaussianProcessWrapper:
                 y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[2],
-                markersize=3.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=3,
                 ls="",
@@ -925,9 +930,9 @@ class GaussianProcessWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax.set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax.set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+        ax.set_xlabel(r"$\lambda$", fontsize=32)
+        ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
         ax.set_xscale('log')
         #ax.grid()
 
@@ -939,7 +944,7 @@ class GaussianProcessWrapper:
                     self.par.plotpath,
                     "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
                 ),
-                dpi=300,
+                dpi=420,
             )
         if plot_live==True:
             plt.show()

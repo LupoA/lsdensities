@@ -20,7 +20,7 @@ class AlgorithmParameters:
     def __init__(
         self,
         alphaA=0,
-        alphaB=-1.99,
+        alphaB=0.5,
         alphaC=+1.99,
         lambdaMax=50,
         lambdaStep=0.5,
@@ -698,19 +698,25 @@ class HLTWGPrapper:
         return
 
     def plotStability(self, estar: float, savePlot=True, plot_live=False, enableBootstrapErr_ = False):
-        fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams['mathtext.fontset'] = 'cm'
+        plt.rc('xtick', labelsize=22)
+        plt.rc('ytick', labelsize=22)
+        plt.rcParams.update({'font.size': 22})
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
         plt.title(
             r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
             + r" $\sigma$"
             + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
@@ -729,12 +735,12 @@ class HLTWGPrapper:
             color=CB_colors[4],
         )'''
         if enableBootstrapErr_ == True:
-            ax[0].errorbar(
+            ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_HLT[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[0],
-                markersize=3.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=2,
                 ls="",
@@ -744,40 +750,13 @@ class HLTWGPrapper:
                 markerfacecolor=CB_colors[-5],
             )
 
-        ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[0].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
-        ax[0].set_xscale('log')
-        #ax[0].grid()
+        ax.set_xlabel(r"$\lambda$", fontsize=32)
+        ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
+        ax.set_xscale('log')
 
-        # Second subplot with A/A_0
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color='black',
-            markerfacecolor=CB_colors[0],
-            ecolor=CB_colors[0],
-        )
 
-        ax[1].axhspan(
-            ymin=float(self.rho_result[self.espace_dictionary[estar]]
-                       - self.drho_result[self.espace_dictionary[estar]]),
-            ymax=float(self.rho_result[self.espace_dictionary[estar]]
-                       + self.drho_result[self.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[1].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+
         plt.tight_layout()
         if savePlot == True:
             plt.savefig(
@@ -785,7 +764,7 @@ class HLTWGPrapper:
                     self.par.plotpath,
                     "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
                 ),
-                dpi=300,
+                dpi=420,
             )
         if plot_live == True:
             plt.show()
@@ -793,61 +772,66 @@ class HLTWGPrapper:
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(self, estar: float, savePlot=True, nalphas=2, plot_live=False, enableBootstrapErr_ = False):
-        fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams['mathtext.fontset'] = 'cm'
+        plt.rc('xtick', labelsize=22)
+        plt.rc('ytick', labelsize=22)
+        plt.rcParams.update({'font.size': 22})
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
         plt.title(
             r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
             + r" $\sigma$"
             + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=1.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
-            label=r"$\alpha = {:1.2f} GP width$".format(self.algorithmPar.alphaA),
+            label=r"$\alpha = {:1.2f}$ GP width".format(self.algorithmPar.alphaA),
             color='black',
             markerfacecolor=CB_colors[0],
             ecolor=CB_colors[0],
         )
         if enableBootstrapErr_ == True:
-            ax[0].errorbar(
+            ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_HLT[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[0],
-                markersize=1.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=2,
                 ls="",
                 label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA)+" Bootstrap err",
                 color=CB_colors[-1],
             )
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[1],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=3,
             ls="",
-            label=r"$\alpha = {:1.2f} GP width$".format(self.algorithmPar.alphaB),
+            label=r"$\alpha = {:1.2f}$ GP width".format(self.algorithmPar.alphaB),
             color='black',
             markerfacecolor=CB_colors[1],
             ecolor=CB_colors[1],
         )
         if enableBootstrapErr_ == True:
-            ax[0].errorbar(
+            ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha2_HLT[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[1],
-                markersize=3.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=3,
                 ls="",
@@ -855,27 +839,27 @@ class HLTWGPrapper:
                 color=CB_colors[-2],
             )
         if nalphas == 3:
-            ax[0].errorbar(
+            ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[1],
-                markersize=3.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=3,
                 ls="",
-                label=r"$\alpha = {:1.2f} GP width$".format(self.algorithmPar.alphaC),
+                label=r"$\alpha = {:1.2f}$ GP width".format(self.algorithmPar.alphaC),
                 color='black',
                 markerfacecolor=CB_colors[2],
                 ecolor=CB_colors[2],
             )
             if enableBootstrapErr_ == True:
-                ax[0].errorbar(
+                ax.errorbar(
                     x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                     y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                     yerr=np.array(self.drho_list_alpha3_HLT[self.espace_dictionary[estar]], dtype=float),
                     marker=plot_markers[1],
-                    markersize=3.8,
+                    markersize=4.8,
                     elinewidth=1.3,
                     capsize=3,
                     ls="",
@@ -883,7 +867,7 @@ class HLTWGPrapper:
                     color=CB_colors[-3],
                 )
 
-        ax[0].axhspan(
+        ax.axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
             - self.drho_result[self.espace_dictionary[estar]]),
             ymax=float(self.rho_result[self.espace_dictionary[estar]]
@@ -891,68 +875,12 @@ class HLTWGPrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[0].legend(prop={"size": 12, "family": "Helvetica"})
-        ax[0].set_xscale('log')
-        ax[0].grid()
+        ax.set_xlabel(r"$\lambda$", fontsize=32)
+        ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax.legend(prop={"size": 26, "family": "Helvetica"})
+        ax.set_xscale('log')
 
-        # Second subplot with A/A_0
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color='black',
-            markerfacecolor=CB_colors[0],
-            ecolor=CB_colors[0],
-        )
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[1],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-            color='black',
-            markerfacecolor=CB_colors[1],
-            ecolor=CB_colors[1],
-        )
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[2],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
-            color='black',
-            markerfacecolor=CB_colors[2],
-            ecolor=CB_colors[2],
-        )
-        ax[1].axhspan(
-            ymin=float(self.rho_result[self.espace_dictionary[estar]]
-            - self.drho_result[self.espace_dictionary[estar]]),
-            ymax=float(self.rho_result[self.espace_dictionary[estar]]
-            + self.drho_result[self.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[1].legend(prop={"size": 12, "family": "Helvetica"})
-        ax[1].grid()
+
         plt.tight_layout()
         if savePlot == True:
             plt.savefig(
@@ -960,7 +888,7 @@ class HLTWGPrapper:
                     self.par.plotpath,
                     "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
                 ),
-                dpi=300,
+                dpi=420,
             )
         if plot_live==True:
             plt.show()

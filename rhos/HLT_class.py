@@ -823,13 +823,18 @@ class HLTWrapper:
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(self, estar: float, savePlot=True, nalphas=2, plot_live=False):
-        fig, ax = plt.subplots(2, 1, figsize=(6, 8))
-        #fig, ax = plt.subplots(figsize=(6, 8))
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams['mathtext.fontset'] = 'cm'
+        plt.rc('xtick', labelsize=22)
+        plt.rc('ytick', labelsize=22)
+        plt.rcParams.update({'font.size': 22})
+        fig, ax = plt.subplots(2, 1, figsize=(8, 10))
+        #fig, ax = plt.subplots(figsize=(8, 10))
         plt.title(
-            r"$E/M_{\pi}$"
+            r"$E/M_{0}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
-            + r" $\sigma$"
-            + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
+            + r" $\;\;\; \sigma$"
+            + r" = {:2.2f} $M_0$".format(self.par.sigma / self.par.massNorm)
         )
 
         ax[0].errorbar(
@@ -837,7 +842,7 @@ class HLTWrapper:
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[0],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=2,
             ls="",
@@ -851,7 +856,7 @@ class HLTWrapper:
             y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             marker=plot_markers[1],
-            markersize=3.8,
+            markersize=4.8,
             elinewidth=1.3,
             capsize=3,
             ls="",
@@ -866,7 +871,7 @@ class HLTWrapper:
                 y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 marker=plot_markers[2],
-                markersize=3.8,
+                markersize=4.8,
                 elinewidth=1.3,
                 capsize=3,
                 ls="",
@@ -884,11 +889,10 @@ class HLTWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[0].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+        ax[0].set_xlabel(r"$\lambda$", fontsize=32)
+        ax[0].set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax[0].legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
         ax[0].set_xscale('log')
-
         #ax[0].grid()
         # Second subplot with A/A_0
         ax[1].errorbar(
@@ -942,10 +946,10 @@ class HLTWrapper:
             color=CB_colors[4],
         )
         ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=tnr)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=tnr)
-        ax[1].legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
-        #ax[1].grid()
+        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontsize=32)
+        ax[1].set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax[1].legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
+
         plt.tight_layout()
         if savePlot == True:
             plt.savefig(
@@ -953,7 +957,7 @@ class HLTWrapper:
                     self.par.plotpath,
                     "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
                 ),
-                dpi=300,
+                dpi=420,
             )
         if plot_live==True:
             plt.show()
