@@ -400,14 +400,14 @@ class InverseProblemWrapper:
         self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
         self.rho_result[self.espace_dictionary[estar_]] = rho_flag
         self.drho_result[self.espace_dictionary[estar_]] = err_flag
-        self.gt_HLT[self.espace_dictionary[estar_]].append(gtHLT_flag)
+        self.gt_HLT[self.espace_dictionary[estar_]] = gtHLT_flag
         self.aa0[self.espace_dictionary[estar_]] = gag_flag
         #   bayesian
         self.minNLL[self.espace_dictionary[estar_]] = _minNLL
         self.lambdaStar[self.espace_dictionary[estar_]] = _lambdaStar
         self.rho_bayes[self.espace_dictionary[estar_]] = _rhoBayes
         self.drho_bayes[self.espace_dictionary[estar_]] = _drhoBayes
-        self.gt_Bayes[self.espace_dictionary[estar_]].append(gtBAYES_flag)
+        self.gt_Bayes[self.espace_dictionary[estar_]] = gtBAYES_flag
         self.aa0[self.espace_dictionary[estar_]] = gag_flag
 
         return lambda_flag, rho_flag, err_flag, _minNLL, _lambdaStar, _rhoBayes, _drhoBayes, gtHLT_flag, gtBAYES_flag, gag_flag
@@ -431,7 +431,7 @@ class InverseProblemWrapper:
 
         return 0
 
-    def stabilityPlot(self, generateHLTscan = True, generateLikelihoodShared = True, generateLikelihoodPlot = True):
+    def stabilityPlot(self, generateHLTscan = True, generateLikelihoodShared = True, generateLikelihoodPlot = True, generateKernelsPlot = True):
         for e_i in range(self.par.Ne):
             if generateHLTscan == True:
                 stabilityPlot(self, self.espace[e_i], savePlot = True, plot_live = False)
@@ -439,6 +439,8 @@ class InverseProblemWrapper:
                 sharedPlot_stabilityPlusLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
             if generateLikelihoodPlot == True:
                 plotLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
+            if generateKernelsPlot == True:
+                plotAllKernels(self, )
 
 
 

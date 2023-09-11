@@ -4,6 +4,8 @@ import os
 import matplotlib.pyplot as plt
 sys.path.append("../utils")
 from rhoUtils import *
+from transform import *
+from rhoMath import *
 
 def setPlotOpt(plt):
     plt.rcParams["figure.figsize"] = 5, 2
@@ -212,4 +214,60 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
     if plot_live == True:
         plt.show()
     plt.close(fig)
+    return
+
+def plotAllKernels(invLapW):
+    print(LogMessage(), "Plotting kernel functions")
+    _name = "HLTCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
+    with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
+        for _e in range(invLapW.par.Ne):
+            print(invLapW.espace[_e], invLapW.gt_HLT[_e], file=output)
+            plotKernel(invLapW, invLapW.gt_HLT[_e], ne_=40, omega=invLapW.espace[_e], label = 'HLT', alpha_ = invLapW.algorithmPar.alphaA)
+
+    _name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
+    with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
+        for _e in range(invLapW.par.Ne):
+            print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
+            plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
+
+def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
+    energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*8, ne_)
+    kernel = np.zeros(ne_)
+    for _e in range(len(energies)):
+        kernel[_e] = combine_base_Eslice(gt_, invLapW.par, energies[_e])
+    plt.plot(
+            energies / invLapW.par.massNorm,
+            kernel,
+            marker="o",
+            markersize=3.8,
+            ls="--",
+            label=label + " Kernel at $\omega/M_{\pi}$ = " + "{:2.1e}".format(omega/invLapW.par.massNorm),
+            color='black',
+            markerfacecolor=CB_colors[0],
+    )
+    plt.plot(
+            energies / invLapW.par.massNorm,
+            gauss_fp(energies, omega, invLapW.par.sigma, norm="half"),
+            ls = '-',
+            label = 'Exact',
+            color='red',
+            linewidth=0.4,
+    )
+    plt.title(r" $\sigma$" + " = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm) + r"$M_\pi$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
+    plt.xlabel(r"$E / M_{\pi}$", fontdict=tnr)
+    plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+    #plt.tight_layout()
+    plt.savefig(
+        os.path.join(
+            invLapW.par.plotpath,
+            label
+            +"SmearingKernelSigma{:2.2e}".format(invLapW.par.sigma)
+            + "Enorm{:2.2e}".format(invLapW.par.massNorm)
+            + "Energy{:2.2e}".format(omega)
+            + "Alpha{:2.2f}".format(alpha_)
+            + ".png",
+        ),
+        dpi=400,
+    )
+    plt.clf()
     return
