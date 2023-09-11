@@ -35,3 +35,5 @@ from GP_class import *
 from correlatorUtils import foldPeriodicCorrelator
 from correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
+from InverseProblemWrapper import *
+from plotutils import *

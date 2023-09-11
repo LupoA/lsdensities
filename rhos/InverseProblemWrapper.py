@@ -12,6 +12,7 @@ from core import *
 from core import A0E_mp
 from abw import gAg, gBg
 import matplotlib.pyplot as plt
+from plotutils import *
 
 _big = 100
 
@@ -21,11 +22,13 @@ class AlgorithmParameters:
         alphaA=0,
         alphaB=1/2,
         alphaC=1.99,
-        lambdaMax=50,
-        lambdaStep=0.5,
-        lambdaScanCap=6,
-        kfactor=0.1,
-        lambdaMin=0.,
+        lambdaMax=50,           #   Starting lambda
+        lambdaStep=0.5,         #   Step in lambda for the scan
+        lambdaScanCap=6,        #   Search for plateau in lambda stops after lambdaScanCap subsequent compatible measurements. Affected by comparisonRatio.
+        kfactor=0.1,            #   Systematic error estimated comparing result at lambda with result at kfactor*lambda
+        lambdaMin=1e-6,         #   Stop scan at lambdaMin
+        comparisonRatio = 1,    #   Measurements at different lambdas will be considered compatible within comparisonRatio*sigma
+        resize=4,               #   When lambda <=0 but lambda> lambdaMin: lambdaStep = lambdaStep /= resize and lambda += lambdaStep * (resize - 1 / resize). Allows probing lambda over different scales.
     ):
         assert alphaA != alphaB
         assert alphaA != alphaC
@@ -40,6 +43,8 @@ class AlgorithmParameters:
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
         self.lambdaMin = lambdaMin
+        self.comparisonRatio = comparisonRatio
+        self.resize = resize
 
 class A0_t:
     def __init__(self, par_: Inputs, alphaMP_=0, eminMP_=0):
@@ -131,7 +136,6 @@ class InverseProblemWrapper:
         self.errBayes_list = [[] for _ in range(self.par.Ne)]
         self.gAA0g_list = [[] for _ in range(self.par.Ne)]
         self.likelihood_list = [[] for _ in range(self.par.Ne)]
-        self.gt_list = [[] for _ in range(self.par.Ne)]
         self.SigmaMatA = SigmaMatrix(self.par, algorithmPar.alphaA)
         self.selectSigmaMat[algorithmPar.alphaA] = self.SigmaMatA
         #   Second alpha
@@ -141,7 +145,6 @@ class InverseProblemWrapper:
             self.errBayes_list_alphaB = [[] for _ in range(self.par.Ne)]
             self.gAA0g_list_alphaB = [[] for _ in range(self.par.Ne)]
             self.likelihood_list_alphaB = [[] for _ in range(self.par.Ne)]
-            self.gt_list_alphaB = [[] for _ in range(self.par.Ne)]
             self.SigmaMatB = SigmaMatrix(self.par, algorithmPar.alphaB)
             self.selectSigmaMat[algorithmPar.alphaB] = self.SigmaMatB
         #   Third alpha
@@ -151,12 +154,11 @@ class InverseProblemWrapper:
                 self.errBayes_list_alphaC = [[] for _ in range(self.par.Ne)]
                 self.gAA0g_list_alphaC = [[] for _ in range(self.par.Ne)]
                 self.likelihood_list_alphaC = [[] for _ in range(self.par.Ne)]
-                self.gt_list_alphaC = [[] for _ in range(self.par.Ne)]
                 self.SigmaMatC = SigmaMatrix(self.par, algorithmPar.alphaC)
                 self.selectSigmaMat[algorithmPar.alphaC] = self.SigmaMatC
         #   Results
         self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.minNLL = np.ndarray(self.par.Ne, dtype=np.float64) #   minimum of Negative Log Likelihood
+        self.minNLL = np.ndarray(self.par.Ne, dtype=np.float64)     #   minimum of Negative Log Likelihood
         self.lambdaStar = np.ndarray(self.par.Ne, dtype=np.float64) #   where NLL is minimised
         self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64) #   from plateau in lambda
         self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)#   from plateau in lambda
@@ -164,6 +166,9 @@ class InverseProblemWrapper:
         self.drho_bayes = np.ndarray(self.par.Ne, dtype=np.float64) #   frin min of NLL
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.gt_HLT = [[] for _ in range(self.par.Ne)]
+        self.gt_Bayes = [[] for _ in range(self.par.Ne)]
+        self.aa0 = np.ndarray(self.par.Ne, dtype=np.float64)    # A / A0 for the result (HLT only)
         #   Control variables
         self.espace_is_filled = False
         self.A0_is_filled = False
@@ -182,21 +187,22 @@ class InverseProblemWrapper:
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
         self.SigmaMatA.evaluate()
-        with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaA.txt'), "w") as output:
-            print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "gt\t", "likelihood\t", file=output)
+        with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaA.log'), "w") as output:
+            print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "likelihood\n", file=output)
         if self.par.Na > 1:
             self.A0_B.evaluate(self.espaceMP)
             self.SigmaMatB.evaluate()
-            with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaB.txt'), "w") as output:
-                print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "gt\t", "likelihood\t", file=output)
+            with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaB.log'), "w") as output:
+                print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "likelihood\n", file=output)
             if self.par.Na > 2:
                 self.A0_C.evaluate(self.espaceMP)
                 self.SigmaMatC.evaluate()
-                with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaC.txt'), "w") as output:
-                    print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "gt\t", "likelihood\t", file=output)
+                with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaC.log'), "w") as output:
+                    print("# estar\t", "lambda\t", "rho\t", "errBayes\t", "errBoot\t", "A/A0\t", "likelihood\n", file=output)
         self.A0_is_filled = True
         return
 
+    #TODO: do we also want to print gt?
     def _store(self, estar, rho, errBayes, errBoot, likelihood, gag, gt, lambda_, whichAlpha='A'):
         if whichAlpha == 'A':
             self.rho_list[self.espace_dictionary[estar]].append(rho)
@@ -204,41 +210,38 @@ class InverseProblemWrapper:
             self.errBoot_list[self.espace_dictionary[estar]].append(errBoot)
             self.gAA0g_list[self.espace_dictionary[estar]].append(gag / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar])
             self.likelihood_list[self.espace_dictionary[estar]].append(likelihood)
-            self.gt_list[self.espace_dictionary[estar]].append(gt)
             with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaA.log'), "a") as output:
-                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), gt, float(likelihood), file=output)
+                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), float(likelihood), file=output)
         if whichAlpha == 'B':
             self.rho_list_alphaB[self.espace_dictionary[estar]].append(rho)
             self.errBayes_list_alphaB[self.espace_dictionary[estar]].append(errBayes)
             self.errBoot_list_alphaB[self.espace_dictionary[estar]].append(errBoot)
             self.gAA0g_list_alphaB[self.espace_dictionary[estar]].append(gag / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar])
             self.likelihood_list_alphaB[self.espace_dictionary[estar]].append(likelihood)
-            self.gt_list_alphaB[self.espace_dictionary[estar]].append(gt)
             with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaB.log'), "a") as output:
-                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), gt, float(likelihood), file=output)
+                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), float(likelihood), file=output)
         if whichAlpha == 'C':
             self.rho_list_alphaC[self.espace_dictionary[estar]].append(rho)
             self.errBayes_list_alphaC[self.espace_dictionary[estar]].append(errBayes)
             self.errBoot_list_alphaC[self.espace_dictionary[estar]].append(errBoot)
             self.gAA0g_list_alphaC[self.espace_dictionary[estar]].append(gag / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar])
             self.likelihood_list_alphaC[self.espace_dictionary[estar]].append(likelihood)
-            self.gt_list_alphaC[self.espace_dictionary[estar]].append(gt)
             with open(os.path.join(self.par.logpath, 'InverseProblemLOG_AlphaC.log'), "a") as output:
-                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), gt, float(likelihood), file=output)
+                print(float(estar), float(lambda_), float(rho), float(errBayes), float(errBoot), float(gag), float(likelihood), file=output)
         return
 
     def _areRangesCompatible(self, x, deltax, y, deltay):
         x2 = x + deltax
         x1 = x - deltax
-        y1 = y + deltay
-        y2 = y - deltay
+        y1 = y - deltay
+        y2 = y + deltay
         if x1 <= y2 and y1 <= x2:
             return True
         else:
             return False
 
-    def _flagResult(self, lambda_, rho, err):
-        return lambda_, rho, err
+    def _flagResult(self, *args):
+        return args
 
         # - - - - - - - - - - - - - - - Main function: given lambda computes rho_s - - - - - - - - - - - - - - - #
 
@@ -252,7 +255,7 @@ class InverseProblemWrapper:
         S_ = self.selectSigmaMat[float(alpha_)].matrix
         _Matrix = S_ + (_factor * self.matrix_bundle.B)
         start_time = time.time()
-        _MatrixInv = invert_matrix_ge(_M)
+        _MatrixInv = invert_matrix_ge(_Matrix)
         end_time = time.time()
         print(LogMessage(), "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format(end_time - start_time), "s")
 
@@ -290,12 +293,13 @@ class InverseProblemWrapper:
     # - - - - - - - - - - - - - - - Scan over parameters: Lambda, Alpha (optional) - - - - - - - - - - - - - - - #
 
     def scanParameters(self, estar_):
-        global _AB_Overlap
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
-        cap_ = self.algorithmPar.lambdaScanCap
+        _cap = self.algorithmPar.lambdaScanCap
+        _resize = self.algorithmPar.resize
         _countPositiveResult = 0
-        resize = 4
+        _compRatio = self.algorithmPar.comparisonRatio
+        lambda_flag = lambda_
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "At Energy {:2.2e}".format(estar_))
@@ -314,18 +318,21 @@ class InverseProblemWrapper:
             if self.par.Na > 2:
                 _rhoC, _errBayesC, _errBootC, _likelihoodC, _gAgC, _gtC = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
                 self._store(estar_, _rhoC, _errBayesC, _errBootC, _likelihoodC, _gAgC, _gtC, lambda_, whichAlpha='C')
-        _minNLL = _likelihood    # NLL
 
+        #   Flag these until better results
+        _minNLL, _lambdaStar, _rhoBayes, _drhoBayes, gtBAYES_flag = self._flagResult(_likelihood, lambda_, _rho, _errBayes, _gt)
 
-        lambda_ -= lambda_step
         #   Loops over values of lambda
-        while _countPositiveResult < cap_ and lambda_ > self.algorithmPar.lambdaMin:
+        lambda_ -= lambda_step
+        while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
             #   -   -   -   -   -   -
             print(LogMessage(), "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)))
             print(LogMessage(), "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(float(lambda_ / (1 + lambda_))))
             self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
-            if _countPositiveResult == 0:   #   Comparisons are done against flagged result
-                lambda_flag, rho_flag, err_flag = self._flagResult(lambda_, _rho, _errBoot) #   Flag this until better results
+
+            #   Flag these until better results
+            if _countPositiveResult == 0:
+                lambda_flag, rho_flag, err_flag, gtHLT_flag, gag_flag = self._flagResult(lambda_, _rho, _errBoot, _gt, _gAg)
             #   -   -   -   -   -   -
 
             print(LogMessage(), "\t Setting Alpha ::: First Alpha = ", self.algorithmPar.alphaA)
@@ -340,15 +347,12 @@ class InverseProblemWrapper:
                     print(LogMessage(), "\t Setting Alpha ::: Third Alpha = ", self.algorithmPar.alphaC)
                     _rhoUpdatedC, _errBayesUpdatedC, _errBootUpdatedC, _likelihoodUpdatedC, _gAgUpdatedC, _gtUpdatedC = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
                     self._store(estar_, _rhoUpdatedC, _errBayesUpdatedC, _errBootUpdatedC, _likelihoodUpdatedC, _gAgUpdatedC, _gtUpdatedC, lambda_, whichAlpha='C')
-                    _AC_Overlap = self._areRangesCompatible(_rhoUpdated, _errBootUpdated, _rhoUpdatedC,
-                                                            _errBootUpdatedC)
+                    _AC_Overlap = self._areRangesCompatible(_rhoUpdated, _errBootUpdated, _rhoUpdatedC, _errBootUpdatedC)
 
+            newLambda_Overlap = self._areRangesCompatible(_rhoUpdated, _compRatio*_errBootUpdated, _rho, _compRatio*_errBoot) # !
 
             if _likelihoodUpdated < _minNLL:    # NLL
-                _minNLL = _likelihoodUpdated
-                _lambdaStar = lambda_
-                _rhoBayes = _rhoUpdated
-                _drhoBayes = _errBayesUpdated
+                _minNLL, _lambdaStar, _rhoBayes, _drhoBayes, gtBAYES_flag = self._flagResult(_likelihoodUpdated, lambda_, _rhoUpdated, _errBayesUpdated, _gtUpdated)
 
             _skip = False
             #   Checks compatibility between different alphas
@@ -362,13 +366,17 @@ class InverseProblemWrapper:
                         _skip = True
 
             #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
-            newLambda_Overlap = self._areRangesCompatible(rho_flag, err_flag, _rhoUpdated, _errBootUpdated)
+            if (newLambda_Overlap == False):
+                print(LogMessage(), "\t Result at this Lambda does not overlap with previous: REJECTING result")
+            if _gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_] > self.par.A0cut:
+                print(LogMessage(), "\t A/A0 is too large: rejecting result  (", float(_gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]),")")
+                _skip = True
             if (newLambda_Overlap == True) and (_gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_] < self.par.A0cut) and (_skip == False):
                 #   Flag the first compatible result
                 if _countPositiveResult == 1:   #   At future alphas we compare with rho_s at _countPositiveResult = 1. This can be changed.
-                    lambda_flag, rho_flag, err_flag = self._flagResult(lambda_, _rho, _errBoot)
+                    lambda_flag, rho_flag, err_flag, gtHLT_flag, gag_flag = self._flagResult(lambda_, _rho, _errBoot, _gtUpdated, _gAgUpdated)
                 _countPositiveResult +=1
-                print(LogMessage(), f"{bcolors.OKGREEN}Stopping Condition{bcolors.ENDC}", _countPositiveResult, "/", cap_)
+                print(LogMessage(), f"{bcolors.OKGREEN}Stopping Condition{bcolors.ENDC}", _countPositiveResult, "/", _cap)
             else:
                 _countPositiveResult = 0
 
@@ -377,12 +385,12 @@ class InverseProblemWrapper:
             _errBoot = _errBootUpdated
             lambda_ -= lambda_step
             if lambda_ <= 0:
-                lambda_step /= resize
-                lambda_ += lambda_step * (resize - 1 / resize)
+                lambda_step /= _resize
+                lambda_ += lambda_step * (_resize - 1 / _resize)
                 print(LogMessage(), "Resize LambdaStep to ", lambda_step, "Setting Lambda = ", lambda_)
 
             if lambda_ < self.algorithmPar.lambdaMin:
-                print(LogMessage(), f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda")
+                print(LogMessage(), f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Stopping ::: Reached lower limit for lambda. Try decreasing 'algorithmPar.lambdaMin' or increase the smearing radius.")
 
         #   End of WHILE
         if _countPositiveResult == 0:
@@ -392,14 +400,45 @@ class InverseProblemWrapper:
         self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
         self.rho_result[self.espace_dictionary[estar_]] = rho_flag
         self.drho_result[self.espace_dictionary[estar_]] = err_flag
+        self.gt_HLT[self.espace_dictionary[estar_]].append(gtHLT_flag)
+        self.aa0[self.espace_dictionary[estar_]] = gag_flag
         #   bayesian
         self.minNLL[self.espace_dictionary[estar_]] = _minNLL
         self.lambdaStar[self.espace_dictionary[estar_]] = _lambdaStar
         self.rho_bayes[self.espace_dictionary[estar_]] = _rhoBayes
         self.drho_bayes[self.espace_dictionary[estar_]] = _drhoBayes
+        self.gt_Bayes[self.espace_dictionary[estar_]].append(gtBAYES_flag)
+        self.aa0[self.espace_dictionary[estar_]] = gag_flag
 
-        return lambda_flag, rho_flag, err_flag, _minNLL, _lambdaStar, _rhoBayes, _drhoBayes
+        return lambda_flag, rho_flag, err_flag, _minNLL, _lambdaStar, _rhoBayes, _drhoBayes, gtHLT_flag, gtBAYES_flag, gag_flag
 
     def estimate_sys_error(self, estar_):
         return 0
+
+    #TODO: find a good place for printing g_t
+    def run(self, savePlots=True, livePlots=False):
+        with open(os.path.join(self.par.logpath, 'ResultHLT.txt'), "w") as output:
+            print("# Energy \t Lambda(HLT) \t Rho(HLT) \t Stat(HLT) \t Sys(HLT) \t Quadrature \t A/A0", file=output)
+        with open(os.path.join(self.par.logpath, 'ResultBayes.txt'), "w") as output:
+            print("# Energy \t Lambda(Bayes) \t Rho(Bayes) \t Stat(Bayes) \t Sys(Bayes) \t Quadrature \t NLL", file=output)
+
+        for e_i in range(self.par.Ne):
+            lambdaHLT, rhoHLT, errHLT, minNLL, lambdaBayes, rhoBayes, errBayes, gtHLT, gtBayes, gaa0g = self.scanParameters(self.espace[e_i])
+            with open(os.path.join(self.par.logpath, 'ResultHLT.txt'), "a") as output:
+                print(self.espace[e_i], lambdaHLT, float(rhoHLT), float(errHLT), 0, 0, float(gaa0g), file=output)
+            with open(os.path.join(self.par.logpath, 'ResultBayes.txt'), "a") as output:
+                print(self.espace[e_i], lambdaBayes, float(rhoBayes), float(errBayes), 0, 0, float(minNLL), file=output)
+
+        return 0
+
+    def stabilityPlot(self, generateHLTscan = True, generateLikelihoodShared = True, generateLikelihoodPlot = True):
+        for e_i in range(self.par.Ne):
+            if generateHLTscan == True:
+                stabilityPlot(self, self.espace[e_i], savePlot = True, plot_live = False)
+            if generateLikelihoodShared == True:
+                sharedPlot_stabilityPlusLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
+            if generateLikelihoodPlot == True:
+                plotLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
+
+
 
