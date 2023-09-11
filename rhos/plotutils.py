@@ -224,11 +224,11 @@ def plotAllKernels(invLapW):
             print(invLapW.espace[_e], invLapW.gt_HLT[_e], file=output)
             plotKernel(invLapW, invLapW.gt_HLT[_e], ne_=40, omega=invLapW.espace[_e], label = 'HLT', alpha_ = invLapW.algorithmPar.alphaA)
 
-    _name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
-    with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
-        for _e in range(invLapW.par.Ne):
-            print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
-            plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
+    #_name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
+    #with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
+    #    for _e in range(invLapW.par.Ne):
+    #        print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
+    #        plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
 
 def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
     energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*8, ne_)
@@ -256,7 +256,6 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
     plt.title(r" $\sigma$" + " = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm) + r"$M_\pi$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
     plt.xlabel(r"$E / M_{\pi}$", fontdict=tnr)
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
-    #plt.tight_layout()
     plt.savefig(
         os.path.join(
             invLapW.par.plotpath,
