@@ -177,6 +177,14 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
     plotNoErr(ax, invLapW.lambda_list[invLapW.espace_dictionary[estar]],
               invLapW.likelihood_list[invLapW.espace_dictionary[estar]],
               label='NLL', markerId=0, colorID=0)
+    if invLapW.par.Na > 1:
+        plotNoErr(ax, invLapW.lambda_list[invLapW.espace_dictionary[estar]],
+                  invLapW.likelihood_list_alphaB[invLapW.espace_dictionary[estar]],
+                  label='NLL '+r"$\alpha = {:1.2f}$".format(invLapW.algorithmPar.alphaB), markerId=1, colorID=1)
+        if invLapW.par.Na > 2:
+            plotNoErr(ax, invLapW.lambda_list[invLapW.espace_dictionary[estar]],
+                      invLapW.likelihood_list_alphaC[invLapW.espace_dictionary[estar]],
+                      label='NLL ' + r"$\alpha = {:1.2f}$".format(invLapW.algorithmPar.alphaC), markerId=2, colorID=2)
     ax.plot(
         invLapW.lambdaStar[invLapW.espace_dictionary[estar]],
         invLapW.minNLL[invLapW.espace_dictionary[estar]],
