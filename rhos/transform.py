@@ -86,8 +86,6 @@ def combine_fMf_Eslice(ht_sliced, params, estar_, alpha_): #   Compute f Minv f 
         out_ = mp.fadd(out_, aux_)
     return out_
 
-import numpy as np
-
 def combine_base_Eslice(ht_sliced, params, estar):
 
     out_ = 0
@@ -96,4 +94,14 @@ def combine_base_Eslice(ht_sliced, params, estar):
                     gte(T=params.time_extent, t=mpf(i+1), e=mpf(str(estar)), periodicity=params.periodicity)
                     )
         out_ = mp.fadd(out_, aux_)
+    return out_
+
+def combine_likelihood(minv, params, mpcorr):
+    out_ = 0
+    aux = mp.matrix(params.tmax, 1)
+    for i in range(params.tmax):
+        aux[i] = 0
+        for j in range(params.tmax):
+                aux[i] += minv[i,j] * mpcorr[j]
+        out_ += aux[i] * mpcorr[i]
     return out_

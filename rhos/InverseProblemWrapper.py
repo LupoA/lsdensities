@@ -349,7 +349,7 @@ class InverseProblemWrapper:
                     self._store(estar_, _rhoUpdatedC, _errBayesUpdatedC, _errBootUpdatedC, _likelihoodUpdatedC, _gAgUpdatedC, _gtUpdatedC, lambda_, whichAlpha='C')
                     _AC_Overlap = self._areRangesCompatible(_rhoUpdated, _errBootUpdated, _rhoUpdatedC, _errBootUpdatedC)
 
-            newLambda_Overlap = self._areRangesCompatible(_rhoUpdated, _compRatio*_errBootUpdated, _rho, _compRatio*_errBoot) # !
+            newLambda_Overlap = self._areRangesCompatible(_rhoUpdated, _compRatio*_errBootUpdated, _rho, _compRatio*_errBoot) # comparison with previous lambda
 
             if _likelihoodUpdated < _minNLL:    # NLL
                 _minNLL, _lambdaStar, _rhoBayes, _drhoBayes, gtBAYES_flag = self._flagResult(_likelihoodUpdated, lambda_, _rhoUpdated, _errBayesUpdated, _gtUpdated)

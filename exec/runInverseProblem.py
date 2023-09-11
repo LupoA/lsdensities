@@ -87,7 +87,7 @@ def main():
 
     #   Prepare
     cNorm = mpf(str(corr.central[1] ** 2))
-    lambdaMax = 1e+5
+    lambdaMax = 1e+4
 
     hltParams = AlgorithmParameters(
         alphaA=0,
