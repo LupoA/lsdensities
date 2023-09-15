@@ -105,7 +105,7 @@ def main():
     HLT = InverseProblemWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, read_energies=0)
     HLT.prepareHLT()
     HLT.run()
-    HLT.stabilityPlot()
+    HLT.stabilityPlot(generateHLTscan=True, generateLikelihoodShared=True, generateLikelihoodPlot=True, generateKernelsPlot=True)
 
     end()
 

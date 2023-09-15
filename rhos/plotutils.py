@@ -75,9 +75,9 @@ def stabilityPlot(invLapW, estar, savePlot=True, plot_live=False):
                      invLapW.errBoot_list_alphaC[invLapW.espace_dictionary[estar]], markerId=2, colorID=2, label=r"$\alpha = {:1.2f}$".format(invLapW.algorithmPar.alphaC))
 
     ax.axhspan(
-        ymin=float(invLapW.rho_result[invLapW.espace_dictionary[estar]]
+        ymin=float(invLapW.rhoResultHLT[invLapW.espace_dictionary[estar]]
                    - invLapW.drho_result[invLapW.espace_dictionary[estar]]),
-        ymax=float(invLapW.rho_result[invLapW.espace_dictionary[estar]]
+        ymax=float(invLapW.rhoResultHLT[invLapW.espace_dictionary[estar]]
                    + invLapW.drho_result[invLapW.espace_dictionary[estar]]),
         alpha=0.3,
         color=CB_colors[4],
@@ -134,7 +134,7 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
             label='NLL', markerId=0, colorID=0)
 
     ax2.plot(
-        invLapW.lambdaStar[invLapW.espace_dictionary[estar]],
+        invLapW.lambdaResultBayes[invLapW.espace_dictionary[estar]],
         invLapW.minNLL[invLapW.espace_dictionary[estar]],
         markersize=25,
         marker="*",
@@ -188,7 +188,7 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
                       invLapW.likelihood_list_alphaC[invLapW.espace_dictionary[estar]],
                       label='NLL ' + r"$\alpha = {:1.2f}$".format(invLapW.algorithmPar.alphaC), markerId=2, colorID=2)
     ax.plot(
-        invLapW.lambdaStar[invLapW.espace_dictionary[estar]],
+        invLapW.lambdaResultBayes[invLapW.espace_dictionary[estar]],
         invLapW.minNLL[invLapW.espace_dictionary[estar]],
         markersize=25,
         marker="*",
@@ -224,11 +224,11 @@ def plotAllKernels(invLapW):
             print(invLapW.espace[_e], invLapW.gt_HLT[_e], file=output)
             plotKernel(invLapW, invLapW.gt_HLT[_e], ne_=40, omega=invLapW.espace[_e], label = 'HLT', alpha_ = invLapW.algorithmPar.alphaA)
 
-    #_name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
-    #with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
-    #    for _e in range(invLapW.par.Ne):
-    #        print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
-    #        plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
+    _name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
+    with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
+        for _e in range(invLapW.par.Ne):
+            print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
+            plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
 
 def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
     energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*8, ne_)
