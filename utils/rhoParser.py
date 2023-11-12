@@ -186,6 +186,13 @@ def parseArgumentSynthData():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        "--T",
+        metavar="TimeExtent",
+        type=int,
+        help="time extent of the lattice",
+        required=True,
+    )
+    parser.add_argument(
         "--nms",
         metavar="SampleSize",
         type=int,

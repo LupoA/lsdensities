@@ -2,7 +2,7 @@ from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
 from core import *
-
+import time
 sys.path.append("../utils")
 from rhoUtils import LogMessage
 from rhoStat import *
@@ -11,23 +11,9 @@ from rhoStat import *
 def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):
     ht_ = mp.matrix(params.tmax, 1)
     for i in range(params.tmax):
-        ht_[i] = 0
         for j in range(params.tmax):
-            aux_ = mp.fmul(
-                Tinv_[j, i],
-                ft_mp(
-                    e=estar_,
-                    t=mpf(j + 1),
-                    sigma_=params.mpsigma,
-                    alpha=alpha_,
-                    e0=params.mpe0,
-                    type=params.periodicity,
-                    T=params.time_extent,
-                ),
-            )
-            ht_[i] = mp.fadd(aux_, ht_[i])
+            ht_[i] += Tinv_[i, j] * ft_mp(e=estar_, t=mpf(j + 1), sigma_=params.mpsigma, alpha=mpf(alpha_), e0=params.mpe0, type=params.periodicity, T=params.time_extent)
     return ht_
-
 
 def y_combine_central_mp(ht_, corr_, params):
     rho = mp.matrix(params.Ne, 1)
@@ -37,7 +23,6 @@ def y_combine_central_mp(ht_, corr_, params):
             aux_ = mp.fmul(ht_[e, i], corr_[i])
             rho[e] = mp.fadd(rho[e], aux_)
     return rho
-
 
 def y_combine_sample_mp(ht_, corrtype_, params):
     pbar = ProgressBar()
@@ -50,7 +35,6 @@ def y_combine_sample_mp(ht_, corrtype_, params):
                 aux_ = mp.fmul(ht_[e, i], y[i])
                 rhob[e, b] = mp.fadd(rhob[e, b], aux_)
     return averageVector_mp(rhob)
-
 
 def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
     rhob = mp.matrix(params.num_boot, 1)

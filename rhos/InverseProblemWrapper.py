@@ -100,9 +100,9 @@ class InverseProblemWrapper:
         self.correlator = correlator
         self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
-        if read_energies==0:
+        if read_energies == 0:
             self.espace = np.linspace(par.emin, par.emax, par.Ne)
-        elif read_energies != 0:
+        elif read_energies.all != 0:
             print(LogMessage(), "InverseProblemWrapper ::: Reading input energies")
             par.Ne = len(read_energies)
             self.espace = read_energies
@@ -177,6 +177,7 @@ class InverseProblemWrapper:
         # - - - - - - - - - - - - - - - End of INIT - - - - - - - - - - - - - - - #
 
     def fillEspaceMP(self):
+        print(LogMessage(), "Chosen energies: ", self.espace)
         for e_id in range(self.par.Ne):
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
             self.espace_dictionary[self.espace[e_id]] = e_id    #   pass the FLOAT, get the INTEGER
@@ -257,12 +258,14 @@ class InverseProblemWrapper:
         start_time = time.time()
         _MatrixInv = invert_matrix_ge(_Matrix)
         end_time = time.time()
-        print(LogMessage(), "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format(end_time - start_time), "s")
-
+        print(LogMessage(), "Time ::: Matrix inverted in {:4.4f}".format(end_time - start_time), "s")
+        start_time = time.time()
         _g_t_estar = h_Et_mp_Eslice(_MatrixInv, self.par, estar_, alpha_=alpha_)
-
+        end_time = time.time()
+        print(LogMessage(), "Time ::: Coefficients computed in {:4.4f}".format(end_time - start_time), "s")
         rho_estar, drho_estar_Bootstrap = y_combine_sample_Eslice_mp(_g_t_estar, self.correlator.mpsample, self.par)
-
+        start_time = time.time()
+        print(LogMessage(), "Time ::: Bootstrapped result in {:4.4f}".format(start_time - end_time), "s")
         gAg_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
 
         varianceRho = combine_fMf_Eslice(ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_)
@@ -286,7 +289,7 @@ class InverseProblemWrapper:
         det = mp.det(_Matrix / _factor)
         likelihood_estar = mp.fadd(likelihood_estar, 0.5 * mp.log(det))
         likelihood_estar = mp.fadd(likelihood_estar, (self.par.tmax * mp.log(2 * mp.pi)) * 0.5)
-        print(LogMessage(),  "\t \t lambdaToRho ::: Likelihood = {:2.4e}".format(float(likelihood_estar)))
+        print(LogMessage(),  "\t \t lambdaToRho ::: NLL = {:2.4e}".format(float(likelihood_estar)))
 
         return rho_estar, drho_estar_Bayes, drho_estar_Bootstrap, likelihood_estar, gAg_estar, _g_t_estar
 

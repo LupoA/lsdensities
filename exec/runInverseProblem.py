@@ -87,7 +87,7 @@ def main():
 
     #   Prepare
     cNorm = mpf(str(corr.central[1] ** 2))
-    lambdaMax = 1e+4
+    lambdaMax = 1e+9
 
     hltParams = AlgorithmParameters(
         alphaA=0,
@@ -98,7 +98,7 @@ def main():
         lambdaScanCap=8,
         kfactor=0.1,
         lambdaMin=1e-1,
-        comparisonRatio=0.15,    #   brutal! but we are comparing highly correlated measurements
+        comparisonRatio=0.15,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
