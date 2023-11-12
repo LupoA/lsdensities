@@ -12,7 +12,7 @@ from mpmath import mp, mpf
 def scan_S_Value():
     S_list = []
     T_list = []
-    upper_bound = int(1000)
+    upper_bound = int(100)
 
     for i in range(10, upper_bound, 4):
         tmax = int(i / 2 - 1)
@@ -58,12 +58,12 @@ def scan_ft_Value():
     upper_bound = int(1000)
 
     for i in range(10, upper_bound, 2):
-        ftcalc = ft_mp(fixed_e, fixed_t, sigma, type="COSH", T=i)
+        ftcalc = ft_mp(fixed_e, fixed_t, sigma, alpha=0, type="COSH", T=i)
         ft_list.append(ftcalc)
         T_list.append(i)
         print("$f_{3}$ = ", float(ftcalc))
 
-    ftinf = ft_mp(fixed_e, fixed_t, sigma, type="EXP")
+    ftinf = ft_mp(fixed_e, fixed_t, sigma, alpha=0, type="EXP")
     print("$f_{3}_{inf}$ = ", float(ftinf))
 
     import matplotlib.pyplot as plt
