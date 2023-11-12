@@ -3,7 +3,6 @@ from progressbar import ProgressBar
 import sys
 import numpy as np
 import time
-
 sys.path.append("../utils")
 import math
 
@@ -48,8 +47,7 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
 
-
-def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
+def Zfact_mp_deprecated(estar_, sigma_):  # this can go to hell
     fact_ = mp.sqrt(2)
     res_ = mp.fdiv(estar_, fact_)
     res_ = mp.fdiv(res_, sigma_)  #   e/(sqrt2 sigma)
@@ -61,10 +59,9 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     res_ = mp.fmul(res_, fact_)  # sqrt(pi/2) sigma (1 + erf [e/(sqrt2 sigma)])
     return res_
 
-
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
+def generalised_ft(t, alpha, sigma, e, e0):
     newt = mp.fsub(t, alpha)  #
-    aux = mp.fmul(sigma_, sigma_)  #   s^2
+    aux = mp.fmul(sigma, sigma)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
     aux = mp.fmul(arg, newt)  #   s^2 (alpha-t)^2
     aux = mp.fmul(aux, mpf("0.5"))  #   s^2 (alpha-t)^2 /2
@@ -73,83 +70,56 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
     aux = mp.fmul(e, aux)  #   e(alpha-t)
     aux = mp.exp(aux)
     res = mp.fmul(res, aux)  #   exp{s^2 (alpha-t)^2 /2} exp{estar (alpha-t) }
+    #   The previous expression will multiply Erfc
     arg = mp.fadd(arg, e0)
-    arg = mp.fsub(arg, e)
-    arg = mp.fdiv(arg, sigma_)
+    arg = mp.fsub(arg, e)   # s^2 (t-alpha) + E0 - omega
+    arg = mp.fdiv(arg, sigma)
     aux = mp.sqrt(2)
-    arg = mp.fdiv(arg, aux)
+    arg = mp.fdiv(arg, aux) # [s^2 (t-alpha) + E0 - omega] / sqrt{2} s
     arg = mp.erfc(arg)  #   this is the COMPLEMENTARY erf
-    res = mp.fmul(res, arg)
-    aux = mp.fdiv(e, aux)
-    aux = mp.fdiv(aux, sigma_)
-    aux = mp.erf(aux)
-    aux = mp.fadd(mpf(1), aux)
-    res = mp.fdiv(res, aux)
-    if type == "COSH":
-        assert T > 0
-        newt2 = mp.fadd(t, alpha)  # alpha+t
-        newt2 = mp.fsub(newt2, mpf(T))  # alpha+t-T
-        aux2 = mp.fmul(sigma_, sigma_)  # s^2
-        arg2 = mp.fmul(aux2, newt2)  # s^2 (t+alpha-T)
-        aux2 = mp.fmul(arg2, newt2)  # s^2 (alpha+t-T)^2
-        aux2 = mp.fmul(aux2, mpf("0.5"))  # s^2 (alpha+t-T)^2 /2
-        res2 = mp.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
-        aux2 = newt2  # alpha+t-T
-        aux2 = mp.fmul(e, aux2)  # e(alpha+t-T)
-        aux2 = mp.exp(aux2)
-        res2 = mp.fmul(res2, aux2)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
-        arg2 = mp.fsub(e0, arg2)
-        arg2 = mp.fsub(arg2, e)
-        arg2 = mp.fdiv(arg2, sigma_)
-        aux2 = mp.sqrt(2)
-        arg2 = mp.fdiv(arg2, aux2)
-        arg2 = mp.erfc(arg2)  # this is the COMPLEMENTARY erf
-        res2 = mp.fmul(res2, arg2)
-        aux2 = mp.fdiv(e, aux2)
-        aux2 = mp.fdiv(aux2, sigma_)
-        aux2 = mp.erf(aux2)
-        aux2 = mp.fadd(mpf(1), aux2)
-        res2 = mp.fdiv(res2, aux2)
-        res += res2
+    res = mp.fmul(res, arg) # Erfc() * exp()
     return res
 
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
+    res = generalised_ft(t, alpha, sigma_, e, e0)
+    if type == "COSH":
+        assert T > 0
+        pterm = generalised_ft(T-t, alpha, sigma_, e, e0)
+        res = mp.fadd(res, pterm)
+    res *= 0.5
+    return res
 
 def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
-    aux = mp.fmul(sigma_, sigma_)
-    aux = mp.fdiv(aux, mpf(2))
-    aux = mp.fmul(aux, alpha)
-    aux = mp.fadd(e_, aux)
-    aux = mp.fsub(aux, e0)
-    res = mp.fdiv(aux, sigma_)
+    aux = mp.fmul(sigma_, sigma_)   # start by the argument of erf
+    aux = mp.fdiv(aux, mpf(2))  # s^2 / 2
+    aux = mp.fmul(aux, alpha)   # a s^2 / 2
+    aux = mp.fadd(e_, aux)      # omega + a s^2 / 2
+    aux = mp.fsub(aux, e0)      # omega - E0 + a s^2 / 2
+    res = mp.fdiv(aux, sigma_)  # omega - E0 + a s^2 / 2sigma
     res = mp.erf(res)  #   Erf
     res = mp.fadd(1, res)  # 1+erf, the numerator
     aux_ = mp.sqrt(mp.pi)
-    res = mp.fdiv(res, aux_)  # 1+erf /pi
+    res = mp.fdiv(res, aux_)  # 1+erf / sqrt{pi}
     res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
-    aux_ = mp.sqrt(2)
-    aux_ = mp.fdiv(e_, aux_)
-    aux_ = mp.fdiv(aux_, sigma_)
-    aux_ = mp.erf(aux_)
-    aux_ = mp.fadd(aux_, 1)
-    aux_ = mp.fmul(aux_, aux_)
-    res = mp.fdiv(res, aux_)
-    # alpha implementation
-    aux = mp.fmul(alpha, e_)  # alpha*e
-    aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
-    aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
-    aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
-    aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
-    aux = mp.exp(aux)
-    res = mp.fmul(res, aux)
+    res = mp.fdiv(res, 4)   # 1+erf / (4 sqrt{pi} s)
+    # exp term due to alpha
+    if alpha != 0:
+        aux = mp.fmul(alpha, e_)  # alpha*e
+        aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+        aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
+        aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
+        aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alphaomega
+        aux = mp.exp(aux)
+        res = mp.fmul(res, aux)
     return res
 
-
 def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
-    if e0_ == 0:
+    if e0_ == 0:    # this is so bad
         e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
+    print("Debug : e0 : ", e0_)
     for ei in range(par.Ne):
-        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_)
+        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=mpf(alpha_), e0=e0_)
     return a0_e
 
 
