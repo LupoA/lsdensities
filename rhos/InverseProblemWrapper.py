@@ -94,18 +94,15 @@ class InverseProblemWrapper:
         algorithmPar: AlgorithmParameters,
         matrix_bundle: MatrixBundle,
         correlator: Obs,
-        read_energies = 0,
+        energies,
     ):
         self.par = par
         self.correlator = correlator
         self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
-        if read_energies == 0:
-            self.espace = np.linspace(par.emin, par.emax, par.Ne)
-        elif read_energies.all != 0:
-            print(LogMessage(), "InverseProblemWrapper ::: Reading input energies")
-            par.Ne = len(read_energies)
-            self.espace = read_energies
+        print(LogMessage(), "InverseProblemWrapper ::: Reading input energies")
+        par.Ne = len(energies)
+        self.espace = energies
         self.e0MP = mpf(str(par.e0))
         self.espaceMP = mp.matrix(par.Ne, 1)
         self.sigmaMP = mpf(str(par.sigma))
@@ -442,6 +439,10 @@ class InverseProblemWrapper:
                 plotLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
             if generateKernelsPlot == True:
                 plotAllKernels(self)
+
+    def plotResult(self):
+        plotSpectralDensity(self)
+        return
 
 
 

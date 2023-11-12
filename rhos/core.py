@@ -117,7 +117,6 @@ def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
     if e0_ == 0:    # this is so bad
         e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
-    print("Debug : e0 : ", e0_)
     for ei in range(par.Ne):
         a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=mpf(alpha_), e0=e0_)
     return a0_e

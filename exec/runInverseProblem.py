@@ -87,7 +87,8 @@ def main():
 
     #   Prepare
     cNorm = mpf(str(corr.central[1] ** 2))
-    lambdaMax = 1e+9
+    lambdaMax = 1e+4
+    energies = np.linspace(par.emin, par.emax, par.Ne)
 
     hltParams = AlgorithmParameters(
         alphaA=0,
@@ -97,16 +98,19 @@ def main():
         lambdaStep=lambdaMax/2,
         lambdaScanCap=8,
         kfactor=0.1,
-        lambdaMin=1e-1,
+        lambdaMin=1e-3,
         comparisonRatio=0.15,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
-    HLT = InverseProblemWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, read_energies=0)
+    HLT = InverseProblemWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, energies=energies)
     HLT.prepareHLT()
     HLT.run()
-    HLT.stabilityPlot(generateHLTscan=True, generateLikelihoodShared=True, generateLikelihoodPlot=True, generateKernelsPlot=True)
-
+    HLT.stabilityPlot(generateHLTscan=True,
+                      generateLikelihoodShared=True,
+                      generateLikelihoodPlot=True,
+                      generateKernelsPlot=True) # Lots of plots as it is
+    HLT.plotResult()
     end()
 
 if __name__ == "__main__":

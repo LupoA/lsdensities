@@ -51,10 +51,11 @@ def stabilityPlot(invLapW, estar, savePlot=True, plot_live=False):
     setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 10))
     plt.title(
-        r"$E/M_{\pi}$"
+        r"$E/M_{\rm ref}$"
         + "= {:2.2f}  ".format(estar / invLapW.par.massNorm)
         + r" $\;\;\; \sigma$"
-        + r" = {:2.2f} $M_\pi$".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r" = {:2.2f} ".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r"$M_{\rm ref}$"
     )
     if invLapW.par.Na > 1:
         _a0label = r"$\alpha = {:1.2f}$".format(invLapW.algorithmPar.alphaA)
@@ -148,10 +149,11 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
     ax2.set_ylabel("NLL", fontsize=32)
     plt.subplots_adjust(hspace=0)
     ax.set_title(
-        r"$E/M_{\pi}$"
+        r"$E/M_{\rm ref}$"
         + "= {:2.2f}  ".format(estar / invLapW.par.massNorm)
         + r" $\sigma$"
-        + " = {:2.2f} $M_\pi$".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + " = {:2.2f} ".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r" $M_{\rm ref}$"
     )
     plt.tight_layout()
     if savePlot == True:
@@ -171,10 +173,11 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
     setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 10))
     plt.title(
-        r"$E/M_{\pi}$"
+        r"$E/M_{\rm ref}$"
         + "= {:2.2f}  ".format(estar / invLapW.par.massNorm)
         + r" $\;\;\; \sigma$"
-        + r" = {:2.2f} $M_\pi$".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r" = {:2.2f} ".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r" $M_{\rm ref}$"
     )
     plotNoErr(ax, invLapW.lambda_list[invLapW.espace_dictionary[estar]],
               invLapW.likelihood_list[invLapW.espace_dictionary[estar]],
@@ -217,6 +220,7 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
     return
 
 def plotAllKernels(invLapW):
+    setPlotOpt(plt)
     print(LogMessage(), "Plotting kernel functions")
     _name = "HLTCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
     with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
@@ -231,6 +235,8 @@ def plotAllKernels(invLapW):
             plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
 
 def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
+    setPlotOpt(plt)
+    fig, ax = plt.subplots(figsize=(8, 10))
     energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*8, ne_)
     kernel = np.zeros(ne_)
     for _e in range(len(energies)):
@@ -241,7 +247,7 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
             marker="o",
             markersize=3.8,
             ls="--",
-            label=label + " Kernel at $\omega/M_{\pi}$ = " + "{:2.1e}".format(omega/invLapW.par.massNorm),
+            label=label + " Kernel at $\omega/M_{ref}$ = " + "{:2.1e}".format(omega/invLapW.par.massNorm),
             color='black',
             markerfacecolor=CB_colors[0],
     )
@@ -253,8 +259,8 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
             color='red',
             linewidth=0.4,
     )
-    plt.title(r" $\sigma$" + " = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm) + r"$M_\pi$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
-    plt.xlabel(r"$E / M_{\pi}$", fontdict=tnr)
+    plt.title(r" $\sigma$" + " = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm) + r"$M_{\rm ref}$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
+    plt.xlabel(r"$E / M_{\rm ref}$", fontdict=tnr)
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
     plt.savefig(
         os.path.join(
@@ -269,4 +275,30 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
         dpi=400,
     )
     plt.clf()
+    return
+
+def plotSpectralDensity(invLapW):
+    print(LogMessage(), "Plotting spectral density")
+    setPlotOpt(plt)
+    fig, ax = plt.subplots(figsize=(8, 10))
+    plt.title(
+        r" $\;\;\; \sigma$"
+        + r" = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm)
+        + r"$M_{\rm ref}$"
+    )
+    plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultHLT, dtype=float), np.array(invLapW.drho_result, dtype=float), label='HLT', markerId=0, colorID=0)
+
+    plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultBayes, dtype=float),
+             np.array(invLapW.drho_bayes, dtype=float), label='Bayesian', markerId=1, colorID=1)
+
+    plt.xlabel(r"$E / M_{\rm ref}$", fontdict=tnr)
+    plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+    plt.savefig(
+        os.path.join(
+            invLapW.par.plotpath,
+            "RESULT{:2.2e}".format(invLapW.par.sigma)
+            + ".png",
+        ),
+        dpi=400,
+    )
     return
