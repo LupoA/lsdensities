@@ -75,86 +75,130 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     return res_
 
 
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
-    newt = mp.fsub(t, alpha)  #
-    aux = mp.fmul(sigma_, sigma_)  #   s^2
-    arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
-    aux = mp.fmul(arg, newt)  #   s^2 (alpha-t)^2
-    aux = mp.fmul(aux, mpf("0.5"))  #   s^2 (alpha-t)^2 /2
-    res = mp.exp(aux)  #   exp{s^2 (alpha-t)^2 /2}
-    aux = mp.fneg(newt)  #   alpha-t
-    aux = mp.fmul(e, aux)  #   e(alpha-t)
-    aux = mp.exp(aux)
-    res = mp.fmul(res, aux)  #   exp{s^2 (alpha-t)^2 /2} exp{estar (alpha-t) }
-    arg = mp.fadd(arg, e0)
-    arg = mp.fsub(arg, e)
-    arg = mp.fdiv(arg, sigma_)
-    aux = mp.sqrt(2)
-    arg = mp.fdiv(arg, aux)
-    arg = mp.erfc(arg)  #   this is the COMPLEMENTARY erf
-    res = mp.fmul(res, arg)
-    aux = mp.fdiv(e, aux)
-    aux = mp.fdiv(aux, sigma_)
-    aux = mp.erf(aux)
-    aux = mp.fadd(mpf(1), aux)
-    res = mp.fdiv(res, aux)
-    if type == "COSH":
-        assert T > 0
-        newt2 = mp.fadd(t, alpha)  # alpha+t
-        newt2 = mp.fsub(newt2, mpf(T))  # alpha+t-T
-        aux2 = mp.fmul(sigma_, sigma_)  # s^2
-        arg2 = mp.fmul(aux2, newt2)  # s^2 (t+alpha-T)
-        aux2 = mp.fmul(arg2, newt2)  # s^2 (alpha+t-T)^2
-        aux2 = mp.fmul(aux2, mpf("0.5"))  # s^2 (alpha+t-T)^2 /2
-        res2 = mp.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
-        aux2 = newt2  # alpha+t-T
-        aux2 = mp.fmul(e, aux2)  # e(alpha+t-T)
-        aux2 = mp.exp(aux2)
-        res2 = mp.fmul(res2, aux2)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
-        arg2 = mp.fsub(e0, arg2)
-        arg2 = mp.fsub(arg2, e)
-        arg2 = mp.fdiv(arg2, sigma_)
-        aux2 = mp.sqrt(2)
-        arg2 = mp.fdiv(arg2, aux2)
-        arg2 = mp.erfc(arg2)  # this is the COMPLEMENTARY erf
-        res2 = mp.fmul(res2, arg2)
-        aux2 = mp.fdiv(e, aux2)
-        aux2 = mp.fdiv(aux2, sigma_)
-        aux2 = mp.erf(aux2)
-        aux2 = mp.fadd(mpf(1), aux2)
-        res2 = mp.fdiv(res2, aux2)
-        res += res2
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='CAUCHY'):
+    if ker_type=='GAUSS':
+        newt = mp.fsub(t, alpha)  #
+        aux = mp.fmul(sigma_, sigma_)  #   s^2
+        arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
+        aux = mp.fmul(arg, newt)  #   s^2 (alpha-t)^2
+        aux = mp.fmul(aux, mpf("0.5"))  #   s^2 (alpha-t)^2 /2
+        res = mp.exp(aux)  #   exp{s^2 (alpha-t)^2 /2}
+        aux = mp.fneg(newt)  #   alpha-t
+        aux = mp.fmul(e, aux)  #   e(alpha-t)
+        aux = mp.exp(aux)
+        res = mp.fmul(res, aux)  #   exp{s^2 (alpha-t)^2 /2} exp{estar (alpha-t) }
+        arg = mp.fadd(arg, e0)
+        arg = mp.fsub(arg, e)
+        arg = mp.fdiv(arg, sigma_)
+        aux = mp.sqrt(2)
+        arg = mp.fdiv(arg, aux)
+        arg = mp.erfc(arg)  #   this is the COMPLEMENTARY erf
+        res = mp.fmul(res, arg)
+        aux = mp.fdiv(e, aux)
+        aux = mp.fdiv(aux, sigma_)
+        aux = mp.erf(aux)
+        aux = mp.fadd(mpf(1), aux)
+        res = mp.fdiv(res, aux)
+        if type == "COSH":
+            assert T > 0
+            newt2 = mp.fadd(t, alpha)  # alpha+t
+            newt2 = mp.fsub(newt2, mpf(T))  # alpha+t-T
+            aux2 = mp.fmul(sigma_, sigma_)  # s^2
+            arg2 = mp.fmul(aux2, newt2)  # s^2 (t+alpha-T)
+            aux2 = mp.fmul(arg2, newt2)  # s^2 (alpha+t-T)^2
+            aux2 = mp.fmul(aux2, mpf("0.5"))  # s^2 (alpha+t-T)^2 /2
+            res2 = mp.exp(aux2)  # exp{s^2 (alpha+t-T)^2 /2}
+            aux2 = newt2  # alpha+t-T
+            aux2 = mp.fmul(e, aux2)  # e(alpha+t-T)
+            aux2 = mp.exp(aux2)
+            res2 = mp.fmul(res2, aux2)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha+t-T) }
+            arg2 = mp.fsub(e0, arg2)
+            arg2 = mp.fsub(arg2, e)
+            arg2 = mp.fdiv(arg2, sigma_)
+            aux2 = mp.sqrt(2)
+            arg2 = mp.fdiv(arg2, aux2)
+            arg2 = mp.erfc(arg2)  # this is the COMPLEMENTARY erf
+            res2 = mp.fmul(res2, arg2)
+            aux2 = mp.fdiv(e, aux2)
+            aux2 = mp.fdiv(aux2, sigma_)
+            aux2 = mp.erf(aux2)
+            aux2 = mp.fadd(mpf(1), aux2)
+            res2 = mp.fdiv(res2, aux2)
+            res += res2
+
+    elif ker_type =='CAUCHY':
+        def ker(k, sigma_, omega_):
+            aux = omega_ - k
+            aux = aux * aux + sigma_ * sigma_
+            aux = sigma_ / aux
+            return aux
+
+        # Define the function to be integrated
+        def integrand(k):
+            aux = mp.exp(alpha * k)
+            aux2 = - t * k
+            aux2 = mp.exp(aux2)
+            aux3 = - (T - t) * k
+            aux3 = mp.exp(aux3)
+            aux2 = aux2 + aux3
+            aux = aux * aux2 * ker(k, sigma_, e)
+            return aux
+
+        from scipy.integrate import quad as scipy_quad
+        res, _ = scipy_quad(lambda k: float(integrand(k)), 0.0, np.inf)
+        #res = mp.quad(integrand, [e0, mpf(mp.inf)], maxdegree=300)
+
     return res
 
 
-def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
-    aux = mp.fmul(sigma_, sigma_)
-    aux = mp.fdiv(aux, mpf(2))
-    aux = mp.fmul(aux, alpha)
-    aux = mp.fadd(e_, aux)
-    aux = mp.fsub(aux, e0)
-    res = mp.fdiv(aux, sigma_)
-    res = mp.erf(res)  #   Erf
-    res = mp.fadd(1, res)  # 1+erf, the numerator
-    aux_ = mp.sqrt(mp.pi)
-    res = mp.fdiv(res, aux_)  # 1+erf /pi
-    res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
-    aux_ = mp.sqrt(2)
-    aux_ = mp.fdiv(e_, aux_)
-    aux_ = mp.fdiv(aux_, sigma_)
-    aux_ = mp.erf(aux_)
-    aux_ = mp.fadd(aux_, 1)
-    aux_ = mp.fmul(aux_, aux_)
-    res = mp.fdiv(res, aux_)
-    # alpha implementation
-    aux = mp.fmul(alpha, e_)  # alpha*e
-    aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
-    aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
-    aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
-    aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
-    aux = mp.exp(aux)
-    res = mp.fmul(res, aux)
+def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='CAUCHY'):
+    if ker_type == 'GAUSS':
+        aux = mp.fmul(sigma_, sigma_)
+        aux = mp.fdiv(aux, mpf(2))
+        aux = mp.fmul(aux, alpha)
+        aux = mp.fadd(e_, aux)
+        aux = mp.fsub(aux, e0)
+        res = mp.fdiv(aux, sigma_)
+        res = mp.erf(res)  #   Erf
+        res = mp.fadd(1, res)  # 1+erf, the numerator
+        aux_ = mp.sqrt(mp.pi)
+        res = mp.fdiv(res, aux_)  # 1+erf /pi
+        res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
+        aux_ = mp.sqrt(2)
+        aux_ = mp.fdiv(e_, aux_)
+        aux_ = mp.fdiv(aux_, sigma_)
+        aux_ = mp.erf(aux_)
+        aux_ = mp.fadd(aux_, 1)
+        aux_ = mp.fmul(aux_, aux_)
+        res = mp.fdiv(res, aux_)
+        # alpha implementation
+        aux = mp.fmul(alpha, e_)  # alpha*e
+        aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+        aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
+        aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
+        aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
+        aux = mp.exp(aux)
+        res = mp.fmul(res, aux)
 
+    elif ker_type == 'CAUCHY':
+
+        def ker(k, sigma_, omega_):
+            aux = omega_ - k
+            aux = aux * aux + sigma_ * sigma_
+            aux = sigma_ / aux
+            return aux
+
+        # Define the function to be integrated
+        def integrand2(k):
+            aux = alpha * k
+            aux = mp.exp(aux)
+            aux2 = ker(k, sigma_, e_) ** 2
+            aux = aux * aux2
+            return aux
+
+        from scipy.integrate import quad as scipy_quad
+        res, _ = scipy_quad(lambda k: float(integrand2(k)), 0.0, np.inf)
+        #res = mp.quad(integrand, [e0, mp.inf], maxdegree=300)
     return res
 
 
@@ -165,3 +209,10 @@ def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
     for ei in range(par.Ne):
         a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_)
     return a0_e
+
+
+def gte(T,t,e,periodicity):
+    if periodicity=='COSH':
+        return mp.fadd(mp.exp((-T+t)*e), mp.exp(-t*e))
+    if periodicity == 'EXP':
+        return mp.exp(-t*e)

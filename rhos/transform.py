@@ -88,3 +88,14 @@ def y_combine_sample_Eslice_mp(ht_sliced, mpmatrix, params):
             rhob[b] = mp.fadd(rhob[b], aux_)
     # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
     return averageScalar_mp(rhob)
+
+
+def combine_base_Eslice(ht_sliced, params, estar):
+
+    out_ = 0
+    for i in range(params.tmax):
+        aux_ = mp.fmul(ht_sliced[i],
+                    gte(T=params.time_extent, t=mpf(i+1), e=mpf(str(estar)), periodicity=params.periodicity)
+                    )
+        out_ = mp.fadd(out_, aux_)
+    return out_

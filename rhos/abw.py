@@ -27,6 +27,7 @@ def gAg(smat, gt, estar, alpha, params):
     #   term 2 = A0
 
     term3 = mpf(0)
+
     for t in range(tmax):
         aux_ = mp.fmul(
             ft_mp(
