@@ -8,6 +8,7 @@ def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
     in_.periodicity = args_.periodicity
+    in_.kerneltype = args_.kerneltype
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
