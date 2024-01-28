@@ -1,0 +1,14 @@
+text.usetex: True
+font.family: serif
+font.monospace: Computer Modern Roman
+lines.linewidth: 0.5  # set thicker line width
+lines.markersize : 3
+lines.markeredgewidth : 0.5
+errorbar.capsize : 1.5
+axes.linewidth : 0.5
+legend.fontsize : 14
+legend.handletextpad : 0.3
+legend.columnspacing : 0.5
+xtick.labelsize : 14  # set font size of x tick labels to 8
+ytick.labelsize : 14    # set font size of y tick labels to 8
+

@@ -8,6 +8,7 @@ def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
     in_.periodicity = args_.periodicity
+    in_.kerneltype = args_.kerneltype
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -88,7 +89,7 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
     #cNorm = mpf(str(corr.central[0] ** 2))
 
-    lambdaMax = 0.4
+    lambdaMax = 2.5
     #lambdaMax = 200
     #   Prepare
     hltParams = AlgorithmParameters(
@@ -100,15 +101,12 @@ def main():
         lambdaScanPrec=0.1,
         lambdaScanCap=6,
         kfactor=0.1,
-        lambdaMin=0.15
-
-
-
+        lambdaMin=0.5
     )
     #print('cNorm:', cNorm)
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
     #print(corr.mpcov)
-    #   Wrapper for the Inverse Problem
+    #   Wrapper for the Inverse z
     HLT = HLTWrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )

@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 _big = 100
 
-
 class AlgorithmParameters:
     def __init__(
         self,
@@ -129,13 +128,11 @@ class HLTWrapper:
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
-
     def fillEspaceMP(self):
         for e_id in range(self.par.Ne):
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
             self.espace_dictionary[self.espace[e_id]] = e_id
         self.espace_is_filled = True
-
     def prepareHLT(self):
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
@@ -143,7 +140,6 @@ class HLTWrapper:
             self.A0_B.evaluate(self.espaceMP)
         if self.algorithmPar.alphaC != 0:
             self.A0_C.evaluate(self.espaceMP)
-
     def report(self):
         print(LogMessage(), "Inverse problem ::: Time extent:", self.par.time_extent)
         print(LogMessage(), "Inverse problem ::: tmax:", self.par.tmax)
@@ -196,8 +192,6 @@ class HLTWrapper:
             self.e0MP,
             ")",
         )
-
-
     def lambdaToRho(self, lambda_, estar_, alpha_):
         import time
         #print("Print bnorm: ", self.matrix_bundle.bnorm)
@@ -230,7 +224,6 @@ class HLTWrapper:
         print(LogMessage(), "\t \t  A / A0 = ", float(gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])," (alpha = ", float(alpha_), ")")
 
         return rho_estar, drho_estar, gag_estar
-
     def lambdaToRho_mod(self, lambda_, estar_, alpha_):
         import time
         #print("Print bnorm: ", self.matrix_bundle.bnorm)
@@ -263,7 +256,6 @@ class HLTWrapper:
         print(LogMessage(), "\t \t  A / A0 = ", float(gag_estar/self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_])," (alpha = ", float(alpha_), ")")
 
         return rho_estar, drho_estar, gag_estar, _g_t_estar
-
     def scanLambda(self, estar_, alpha_):
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
@@ -554,20 +546,17 @@ class HLTWrapper:
 
         return self.rho_sys_err[self.espace_dictionary[estar_]]
 
-
     def plotKernel(self, _e):
         # Activating text rendering by LaTeX
         plt.style.use("paperdraft.mplstyle")
         _, _, _, gt = self.lambdaToRho_mod(lambda_=self.lambda_result[_e], estar_=self.espace[_e], alpha_=self.algorithmPar.alphaAmp)
 
-        self._plotKernel(gt, ne_=60, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaA)
+        self._plotKernel(gt, ne_=60, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaA, ker_type=self.par.kerneltype)
 
-
-
-    def _plotKernel(self, gt_, omega, alpha_, ne_=150, ker_type = 'CAUCHY'):
+    def _plotKernel(self, gt_, omega, alpha_, ne_=150, ker_type = 'GAUSS'):
         # Activating text rendering by LaTeX
         plt.style.use("paperdraft.mplstyle")
-        #plt.figure(figsize=(4, 2.0))
+        #plt.figure(figsize=(4.5, 2.0))
         energies = np.linspace(self.par.massNorm*0.05, self.par.massNorm*4.0, ne_)
         kernel = np.zeros(ne_)
         for _e in range(len(energies)):
@@ -579,7 +568,7 @@ class HLTWrapper:
             markersize=5.8,
             ls="--",
             linewidth = 1.2,
-            label="Ker. at $\omega/m_V$ = " + "{:2.1e}".format(omega/self.par.massNorm),
+            label="$\omega/m_0$ = " + "{:2.1e}".format(omega/self.par.massNorm),
             color='black',
             markerfacecolor=CB_colors[0],
         )
@@ -605,16 +594,16 @@ class HLTWrapper:
             linewidth=1.2,
         )
 
-        with open(os.path.join(self.par.logpath, 'Kernel.txt'), "a") as output:
+        with open(os.path.join(self.par.logpath, f'kernel_{omega}.txt'), "a") as output:
             for e_i in range(len(energies)):
                 print(energies[e_i] / self.par.massNorm,
                     kernel[e_i],
                     file=output)
 
-        plt.title(r" $\sigma$" + " = {:2.2f}".format(self.par.sigma / self.par.massNorm) + r"$m_V$ " + " $\;$ "+ r"$\alpha$ = {:2.1f}".format(alpha_), fontsize=14)
+        plt.title(r" $\sigma$" + " = {:2.2f}".format(self.par.sigma / self.par.massNorm) + r"$m_V$ " + " $\;$ "+ r"$\alpha$ = {:2.1f}".format(alpha_), fontsize=13)
         #plt.ylim((-0.1, 6.5))
-        plt.xlabel(r"$E / m_{V}$", fontsize = 14)
-        plt.legend(fontsize=7, loc=1, frameon=False)
+        plt.xlabel(r"$E / m_{0}$", fontsize = 13)
+        plt.legend(fontsize=9, loc=1, frameon=False)
         #plt.tight_layout()
         plt.savefig(
             os.path.join(
@@ -827,11 +816,11 @@ class HLTWrapper:
         plt.style.use("paperdraft.mplstyle")
         fig, ax = plt.subplots(2, 1, figsize=(6, 8))
         plt.title(
-            "$E/m_{V}$"
+            "$E/m_{0}$"
             + "= {:2.2f}        ".format(estar / self.par.massNorm)
             + r" $\sigma$"
             + " = {:2.2f}".format(self.par.sigma / self.par.massNorm)
-            + "$m_{V}$", fontsize=14
+            + "$m_{0}$", fontsize=14
         )
         ax[0].errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),

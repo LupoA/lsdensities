@@ -6,21 +6,6 @@ import numpy as np
 sys.path.append("../utils")
 import math
 
-
-def Smatrix_sigma_mp(tmax_, sigma_):  # for gaussian processes once implemented
-    exit(0)
-    S_ = mp.matrix(tmax_, tmax_)
-    for i in range(tmax_):
-        for j in range(tmax_):
-            entry = mp.quad(
-                lambda x: b_times_exp_mp(x, i + 1, j + 1, sigma_),
-                [0, mp.inf],
-                error=True,
-            )
-            S_[i, j] = entry[0]
-    return S_
-
-
 def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
     S_ = mp.matrix(tmax_, tmax_)
     for i in range(tmax_):
@@ -60,8 +45,6 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
                 entry4 = mp.fdiv(arg4, entry4)
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
-
-
 def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     fact_ = mp.sqrt(2)
     res_ = mp.fdiv(estar_, fact_)
@@ -73,9 +56,7 @@ def Zfact_mp(estar_, sigma_):  # int_0^inf dE exp{(-e-estar)^2/2s^2}
     fact_ = mp.sqrt(fact_)  # sqrt(pi/2)
     res_ = mp.fmul(res_, fact_)  # sqrt(pi/2) sigma (1 + erf [e/(sqrt2 sigma)])
     return res_
-
-
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='CAUCHY'):
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='GAUSS'):
     if ker_type=='GAUSS':
         newt = mp.fsub(t, alpha)  #
         aux = mp.fmul(sigma_, sigma_)  #   s^2
@@ -149,9 +130,7 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='CAUCHY'):
         #res = mp.quad(integrand, [e0, mpf(mp.inf)], maxdegree=300)
 
     return res
-
-
-def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='CAUCHY'):
+def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='GAUSS'):
     if ker_type == 'GAUSS':
         aux = mp.fmul(sigma_, sigma_)
         aux = mp.fdiv(aux, mpf(2))
@@ -200,17 +179,13 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='CAUCHY'):
         res, _ = scipy_quad(lambda k: float(integrand2(k)), 0.0, np.inf)
         #res = mp.quad(integrand, [e0, mp.inf], maxdegree=300)
     return res
-
-
 def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
     if e0_ == 0:
         e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):
-        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_)
+        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=alpha_, e0=e0_, ker_type=par.kerneltype)
     return a0_e
-
-
 def gte(T,t,e,periodicity):
     if periodicity=='COSH':
         return mp.fadd(mp.exp((-T+t)*e), mp.exp(-t*e))
