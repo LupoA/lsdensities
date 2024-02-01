@@ -22,7 +22,7 @@ def init_variables(args_):
     in_.sigma = args_.sigma
     in_.emax = args_.emax * Mpi
     in_.Ne = args_.ne
-    in_.alpha = args_.alpha
+#    in_.alpha = args_.alpha
     in_.assign_values()
     return in_
 

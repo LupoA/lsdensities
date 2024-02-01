@@ -8,6 +8,7 @@ def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
     in_.periodicity = args_.periodicity
+    in_.kerneltype = args_.kerneltype
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -86,24 +87,26 @@ def main():
     print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
 
     cNorm = mpf(str(corr.central[1] ** 2))
+    #cNorm = mpf(str(corr.central[0] ** 2))
 
-    lambdaMax = 1e+5
-
+    lambdaMax = 2.5
+    #lambdaMax = 200
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=-1,
+        alphaB=-1.00,
         alphaC=-1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
-        lambdaScanPrec=1,
-        lambdaScanCap=20,
+        lambdaScanPrec=0.1,
+        lambdaScanCap=6,
         kfactor=0.1,
-        lambdaMin=1e-6
+        lambdaMin=0.5
     )
+    #print('cNorm:', cNorm)
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
-
-    #   Wrapper for the Inverse Problem
+    #print(corr.mpcov)
+    #   Wrapper for the Inverse z
     HLT = HLTWrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
