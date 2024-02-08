@@ -161,8 +161,10 @@ class InverseProblemWrapper:
         self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)#   from plateau in lambda
         self.rhoResultBayes = np.ndarray(self.par.Ne, dtype=np.float64)  #   from min of NLL
         self.drho_bayes = np.ndarray(self.par.Ne, dtype=np.float64) #   frin min of NLL
-        self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_sys_err_HLT = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_quadrature_err_HLT = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_sys_err_Bayes = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_quadrature_err_Bayes = np.ndarray(self.par.Ne, dtype=np.float64)
         self.gt_HLT = [[] for _ in range(self.par.Ne)]      #   from plateau in lambda
         self.gt_Bayes = [[] for _ in range(self.par.Ne)]    #   from min of NLL
         self.aa0 = np.ndarray(self.par.Ne, dtype=np.float64)    # A / A0 for the result (HLT only)
@@ -410,8 +412,28 @@ class InverseProblemWrapper:
 
         return _lambdaStarHLT, _rhoHLT, _drhoHLT, _minNLL, _lambdaStarBayes, _rhoBayes, _drhoBayes, _gtHLT, _gtBAYES, gag_flag
 
-    def estimate_sys_error(self, estar_):
-        return 0
+    def estimate_sys_error(self, e_i):
+
+        _this_y_HLT = self.rhoResultHLT[e_i]  # rho at lambda*
+        _that_y_HLT, _, _, _, _, _ = self.lambdaToRho(self.lambdaResultHLT[e_i]* self.algorithmPar.kfactor, self.espace[e_i], alpha_=0)
+
+        _this_y_Bayes = self.rhoResultBayes[e_i]  # rho at lambda*
+        _that_y_Bayes, _, _, _, _, _ = self.lambdaToRho(self.lambdaResultBayes[e_i]* self.algorithmPar.kfactor, self.espace[e_i], alpha_=0)
+
+        self.rho_sys_err_HLT[e_i] = abs(_this_y_HLT - _that_y_HLT) / 2
+        self.rho_quadrature_err_HLT[e_i] = np.sqrt(
+            self.rho_sys_err_HLT[e_i] ** 2
+            + self.drho_result[e_i] ** 2
+        )
+
+        self.rho_sys_err_Bayes[e_i] = abs(_this_y_Bayes - _that_y_Bayes) / 2
+        self.rho_quadrature_err_Bayes[e_i] = np.sqrt(
+            self.rho_sys_err_Bayes[e_i] ** 2
+            + self.drho_bayes[e_i] ** 2
+        )
+
+
+        return self.rho_sys_err_HLT[e_i], self.rho_sys_err_Bayes[e_i]
 
     #TODO: find a good place for printing g_t
     def run(self, savePlots=True, livePlots=False):
@@ -422,10 +444,11 @@ class InverseProblemWrapper:
 
         for e_i in range(self.par.Ne):
             lambdaHLT, rhoHLT, errHLT, minNLL, lambdaBayes, rhoBayes, errBayes, gtHLT, gtBayes, gaa0g = self.scanParameters(self.espace[e_i])
+            _ = self.estimate_sys_error(e_i)
             with open(os.path.join(self.par.logpath, 'ResultHLT.txt'), "a") as output:
-                print(self.espace[e_i], self.lambdaResultHLT[e_i], float(self.rhoResultHLT[e_i]), float(self.drho_result[e_i]), 0, 0, float(self.aa0[e_i]), file=output)
+                print(self.espace[e_i], self.lambdaResultHLT[e_i], float(self.rhoResultHLT[e_i]), float(self.drho_result[e_i]), float(self.rho_sys_err_HLT[e_i]), float(self.rho_quadrature_err_HLT[e_i]), float(self.aa0[e_i]), file=output)
             with open(os.path.join(self.par.logpath, 'ResultBayes.txt'), "a") as output:
-                print(self.espace[e_i], self.lambdaResultBayes[e_i], float(self.rhoResultBayes[e_i]), float(self.drho_bayes[e_i]), 0, 0, float(self.minNLL[e_i]), file=output)
+                print(self.espace[e_i], self.lambdaResultBayes[e_i], float(self.rhoResultBayes[e_i]), float(self.drho_bayes[e_i]), float(self.rho_sys_err_Bayes[e_i]), float(self.rho_quadrature_err_Bayes[e_i]), float(self.minNLL[e_i]), file=output)
 
         return 0
 

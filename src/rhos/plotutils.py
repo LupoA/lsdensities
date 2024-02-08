@@ -286,10 +286,10 @@ def plotSpectralDensity(invLapW):
         + r" = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm)
         + r"$M_{\rm ref}$"
     )
-    plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultHLT, dtype=float), np.array(invLapW.drho_result, dtype=float), label='HLT', markerId=0, colorID=0)
+    plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultHLT, dtype=float), np.array(invLapW.rho_quadrature_err_HLT, dtype=float), label='HLT', markerId=0, colorID=0)
 
     plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultBayes, dtype=float),
-             np.array(invLapW.drho_bayes, dtype=float), label='Bayesian', markerId=1, colorID=1)
+             np.array(invLapW.rho_quadrature_err_Bayes, dtype=float), label='Bayesian', markerId=1, colorID=1)
 
     plt.xlabel(r"$E / M_{\rm ref}$", fontdict=tnr)
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
