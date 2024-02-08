@@ -27,8 +27,8 @@ python3 -m pip install ./HLTRho-0.0.1.tar.gz
 ```python
 import rhos
 
-# e.g. compute the S_matrix
-rhos.core.S_matrix_mp(t_max, alpha)
+# e.g. compute the S matrix
+rhos.core.Smatrix_mp(t_max, alpha)
 ```
 
 ## Contributing
