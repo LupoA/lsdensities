@@ -15,7 +15,7 @@ Being within the root directory rhos/, where 'pyproject.toml' is located, one ca
 python3 -m build
 ```
 
-Then, one can install the distribution package
+This will create a new subdirectory 'dist'. Then, one can install the distribution package
 
 ```bash
 cd dist/
