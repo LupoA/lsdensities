@@ -2,6 +2,7 @@ import numpy as np
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
 import math
+import random
 
 
 def averageVector_fp(vector, get_error=True, get_var=False):
@@ -59,7 +60,7 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
 
 def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
     import rhoUtils
-
+    random.seed(1994)
     randv = np.zeros(par_.num_samples)
     if is_folded == False:
         for b in range(start, end):

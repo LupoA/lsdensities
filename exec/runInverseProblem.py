@@ -1,5 +1,5 @@
 import sys
-
+import random
 sys.path.append("..")
 from importall import *
 
@@ -32,6 +32,7 @@ def init_variables(args_):
 
 def main():
     print(LogMessage(), "Initialising")
+    #random.seed(1994)
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
@@ -42,21 +43,20 @@ def main():
     par.report()
     par.plotpath, par.logpath = create_out_paths(par)
 
-    #   Here is the correlator
+    #   Correlator
     rawcorr.evaluate()
     rawcorr.tmax = par.tmax
-
-    #   Symmetrise
     if par.periodicity == "COSH":
         print(LogMessage(), "Folding correlator")
         symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
         symCorr.evaluate()
 
-    #   Here is the resampling
+    #   Resampling
     if par.periodicity == "EXP":
         corr = u.Obs(
             T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
         )
+        resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
     if par.periodicity == "COSH":
         corr = u.Obs(
             T=symCorr.T,
@@ -64,63 +64,54 @@ def main():
             nms=par.num_boot,
             is_resampled=True,
         )
-
-    if par.periodicity == "COSH":
-        #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
         resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
-    if par.periodicity == "EXP":
-        resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
 
     corr.sample = resample.run()
     corr.evaluate()
+    #   -   -   -   -   -   -   -   -   -   -   -
 
     #   Covariance
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
-
-    with open(os.path.join(par.outdir,'corrmatrix.txt'), "w") as output:
+    with open(os.path.join(par.logpath,'covarianceMatrix.txt'), "w") as output:
         for i in range(par.time_extent):
             for j in range(par.time_extent):
-                print(i, j, corr.corrmat[i,j], file=output)
+                print(i, j, corr.cov[i,j], file=output)
+    #   -   -   -   -   -   -   -   -   -   -   -
 
-    #   Make it into a mp sample
+    #   Turn correlator into mpmath variable
     print(LogMessage(), "Converting correlator into mpmath type")
-    # mpcorr_sample = mp.matrix(par.num_boot, tmax)
     corr.fill_mp_sample()
     print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
 
-    cNorm = mpf(str(corr.central[1] ** 2))
-
-    lambdaMax = 1e+8
-
     #   Prepare
+    cNorm = mpf(str(corr.central[1] ** 2))
+    lambdaMax = 1e+4
+    energies = np.linspace(par.emin, par.emax, par.Ne)
+
     hltParams = AlgorithmParameters(
         alphaA=0,
         alphaB=1/2,
         alphaC=+1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
-        lambdaScanPrec=1,
-        lambdaScanCap=16,
+        lambdaScanCap=8,
         kfactor=0.1,
-        lambdaMin=1e-6
+        lambdaMin=1e-3,
+        comparisonRatio=0.15,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
-    #   Wrapper for the Inverse Problem
-    HLT = HLTWrapper(
-        par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
-    )
+    HLT = InverseProblemWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, energies=energies)
     HLT.prepareHLT()
-
-    #   Run
-    HLT.run(how_many_alphas=par.Na)
-    HLT.plotParameterScan(how_many_alphas=par.Na, save_plots=True, plot_live=True)
-    HLT.plotRhos(savePlot=True)
-
+    HLT.run()
+    HLT.stabilityPlot(generateHLTscan=True,
+                      generateLikelihoodShared=True,
+                      generateLikelihoodPlot=True,
+                      generateKernelsPlot=True) # Lots of plots as it is
+    HLT.plotResult()
     end()
-
 
 if __name__ == "__main__":
     main()

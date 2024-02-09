@@ -79,11 +79,6 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    with open(os.path.join(par.outdir,'corrmatrix.txt'), "w") as output:
-        for i in range(par.time_extent):
-            for j in range(par.time_extent):
-                print(i, j, corr.corrmat[i,j], file=output)
-
     #   Make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
     # mpcorr_sample = mp.matrix(par.num_boot, tmax)
@@ -92,32 +87,32 @@ def main():
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+8
+    lambdaMax = 1e+4
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=1/2,
+        alphaB=-1.99,
         alphaC=+1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
         lambdaScanPrec=1,
-        lambdaScanCap=16,
+        lambdaScanCap=10,
         kfactor=0.1,
-        lambdaMin=1e-6
+        lambdaMin=1e-5
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
-    HLT = HLTWrapper(
+    HLTGP = HLTWGPrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
-    HLT.prepareHLT()
+    HLTGP.prepareHLT()
 
     #   Run
-    HLT.run(how_many_alphas=par.Na)
-    HLT.plotParameterScan(how_many_alphas=par.Na, save_plots=True, plot_live=True)
-    HLT.plotRhos(savePlot=True)
+    HLTGP.run(how_many_alphas=par.Na, plot_live=True, enableBootErr=True)
+    HLTGP.plotParameterScan(how_many_alphas=par.Na, save_plots=True)
+    HLTGP.plotRhos(savePlot=True)
 
     end()
 

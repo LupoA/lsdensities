@@ -20,7 +20,7 @@ class AlgorithmParameters:
     def __init__(
         self,
         alphaA=0,
-        alphaB=1/2,
+        alphaB=0.5,
         alphaC=1.99,
         lambdaMax=50,
         lambdaStep=0.5,
@@ -43,6 +43,41 @@ class AlgorithmParameters:
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
         self.lambdaMin = lambdaMin
+
+class SigmaMatrix:
+    def __init__(self, par: Inputs, alphaMP=0):
+        self.par = par
+        self.tmax = par.tmax
+        self.alpha=alphaMP
+        self.matrix = mp.matrix(par.tmax, par.tmax)
+    def evaluate(self):
+        print(LogMessage(), "Computing b_t(E) K(E,E') b_r(E') for Alpha = {:2.2f}".format(self.alpha))
+        _title = 'SMat_Sigma' + str(self.par.sigma) + 'Alpha' + str(self.alpha) + 'Prec' + str(self.par.prec) + 'tmax' + str(self.par.tmax) + '.txt'
+        with open(os.path.join(self.par.logpath, _title), "w") as output:
+            for i in range(self.tmax):
+                for j in range(self.tmax):
+                    entry = mp.quad(
+                        lambda x: integrandSigmaMat(x, mpf(str(self.alpha)), mpf(str(self.par.sigma)), mpf(i+1), mpf(j+1), mpf(str(self.par.e0)), self.par),
+                        [self.par.e0, mp.inf],
+                        error=True,
+                        method='tanh-sinh'
+                    )
+                    print(LogMessage(), "\t (t,r) = (", i, j, ") = ", entry[0])
+
+                    print(i, j, entry[0], file=output)
+                self.matrix[i, j] = entry[0]
+    def read(self):
+        _title = 'SMat_Sigma' + str(self.par.sigma) + 'Alpha' + str(self.alpha) + 'Prec' + str(self.par.prec) + 'tmax' + str(self.par.tmax) + '.txt'
+        path_to_matrix = os.path.join(self.par.logpath, _title)
+        print(LogMessage(), "Reading Sigma Matrix from file: ", _title)
+        with open(path_to_matrix, 'r') as file:
+            for line in file:
+                # Split the line into three values
+                a, b, c = line.split()
+
+                a = int(a)
+                b = int(b)
+                self.matrix[a,b] = mpf(str(c))
 
 
 class A0_t:
@@ -71,18 +106,20 @@ class A0_t:
         self.is_filled = True
 
 
-class HLTWrapper:
+class GaussianProcessWrapper:
     def __init__(
         self,
         par: Inputs,
         algorithmPar: AlgorithmParameters,
         matrix_bundle: MatrixBundle,
         correlator: Obs,
+        read_SIGMA = False
     ):
         self.par = par
         self.correlator = correlator
         self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
+        self.read_SIGMA = read_SIGMA
         #
         self.espace = np.linspace(par.emin, par.emax, par.Ne)
         self.e0MP = mpf(str(par.e0))
@@ -107,6 +144,14 @@ class HLTWrapper:
         self.selectA0[algorithmPar.alphaA] = self.A0_A
         self.selectA0[algorithmPar.alphaB] = self.A0_B
         self.selectA0[algorithmPar.alphaC] = self.A0_C
+        #Sigma Mat
+        self.SigmaMatA = SigmaMatrix(self.par, algorithmPar.alphaA)
+        self.SigmaMatB = SigmaMatrix(self.par, algorithmPar.alphaB)
+        self.SigmaMatC = SigmaMatrix(self.par, algorithmPar.alphaC)
+        self.selectSigmaMat = {}
+        self.selectSigmaMat[algorithmPar.alphaA] = self.SigmaMatA
+        self.selectSigmaMat[algorithmPar.alphaB] = self.SigmaMatB
+        self.selectSigmaMat[algorithmPar.alphaC] = self.SigmaMatC
         #
         self.espace_is_filled = False
         #   Lists of result as functions of lambda
@@ -123,6 +168,7 @@ class HLTWrapper:
         #   Results
         self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
         self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.gt_result = mp.matrix(self.par.Ne, 1)
         self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
         self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
@@ -134,13 +180,27 @@ class HLTWrapper:
             self.espace_dictionary[self.espace[e_id]] = e_id
         self.espace_is_filled = True
 
-    def prepareHLT(self):
+    def prepareGP(self):
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
-        if self.algorithmPar.alphaB != 0:
+        if self.read_SIGMA == False:
+            self.SigmaMatA.evaluate()
+        if self.read_SIGMA == True:
+            self.SigmaMatA.read()
+
+        if self.par.Na == 2 or self.par.Na==3:
             self.A0_B.evaluate(self.espaceMP)
-        if self.algorithmPar.alphaC != 0:
+            if self.read_SIGMA == False:
+                self.SigmaMatB.evaluate()
+            if self.read_SIGMA == True:
+                self.SigmaMatB.read()
+
+        if self.par.Na==3:
             self.A0_C.evaluate(self.espaceMP)
+            if self.read_SIGMA == False:
+                self.SigmaMatC.evaluate()
+            if self.read_SIGMA == True:
+                self.SigmaMatC.read()
 
     def report(self):
         print(LogMessage(), "Inverse problem ::: Time extent:", self.par.time_extent)
@@ -201,26 +261,34 @@ class HLTWrapper:
 
         _Bnorm = (self.matrix_bundle.bnorm / (estar_ * estar_))
         _factor = (lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]) / _Bnorm
-        print(LogMessage(), "Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
-        S_ = Smatrix_mp(
-            tmax_=self.par.tmax,
-            alpha_=alpha_,
-            e0_=self.par.mpe0,
-            type=self.par.periodicity,
-            T=self.par.time_extent,
-        )
+        S_ = self.selectSigmaMat[float(alpha_)].matrix
         _M = S_ + (_factor * self.matrix_bundle.B)
         start_time = time.time()
         _Minv = invert_matrix_ge(_M)
         end_time = time.time()
         print(LogMessage(), "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format( end_time - start_time), "s")
+
         _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_, alpha_=alpha_)
-        rho_estar, drho_estar = y_combine_sample_Eslice_mp(
-            _g_t_estar, self.correlator.mpsample, self.par
-        )
+        rho_estar = y_combine_central_Eslice_mp(_g_t_estar, self.correlator.mpcentral, self.par)
+        varianceRho = combine_fMf_Eslice(ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_)
+        print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
+
+        zeta_term = Zfact_mp(estar_, self.par.sigma)
+        zeta_term = mp.fdiv( mp.exp(estar_*alpha_) , zeta_term)
+
+        if varianceRho < 0 :
+            print(LogMessage(), varianceRho)
+        varianceRho = abs(zeta_term - varianceRho)
+
+        varianceRho = mp.fdiv(varianceRho, _factor)
+        varianceRho = mp.fdiv(varianceRho, mpf(2))
+
+        drho_estar = mp.sqrt(varianceRho)
+
+        print(LogMessage(), "\t \t lambdaToRho ::: Bayesian central = {:2.4e}".format(float(rho_estar)))
+        print(LogMessage(), "\t \t lambdaToRho ::: Bayesian variance = {:2.4e}".format(float(drho_estar)))
 
         gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
-
         gBg_estar = gBg(_g_t_estar, self.matrix_bundle.B, _Bnorm)
 
         print(LogMessage(), "\t \t  B / Bnorm = ", float(gBg_estar), " (alpha = ", float(alpha_), ")")
@@ -266,7 +334,7 @@ class HLTWrapper:
                 "\t Setting Alpha ::: Alpha = ",
                 self.algorithmPar.alphaA,
             )
-            _this_updated_rho, _this_updated_drho, _this_gAg, _ = self.lambdaToRho(
+            _this_updated_rho, _this_updated_drho, _this_gAg, _  = self.lambdaToRho(
                 lambda_, estar_, self.algorithmPar.alphaAmp
             )
             self.rho_list[self.espace_dictionary[estar_]].append(
@@ -377,7 +445,7 @@ class HLTWrapper:
 
         # Setting alpha to the first value
         print(LogMessage(), "\t Setting Alpha ::: First Alpha = ", float(self.algorithmPar.alphaA))
-        _this_rho, _this_drho, _this_gAg, _ = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
+        _this_rho, _this_drho, _this_gAg, _  = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
         self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)  #   store
         self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)  #   store
         self.gAA0g_list[self.espace_dictionary[estar_]].append(_this_gAg/ self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_])  #   store
@@ -385,7 +453,7 @@ class HLTWrapper:
         print(LogMessage(), "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaA), " = {:1.3e}".format(float(_this_rho)), " Stat = {:1.3e}".format(float(_this_drho)))
         # Setting alpha to the second value
         print(LogMessage(), "\t Setting Alpha ::: Second Alpha = ", float(self.algorithmPar.alphaB))
-        _this_rho2, _this_drho2, _this_gAg2, _ = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)  #   _this_drho will remain the first one
+        _this_rho2, _this_drho2, _this_gAg2, _  = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)  #   _this_drho will remain the first one
         self.rho_list_alpha2[self.espace_dictionary[estar_]].append(_this_rho2)  #   store
         self.drho_list_alpha2[self.espace_dictionary[estar_]].append(_this_drho2)  #   store
         self.gAA0g_list_alpha2[self.espace_dictionary[estar_]].append(_this_gAg2/ self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_])  #   store
@@ -393,7 +461,7 @@ class HLTWrapper:
         # Setting alpha for the third value
         if how_many_alphas == 3:
             print(LogMessage(), "\t Setting Alpha ::: Third Alpha = ", float(self.algorithmPar.alphaC))
-            _this_rho3, _this_drho3, _this_gAg3, _ = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)  # _this_drho will remain the first one
+            _this_rho3, _this_drho3, _this_gAg3, _  = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)  # _this_drho will remain the first one
             self.rho_list_alpha3[self.espace_dictionary[estar_]].append(_this_rho3)  # store
             self.drho_list_alpha3[self.espace_dictionary[estar_]].append(_this_drho3)  # store
             self.gAA0g_list_alpha3[self.espace_dictionary[estar_]].append(_this_gAg3/ self.selectA0[self.algorithmPar.alphaC].valute_at_E_dictionary[estar_])  # store
@@ -409,7 +477,7 @@ class HLTWrapper:
                 "\t Setting Alpha ::: First Alpha = ",
                 self.algorithmPar.alphaA,
             )
-            _this_updated_rho, _this_updated_drho, _this_gAg, _ = self.lambdaToRho(
+            _this_updated_rho, _this_updated_drho, _this_gAg, _  = self.lambdaToRho(
                 lambda_, estar_, self.algorithmPar.alphaAmp
             )
             self.rho_list[self.espace_dictionary[estar_]].append(
@@ -423,7 +491,7 @@ class HLTWrapper:
             print(LogMessage(), "\t \t ", f"{bcolors.OKBLUE}Residual{bcolors.ENDC}" + " = ", float(_residual1), "(alpha = {:2.2f}".format(self.algorithmPar.alphaA), ")")
 
             print(LogMessage(), "\t Setting Alpha ::: Second Alpha = ", self.algorithmPar.alphaB)
-            _this_updated_rho2, _this_updated_drho2, _this_gAg2, _ = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
+            _this_updated_rho2, _this_updated_drho2, _this_gAg2, _  = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
             self.rho_list_alpha2[self.espace_dictionary[estar_]].append(_this_updated_rho2)  # store
             print(LogMessage(), "\t \t  Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaB), "= {:1.3e}".format(float(_this_updated_rho2)), "Stat = {:1.3e}".format(float(_this_updated_drho2)))
             self.drho_list_alpha2[self.espace_dictionary[estar_]].append(_this_updated_drho2)  # store
@@ -434,7 +502,7 @@ class HLTWrapper:
 
             if how_many_alphas == 3:
                 print(LogMessage(), "\t Setting Alpha ::: Third Alpha = ", self.algorithmPar.alphaC)
-                _this_updated_rho3, _this_updated_drho3, _this_gAg3, _ = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
+                _this_updated_rho3, _this_updated_drho3, _this_gAg3, _  = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
                 self.rho_list_alpha3[self.espace_dictionary[estar_]].append(_this_updated_rho3)  # store
                 print(LogMessage(), "\t \t  Rho (Alpha = {:2.2f}) ".format( self.algorithmPar.alphaC), "= {:1.3e}".format(float(_this_updated_rho3)), "Stat = {:1.3e}".format(float(_this_updated_drho3)))
                 self.drho_list_alpha3[self.espace_dictionary[estar_]].append(_this_updated_drho3)  # store
@@ -460,7 +528,7 @@ class HLTWrapper:
                     lambda_flag = lambda_
                     rho_flag = _this_updated_rho
                     drho_flag = _this_updated_drho
-                if _count == 6:
+                if _count == 7:
                     lambda_flag = lambda_
                     rho_flag = _this_updated_rho
                     drho_flag = _this_updated_drho
@@ -536,8 +604,8 @@ class HLTWrapper:
         assert self.result_is_filled[self.espace_dictionary[estar_]] == True
 
         _this_y = self.rho_result[self.espace_dictionary[estar_]]  #   rho at lambda*
-        _that_y, _that_yerr, _that_x, _ = self.lambdaToRho(
-            self.lambda_result[self.espace_dictionary[estar_]]
+        _that_y, _that_yerr, _that_x, _  = self.lambdaToRho(
+            float(self.lambda_result[self.espace_dictionary[estar_]])
             * self.algorithmPar.kfactor,
             estar_,
             alpha_=0,
@@ -560,35 +628,39 @@ class HLTWrapper:
 
         return self.rho_sys_err[self.espace_dictionary[estar_]]
 
-    def plotKernel(self):
+    def plotKernel(self, plot_gaussian=False):
         _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaA)) + '.txt'
         with open(os.path.join(self.par.logpath, _name), "w") as output:
             for _e in range(self.par.Ne):
                 _, _, _, gt = self.lambdaToRho(lambda_=self.lambda_result[_e], estar_=self.espace[_e], alpha_=self.algorithmPar.alphaAmp)
                 print(self.espace[_e], gt, file=output)
 
-            self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaA)
+            self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaA, plot_gaussian=plot_gaussian)
 
         _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaB)) + '.txt'
         with open(os.path.join(self.par.logpath, _name), "w") as output:
             for _e in range(self.par.Ne):
                 _, _, _, gt = self.lambdaToRho(lambda_=self.lambda_result[_e], estar_=self.espace[_e], alpha_=self.algorithmPar.alphaBmp)
                 print(self.espace[_e], gt, file=output)
-        self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaB)
+        self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaB, plot_gaussian=plot_gaussian)
 
         _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaC)) + '.txt'
         with open(os.path.join(self.par.logpath, _name), "w") as output:
             for _e in range(self.par.Ne):
                 _, _, _, gt = self.lambdaToRho(lambda_=self.lambda_result[_e], estar_=self.espace[_e], alpha_=self.algorithmPar.alphaCmp)
                 print(self.espace[_e], gt, file=output)
-        self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaC)
+        self._plotKernel(gt, ne_=40, omega=self.espace[_e], alpha_ = self.algorithmPar.alphaC, plot_gaussian=plot_gaussian)
 
 
-    def _plotKernel(self, gt_, omega, alpha_, ne_=70):
+    def _plotKernel(self, gt_, omega, alpha_, ne_=40, plot_gaussian=False):
         energies = np.linspace(self.par.massNorm*0.05, self.par.massNorm*8, ne_)
         kernel = np.zeros(ne_)
-        for _e in range(len(energies)):
-            kernel[_e] = combine_base_Eslice(gt_, self.par, energies[_e])
+        _file = "SmearingKernelSigma{:2.2e}".format(self.par.sigma) + "Enorm{:2.2e}".format(self.par.massNorm) + "Energy{:2.2e}".format(omega) + "Alpha{:2.2f}".format(alpha_)+ ".txt"
+
+        with open(os.path.join(self.par.logpath, _file), "w") as output:
+            for _e in range(len(energies)):
+                kernel[_e] = combine_base_Eslice(gt_, self.par, energies[_e])
+                print(energies[_e], kernel[_e], file=output)
         plt.plot(
             energies / self.par.massNorm,
             kernel,
@@ -599,14 +671,15 @@ class HLTWrapper:
             color='black',
             markerfacecolor=CB_colors[0],
         )
-        plt.plot(
-            energies / self.par.massNorm,
-            gauss_fp(energies, omega, self.par.sigma, norm="half"),
-            ls = '-',
-            label = 'Exact',
-            color='red',
-            linewidth=0.4,
-        )
+        if plot_gaussian == True:
+            plt.plot(
+                energies / self.par.massNorm,
+                gauss_fp(energies, omega, self.par.sigma, norm="half"),
+                ls = '-',
+                label = 'Gaussian',
+                color='red',
+                linewidth=0.4,
+            )
         plt.title(r" $\sigma$" + " = {:2.2f}".format(self.par.sigma / self.par.massNorm) + r"$M_\pi$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
         plt.xlabel(r"$E / M_{\pi}$", fontdict=tnr)
         plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
@@ -624,7 +697,6 @@ class HLTWrapper:
         )
         plt.clf()
         return
-
 
     def run(self, how_many_alphas=1, saveplots=True, plot_live=False):
 
@@ -650,7 +722,7 @@ class HLTWrapper:
             for e_i in range(self.par.Ne):
                 _, _, _, _, _, _ = self.scanLambdaAlpha(self.espace[e_i], how_many_alphas=how_many_alphas)
                 _ = self.estimate_sys_error(self.espace[e_i])
-                self.plotKernel()
+                self.plotKernel(plot_gaussian=False)
                 if saveplots==True:
                     self.plotStabilityMultipleAlpha(estar=self.espace[e_i], savePlot=saveplots, nalphas=how_many_alphas, plot_live=plot_live)
             print(
@@ -667,7 +739,6 @@ class HLTWrapper:
                 "how_many_alphas : Invalid value specified. Only 1, 2 or 3 are allowed."
             )
 
-
     def plotParameterScan(self, how_many_alphas=1, save_plots=True, plot_live=False):
         assert all(self.result_is_filled) == True
         if how_many_alphas == 1:
@@ -677,14 +748,13 @@ class HLTWrapper:
         elif how_many_alphas == 2 or how_many_alphas == 3:
             for e_i in range(self.par.Ne):
                 self.plotStabilityMultipleAlpha(
-                    estar=self.espace[e_i], savePlot=save_plots, nalphas=how_many_alphas, plot_live=plot_live
+                    estar=self.espace[e_i], savePlot=save_plots, nalphas=how_many_alphas
                 )
             return
         else:
             raise ValueError(
                 "how_many_alphas : Invalid value specified. Only 1, 2 or 3 are allowed."
             )
-
 
     def plotRhos(self, savePlot=True):
         plt.errorbar(
@@ -748,14 +818,14 @@ class HLTWrapper:
         return
 
     def plotStability(self, estar: float, savePlot=True, plot_live=False):
-        fig, ax = plt.subplots(2, 1, figsize=(6, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(6, 8))
         plt.title(
             r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
             + r" $\sigma$"
             + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
@@ -767,7 +837,7 @@ class HLTWrapper:
             label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
             color=CB_colors[0],
         )
-        ax[0].axhspan(
+        ax.axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
                        - self.drho_result[self.espace_dictionary[estar]]),
             ymax=float(self.rho_result[self.espace_dictionary[estar]]
@@ -775,39 +845,12 @@ class HLTWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax[0].set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax[0].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[0].legend(prop={"size": 12, "family": "Helvetica"})
-        ax[0].set_xscale('log')
-        ax[0].grid()
+        ax.set_xlabel(r"$\lambda$", fontdict=timesfont)
+        ax.set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+        ax.legend(prop={"size": 12, "family": "Helvetica"})
+        ax.set_xscale('log')
+        ax.grid()
 
-        # Second subplot with A/A_0
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=2.2,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color=CB_colors[0],
-        )
-
-        ax[1].axhspan(
-            ymin=float(self.rho_result[self.espace_dictionary[estar]]
-                       - self.drho_result[self.espace_dictionary[estar]]),
-            ymax=float(self.rho_result[self.espace_dictionary[estar]]
-                       + self.drho_result[self.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontdict=timesfont)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
-        ax[1].legend(prop={"size": 12, "family": "Helvetica"})
-        ax[1].grid()
         plt.tight_layout()
         if savePlot == True:
             plt.savefig(
@@ -823,21 +866,19 @@ class HLTWrapper:
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(self, estar: float, savePlot=True, nalphas=2, plot_live=False):
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
         plt.rcParams['font.family'] = 'serif'
         plt.rcParams['mathtext.fontset'] = 'cm'
         plt.rc('xtick', labelsize=22)
         plt.rc('ytick', labelsize=22)
         plt.rcParams.update({'font.size': 22})
-        fig, ax = plt.subplots(2, 1, figsize=(8, 10))
-        #fig, ax = plt.subplots(figsize=(8, 10))
         plt.title(
-            r"$E/M_{0}$"
+            r"$E/M_{\pi}$"
             + "= {:2.2f}  ".format(estar / self.par.massNorm)
-            + r" $\;\;\; \sigma$"
-            + r" = {:2.2f} $M_0$".format(self.par.sigma / self.par.massNorm)
+            + r" $\sigma$"
+            + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
         )
-
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
@@ -851,7 +892,7 @@ class HLTWrapper:
             ecolor=CB_colors[0],
             markerfacecolor=CB_colors[0],
         )
-        ax[0].errorbar(
+        ax.errorbar(
             x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
             y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
             yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
@@ -866,7 +907,7 @@ class HLTWrapper:
             markerfacecolor=CB_colors[1],
         )
         if nalphas == 3:
-            ax[0].errorbar(
+            ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
                 y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
                 yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
@@ -881,63 +922,7 @@ class HLTWrapper:
                 markerfacecolor=CB_colors[2],
             )
 
-        ax[0].axhspan(
-            ymin=float(self.rho_result[self.espace_dictionary[estar]]
-            - self.rho_quadrature_err[self.espace_dictionary[estar]]),
-            ymax=float(self.rho_result[self.espace_dictionary[estar]]
-            + self.rho_quadrature_err[self.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax[0].set_xlabel(r"$\lambda$", fontsize=32)
-        ax[0].set_ylabel(r"$\rho_\sigma$", fontsize=32)
-        ax[0].legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
-        ax[0].set_xscale('log')
-        #ax[0].grid()
-        # Second subplot with A/A_0
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color='black',
-            ecolor=CB_colors[0],
-            markerfacecolor=CB_colors[0],
-        )
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[1],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-            color='black',
-            ecolor=CB_colors[1],
-            markerfacecolor=CB_colors[1],
-        )
-        ax[1].errorbar(
-            x=np.array(self.gAA0g_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[2],
-            markersize=3.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
-            color='black',
-            ecolor=CB_colors[2],
-            markerfacecolor=CB_colors[2],
-        )
-        ax[1].axhspan(
+        ax.axhspan(
             ymin=float(self.rho_result[self.espace_dictionary[estar]]
             - self.drho_result[self.espace_dictionary[estar]]),
             ymax=float(self.rho_result[self.espace_dictionary[estar]]
@@ -945,10 +930,12 @@ class HLTWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax[1].set_xscale('log')
-        ax[1].set_xlabel(r"$A[g_\lambda] / A_0$", fontsize=32)
-        ax[1].set_ylabel(r"$\rho_\sigma$", fontsize=32)
-        ax[1].legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
+        ax.set_xlabel(r"$\lambda$", fontsize=32)
+        ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
+        ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
+        ax.set_xscale('log')
+        #ax.grid()
+
 
         plt.tight_layout()
         if savePlot == True:
