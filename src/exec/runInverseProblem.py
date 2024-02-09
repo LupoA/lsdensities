@@ -15,6 +15,7 @@ def init_variables(args_):
     in_ = Inputs()
     in_.tmax = args_.tmax
     in_.periodicity = args_.periodicity
+    in_.kerneltype = args_.kerneltype
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
@@ -105,8 +106,8 @@ def main():
         lambdaStep=lambdaMax/2,
         lambdaScanCap=8,
         kfactor=0.1,
-        lambdaMin=1e-3,
-        comparisonRatio=0.15,
+        lambdaMin=5e-2,
+        comparisonRatio=0.3,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 

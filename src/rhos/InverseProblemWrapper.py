@@ -274,7 +274,7 @@ class InverseProblemWrapper:
         print(LogMessage(), "\t\t A0 - gt ft = {:2.2e}".format(float(varianceRho)))
         varianceRho = mp.fdiv(varianceRho, _factor)
         varianceRho = mp.fdiv(varianceRho, mpf(2))
-        drho_estar_Bayes = mp.sqrt(varianceRho)
+        drho_estar_Bayes = mp.sqrt(abs(varianceRho))
 
         print(LogMessage(), "\t \t lambdaToRho ::: Central Value = {:2.4e}".format(float(rho_estar)))
         print(LogMessage(), "\t \t lambdaToRho ::: Bayesian Error = {:2.4e}".format(float(drho_estar_Bayes)))

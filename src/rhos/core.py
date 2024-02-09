@@ -80,37 +80,82 @@ def generalised_ft(t, alpha, sigma, e, e0):
     res = mp.fmul(res, arg) # Erfc() * exp()
     return res
 
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0):
-    res = generalised_ft(t, alpha, sigma_, e, e0)
-    if type == "COSH":
-        assert T > 0
-        pterm = generalised_ft(T-t, alpha, sigma_, e, e0)
-        res = mp.fadd(res, pterm)
-    res *= 0.5
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='GAUSS'):
+
+    if ker_type =='GAUSS':
+        res = generalised_ft(t, alpha, sigma_, e, e0)
+        if type == "COSH":
+            assert T > 0
+            pterm = generalised_ft(T-t, alpha, sigma_, e, e0)
+            res = mp.fadd(res, pterm)
+        res *= 0.5
+
+    elif ker_type == 'CAUCHY':
+        def ker(k, sigma_, omega_):
+            aux = omega_ - k
+            aux = aux * aux + sigma_ * sigma_
+            aux = sigma_ / aux
+            return aux
+
+        # Define the function to be integrated
+        def integrand(k):
+            aux = mp.exp(alpha * k)
+            aux2 = - t * k
+            aux2 = mp.exp(aux2)
+            aux3 = - (T - t) * k
+            aux3 = mp.exp(aux3)
+            aux2 = aux2 + aux3
+            aux = aux * aux2 * ker(k, sigma_, e)
+            return aux
+
+        from scipy.integrate import quad as scipy_quad
+        res, _ = scipy_quad(lambda k: float(integrand(k)), 0.0, np.inf)
+        # res = mp.quad(integrand, [e0, mpf(mp.inf)], maxdegree=300)
+
     return res
 
-def A0_mp(e_, sigma_, alpha, e0=mpf(0)):
-    aux = mp.fmul(sigma_, sigma_)   # start by the argument of erf
-    aux = mp.fdiv(aux, mpf(2))  # s^2 / 2
-    aux = mp.fmul(aux, alpha)   # a s^2 / 2
-    aux = mp.fadd(e_, aux)      # omega + a s^2 / 2
-    aux = mp.fsub(aux, e0)      # omega - E0 + a s^2 / 2
-    res = mp.fdiv(aux, sigma_)  # omega - E0 + a s^2 / 2sigma
-    res = mp.erf(res)  #   Erf
-    res = mp.fadd(1, res)  # 1+erf, the numerator
-    aux_ = mp.sqrt(mp.pi)
-    res = mp.fdiv(res, aux_)  # 1+erf / sqrt{pi}
-    res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
-    res = mp.fdiv(res, 4)   # 1+erf / (4 sqrt{pi} s)
-    # exp term due to alpha
-    if alpha != 0:
-        aux = mp.fmul(alpha, e_)  # alpha*e
-        aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
-        aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
-        aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
-        aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alphaomega
-        aux = mp.exp(aux)
-        res = mp.fmul(res, aux)
+def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='GAUSS'):
+    if ker_type == 'GAUSS':
+        aux = mp.fmul(sigma_, sigma_)   # start by the argument of erf
+        aux = mp.fdiv(aux, mpf(2))  # s^2 / 2
+        aux = mp.fmul(aux, alpha)   # a s^2 / 2
+        aux = mp.fadd(e_, aux)      # omega + a s^2 / 2
+        aux = mp.fsub(aux, e0)      # omega - E0 + a s^2 / 2
+        res = mp.fdiv(aux, sigma_)  # omega - E0 + a s^2 / 2sigma
+        res = mp.erf(res)  #   Erf
+        res = mp.fadd(1, res)  # 1+erf, the numerator
+        aux_ = mp.sqrt(mp.pi)
+        res = mp.fdiv(res, aux_)  # 1+erf / sqrt{pi}
+        res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
+        res = mp.fdiv(res, 4)   # 1+erf / (4 sqrt{pi} s)
+        # exp term due to alpha
+        if alpha != 0:
+            aux = mp.fmul(alpha, e_)  # alpha*e
+            aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+            aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
+            aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
+            aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alphaomega
+            aux = mp.exp(aux)
+            res = mp.fmul(res, aux)
+    elif ker_type == 'CAUCHY':
+        def ker(k, sigma_, omega_):
+            aux = omega_ - k
+            aux = aux * aux + sigma_ * sigma_
+            aux = sigma_ / aux
+            return aux
+
+            # Define the function to be integrated
+
+        def integrand2(k):
+            aux = alpha * k
+            aux = mp.exp(aux)
+            aux2 = ker(k, sigma_, e_) ** 2
+            aux = aux * aux2
+            return aux
+
+        from scipy.integrate import quad as scipy_quad
+        res, _ = scipy_quad(lambda k: float(integrand2(k)), 0.0, np.inf)
+        # res = mp.quad(integrand, [e0, mp.inf], maxdegree=300)
     return res
 
 def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
@@ -118,13 +163,13 @@ def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
         e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):
-        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=mpf(alpha_), e0=e0_)
+        a0_e[ei] = A0_mp(e_=espacemp_[ei], sigma_=par.mpsigma, alpha=mpf(alpha_), e0=e0_, ker_type=par.kerneltype)
     return a0_e
 
 
 def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
 
-    _res = ft_mp(e=e1, t=t2, sigma_=s, alpha=alpha, e0=E0, type=par.periodicity, T=par.time_extent)
+    _res = ft_mp(e=e1, t=t2, sigma_=s, alpha=alpha, e0=E0, type=par.periodicity, T=par.time_extent, ker_type=par.kerneltype)
     if par.periodicity == 'EXP':
         _res = _res * mp.exp(-t1 * e1)
     if par.periodicity == 'COSH':

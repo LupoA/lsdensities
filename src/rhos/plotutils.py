@@ -226,18 +226,18 @@ def plotAllKernels(invLapW):
     with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
         for _e in range(invLapW.par.Ne):
             print(invLapW.espace[_e], invLapW.gt_HLT[_e], file=output)
-            plotKernel(invLapW, invLapW.gt_HLT[_e], ne_=40, omega=invLapW.espace[_e], label = 'HLT', alpha_ = invLapW.algorithmPar.alphaA)
+            plotKernel(invLapW, invLapW.gt_HLT[_e], ne_=40, omega=invLapW.espace[_e], label = 'HLT', alpha_ = invLapW.algorithmPar.alphaA, ker_type=invLapW.par.kerneltype)
 
     _name = "BayesCoefficientsAlpha" + str(float(invLapW.algorithmPar.alphaA)) + '.txt'
     with open(os.path.join(invLapW.par.logpath, _name), "w") as output:
         for _e in range(invLapW.par.Ne):
             print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
-            plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA)
+            plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA, ker_type=invLapW.par.kerneltype)
 
-def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
+def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type = 'GAUSS'):
     setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 10))
-    energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*8, ne_)
+    energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*3.0, ne_)
     kernel = np.zeros(ne_)
     for _e in range(len(energies)):
         kernel[_e] = combine_base_Eslice(gt_, invLapW.par, energies[_e])
@@ -251,14 +251,35 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70):
             color='black',
             markerfacecolor=CB_colors[0],
     )
+
+    y_to_plot = []
+    if ker_type == 'CAUCHY':
+        def ker(k, sigma_, omega_):
+            aux = omega_ - k
+            aux = aux * aux + sigma_ * sigma_
+            aux = sigma_ / aux
+            return aux
+
+        y_to_plot = ker(energies, invLapW.par.sigma, omega)
+
+    elif ker_type == 'GAUSS':
+        y_to_plot = gauss_fp(energies, omega, invLapW.par.sigma, norm="half")
+
     plt.plot(
-            energies / invLapW.par.massNorm,
-            gauss_fp(energies, omega, invLapW.par.sigma, norm="half"),
-            ls = '-',
-            label = 'Exact',
-            color='red',
-            linewidth=0.4,
+        energies / invLapW.par.massNorm,
+        y_to_plot,
+        ls='-',
+        label='Target',
+        color='red',
+        linewidth=1.2,
     )
+
+    with open(os.path.join(invLapW.par.logpath, f'kernel_{omega}.txt'), "a") as output:
+        for e_i in range(len(energies)):
+            print(energies[e_i] / invLapW.par.massNorm,
+                  kernel[e_i],
+                  file=output)
+
     plt.title(r" $\sigma$" + " = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm) + r"$M_{\rm ref}$ " + " $\;$ "+ r"$\alpha$ = {:2.2f}".format(alpha_))
     plt.xlabel(r"$E / M_{\rm ref}$", fontdict=tnr)
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
