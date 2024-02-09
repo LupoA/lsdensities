@@ -2,7 +2,6 @@ from mpmath import mp, mpf
 import sys
 import numpy as np
 
-sys.path.append("..")
 from rhos.rhoUtils import LogMessage
 from rhos.transform import *
 from rhos.core import *

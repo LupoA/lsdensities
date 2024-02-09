@@ -3,7 +3,6 @@ from progressbar import ProgressBar
 import sys
 from rhos.core import *
 import time
-sys.path.append("..")
 from rhos.rhoUtils import LogMessage
 from rhos.rhoStat import *
 

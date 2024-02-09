@@ -3,7 +3,6 @@ from progressbar import ProgressBar
 import sys
 import numpy as np
 import time
-sys.path.append("..")
 import math
 
 

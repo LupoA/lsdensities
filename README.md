@@ -5,7 +5,7 @@ related studies, by using the HLT (Hansen-Lupo-Tantalo) method.
 
 ## Authors
 
-Niccolo' Forzano, Alessandro Lupo.
+Niccolò Forzano, Alessandro Lupo.
 
 ## Installation
 

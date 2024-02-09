@@ -2,7 +2,6 @@ import numpy as np
 import sys
 import math
 
-sys.path.append("..")
 from rhos.rhoUtils import *
 import argparse
 

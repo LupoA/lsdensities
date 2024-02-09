@@ -6,19 +6,14 @@ from numpy import *
 import matplotlib.pyplot as plt
 import os
 import sys
-sys.path.append("..")
 
 from mpmath import mpf
 
 
 import numpy as np
-import sys
 import os
 import matplotlib.pyplot as plt
 
-sys.path.append("..")
-sys.path.append("rhos")
-sys.path.append("../rhos")
 
 import rhoUtils as u
 from .rhoUtils import init_precision

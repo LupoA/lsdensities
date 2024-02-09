@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-sys.path.append("..")
 from rhos.rhoUtils import *
 from rhos.transform import *
 from rhos.rhoMath import *

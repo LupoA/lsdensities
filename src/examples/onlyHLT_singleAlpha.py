@@ -1,11 +1,5 @@
 import sys
 
-sys.path.append("..")
-
-sys.path.append("..")
-sys.path.append("rhos")
-sys.path.append("../rhos")
-
 
 import rhoUtils as u
 from .rhoUtils import init_precision

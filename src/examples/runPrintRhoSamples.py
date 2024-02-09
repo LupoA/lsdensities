@@ -1,9 +1,5 @@
 import sys
 
-sys.path.append("..")
-sys.path.append("rhos")
-sys.path.append("../rhos")
-
 
 import rhos.rhoUtils as u
 from rhos.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs

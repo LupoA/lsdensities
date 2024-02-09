@@ -2,7 +2,6 @@ from mpmath import mp, mpf
 import sys
 import numpy as np
 import os
-sys.path.append("..")
 from rhos.rhoMath import *
 from rhos.rhoUtils import LogMessage, Inputs, MatrixBundle
 from rhos.rhoUtils import *
