@@ -87,7 +87,7 @@ def parseArgumentPeak():
     parser.add_argument(
         "--kerneltype",
         type=str,
-        help="Accepted stirngs are 'GAUSS' or 'CAUCHY', depending on which smearing kernel.",
+        help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
         default="GAUSS",
     )
     args = parser.parse_args()
