@@ -7,16 +7,16 @@ from lmfit import Model, Parameters, minimize, Minimizer
 import scipy
 from mpmath import mp, mpf
 
-import rhos.rhoUtils as u
-from rhos.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from rhos import *
+import hltrho.utils.rhoUtils as u
+from hltrho.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from hltrho import *
 
 
 def main():
 
     ############################# Settings #############################################
-    path = './results/tmax32sigma0.161825Ne10nboot300mNorm0.6473prec280Na1/Logs'
-    file_path_input = './corr_NEWPAUL_as_gi_nt64_N40_N80_gauss_s0p23/tmax32sigma0.161825Ne10nboot300mNorm0.6473prec280Na1/Logs/ResultBayes.txt'
+    path = './results/tmax32sigma0.161825Ne5nboot300mNorm0.6473prec280Na1/Logs'
+    file_path_input = './corr_NEWPAUL_as_gi_nt64_N40_N80_gauss_s0p23/tmax32sigma0.161825Ne5nboot300mNorm0.6473prec280Na1/Logs/ResultHLT.txt'
     output_name = './fitresults/fit_results_NEWPAUL_nt64_cauchy_as_gi_double.pdf'
     # Channel choices: 'PS', 'V', 'T', 'AV', 'AT', 'S'
     channel = 'V'
@@ -91,8 +91,8 @@ def main():
     # Get a list of all the file names in the directory
     file_names = os.listdir(path)
 
-    # Filter the file names to include only those starting with 'RhoSamplesE'
-    file_names = [file_name for file_name in file_names if file_name.startswith('RhoSamplesE')]
+    # Filter the file names to include only those starting with 'hltrhoamplesE'
+    file_names = [file_name for file_name in file_names if file_name.startswith('hltrhoamplesE')]
 
     # Extract the energy values from the file names
     energies = [file_name.split('E')[1].split('sig')[0] for file_name in file_names]
@@ -121,7 +121,7 @@ def main():
 
     # Fill the matrix using the values from the files
     for i, energy in enumerate(energies):
-        file_name = f'RhoSamplesE{energy}sig{sigma*mpi}'
+        file_name = f'hltrhoamplesE{energy}sig{sigma*mpi}'
         file_path = os.path.join(path, file_name)
         with open(file_path, 'r') as file:
             lines = file.readlines()

@@ -2,16 +2,16 @@ from mpmath import mp, mpf
 import sys
 import numpy as np
 import os
-from rhos.rhoMath import *
-from rhos.rhoUtils import LogMessage, Inputs, MatrixBundle
-from rhos.rhoUtils import *
-from rhos.transform import *
-from rhos.abw import *
-from rhos.core import *
-from rhos.core import A0E_mp
-from rhos.abw import gAg, gBg
+from .utils.rhoMath import *
+from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle
+from .utils.rhoUtils import *
+from .transform import *
+from .abw import *
+from .core import *
+from .core import A0E_mp
+from .abw import gAg, gBg
 import matplotlib.pyplot as plt
-from rhos.plotutils import *
+from hltrho.plotutils import *
 
 _big = 100
 

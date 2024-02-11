@@ -2,9 +2,9 @@ from mpmath import mp, mpf
 import sys
 import numpy as np
 
-from rhos.rhoUtils import LogMessage
-from rhos.transform import *
-from rhos.core import *
+from .utils.rhoUtils import LogMessage
+from .transform import *
+from .core import *
 
 #   Functionals A, B and W
 

@@ -1,29 +1,30 @@
 import sys
 
 
-import rhoUtils as u
-from .rhoUtils import init_precision
-from .rhoUtils import LogMessage
-from .rhoUtils import end
-from .rhoUtils import Obs
-from .rhoUtils import adjust_precision
-from .rhoUtils import Inputs
-from .rhoUtils import *
-from .rhoStat import *
-from .rhoMath import *
-from .core import *
-from .rhoParser import *
-from .transform import *
-from .abw import *
-from .rhoParallelUtils import *
-from .HLT_class import *
-from .GPHLT_class import *
-from .GP_class import *
-from .correlatorUtils import foldPeriodicCorrelator
-from .correlatorUtils import symmetrisePeriodicCorrelator
-from .mpmath import mp, mpf
-from .InverseProblemWrapper import *
-from .plotutils import *
+import hltrho.utils.rhoUtils as u
+from hltrho.utils.rhoUtils import init_precision
+from hltrho.utils.rhoUtils import LogMessage
+from hltrho.utils.rhoUtils import end
+from hltrho.utils.rhoUtils import Obs
+from hltrho.utils.rhoUtils import adjust_precision
+from hltrho.utils.rhoUtils import Inputs
+from hltrho.utils.rhoUtils import *
+from hltrho.utils.rhoStat import *
+from hltrho.utils.rhoMath import *
+from hltrho.core import *
+from hltrho.utils.rhoParser import *
+from hltrho.transform import *
+from hltrho.abw import *
+from hltrho.utils.rhoParallelUtils import *
+from hltrho.HLT_class import *
+from hltrho.GPHLT_class import *
+from hltrho.GP_class import *
+from hltrho.correlator.correlatorUtils import foldPeriodicCorrelator
+from hltrho.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+from mpmath import mp, mpf
+from hltrho.InverseProblemWrapper import *
+from hltrho.plotutils import *
+import hltrho
 
 
 def init_variables(args_):
@@ -32,6 +33,7 @@ def init_variables(args_):
     in_.periodicity = args_.periodicity
     in_.prec = args_.prec
     in_.datapath = args_.datapath
+    in_.kerneltype = args_.kerneltype
     in_.outdir = args_.outdir
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
@@ -117,7 +119,7 @@ def main():
     lambdaMax = 1e+8
 
     #   Prepare
-    hltParams = AlgorithmParameters(
+    hltParams = hltrho.HLT_class.AlgorithmParameters(
         alphaA=0,
         alphaB=1/2,
         alphaC=+1.99,
@@ -128,10 +130,10 @@ def main():
         kfactor=0.1,
         lambdaMin=1e-6
     )
-    matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
+    matrix_bundle = hltrho.HLT_class.MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
-    HLT = HLTWrapper(
+    HLT = hltrho.HLT_class.HLTWrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
     HLT.prepareHLT()
@@ -139,7 +141,7 @@ def main():
     #   Run
     HLT.run(how_many_alphas=par.Na)
     HLT.plotParameterScan(how_many_alphas=par.Na, save_plots=True, plot_live=True)
-    HLT.plotRhos(savePlot=True)
+    HLT.plothltrho(savePlot=True)
 
     end()
 

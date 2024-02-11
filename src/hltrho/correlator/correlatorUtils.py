@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import math
 
-from rhos.rhoUtils import *
+from ..utils.rhoUtils import *
 import argparse
 
 #   Usage:

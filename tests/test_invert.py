@@ -1,29 +1,29 @@
 import sys
 
 
-import rhos.rhoUtils as u
-from rhos.rhoUtils import init_precision
-from rhos.rhoUtils import LogMessage
-from rhos.rhoUtils import end
-from rhos.rhoUtils import Obs
-from rhos.rhoUtils import adjust_precision
-from rhos.rhoUtils import Inputs
-from rhos.rhoUtils import *
-from rhos.rhoStat import *
-from rhos.rhoMath import *
-from rhos.core import *
-from rhos.rhoParser import *
-from rhos.transform import *
-from rhos.abw import *
-from rhos.rhoParallelUtils import *
-from rhos.HLT_class import *
-from rhos.GPHLT_class import *
-from rhos.GP_class import *
-from rhos.correlatorUtils import foldPeriodicCorrelator
-from rhos.correlatorUtils import symmetrisePeriodicCorrelator
+import hltrho.rhoUtils as u
+from hltrho.rhoUtils import init_precision
+from hltrho.rhoUtils import LogMessage
+from hltrho.rhoUtils import end
+from hltrho.rhoUtils import Obs
+from hltrho.rhoUtils import adjust_precision
+from hltrho.rhoUtils import Inputs
+from hltrho.rhoUtils import *
+from hltrho.rhoStat import *
+from hltrho.rhoMath import *
+from hltrho.core import *
+from hltrho.rhoParser import *
+from hltrho.transform import *
+from hltrho.abw import *
+from hltrho.rhoParallelUtils import *
+from hltrho.HLT_class import *
+from hltrho.GPHLT_class import *
+from hltrho.GP_class import *
+from hltrho.correlatorUtils import foldPeriodicCorrelator
+from hltrho.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
-from rhos.InverseProblemWrapper import *
-from rhos.plotutils import *
+from hltrho.InverseProblemWrapper import *
+from hltrho.plotutils import *
 
 
 def init_precision():

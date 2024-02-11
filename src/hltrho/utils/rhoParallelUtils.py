@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
-from rhos.rhoUtils import LogMessage, Inputs
-from rhos.rhoStat import parallel_bootstrap_compact_fp
+from .rhoUtils import LogMessage, Inputs
+from .rhoStat import parallel_bootstrap_compact_fp
 import multiprocessing as multiprocessing
 from typing import List
 

@@ -27,7 +27,7 @@ def averageVector_fp(vector, get_error=True, get_var=False):
 
 
 def bootstrap_compact_fp(par_, in_):
-    from rhoUtils import ranvec
+    from .rhoUtils import ranvec
 
     out_ = np.zeros((par_.num_boot, par_.time_extent))
     randv = np.zeros(par_.num_samples)
@@ -46,7 +46,7 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
 ):  #   old slower version but more explicit
     print("Function is deprecated.")
     exit(1)
-    from rhoUtils import ranvec
+    from .rhoUtils import ranvec
 
     randv = np.zeros(par_.num_samples)
     for b in range(start, end):
@@ -59,19 +59,19 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
 
 
 def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
-    import rhoUtils
+    import hltrho.utils.rhoUtils
     random.seed(1994)
     randv = np.zeros(par_.num_samples)
     if is_folded == False:
         for b in range(start, end):
-            randv = rhoUtils.ranvec(
+            randv = hltrho.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
             ).astype(int)
             for i in range(par_.time_extent):
                 out_[b][i] = np.mean(in_[randv[:], i])
     if is_folded == True:
         for b in range(start, end):
-            randv = rhoUtils.ranvec(
+            randv = hltrho.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
             ).astype(int)
             for i in range(int(par_.time_extent / 2) + 1):
@@ -79,7 +79,7 @@ def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
 
 
 def bootstrap_fp(T_, nms_, Nb_, in_, out_):
-    from rhoUtils import ranvec
+    from .rhoUtils import ranvec
 
     randv = np.zeros(nms_)
     for b in range(0, Nb_):

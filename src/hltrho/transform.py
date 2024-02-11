@@ -1,10 +1,10 @@
 from mpmath import mp, mpf
 from progressbar import ProgressBar
 import sys
-from rhos.core import *
+from .core import *
 import time
-from rhos.rhoUtils import LogMessage
-from rhos.rhoStat import *
+from .utils.rhoUtils import LogMessage
+from .utils.rhoStat import *
 
 
 def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):

@@ -1,9 +1,9 @@
 import sys
 import random
 
-import rhos.rhoUtils as u
-from rhos.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from rhos import *
+import hltrho.utils.rhoUtils as u
+from hltrho.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from hltrho import *
 
 def init_variables(args_):
     in_ = Inputs()

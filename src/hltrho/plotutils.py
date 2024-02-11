@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from rhos.rhoUtils import *
-from rhos.transform import *
-from rhos.rhoMath import *
+from .utils.rhoUtils import *
+from .transform import *
+from .utils.rhoMath import *
 
 def setPlotOpt(plt):
     plt.rcParams["figure.figsize"] = 5, 2
@@ -114,15 +114,6 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
             invLapW.rho_list[invLapW.espace_dictionary[estar]],
             invLapW.errBoot_list[invLapW.espace_dictionary[estar]], label='Bootstrap Error', markerId=1, colorID=1)
 
-    if(0):
-        '''ax.axhspan(
-            ymin=float(invLapW.rho_result[invLapW.espace_dictionary[estar]]
-                       - invLapW.drho_result[invLapW.espace_dictionary[estar]]),
-            ymax=float(invLapW.rho_result[invLapW.espace_dictionary[estar]]
-                       + invLapW.drho_result[invLapW.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[0],
-        )'''
 
     ax2.set_xlabel(r"$\lambda$", fontsize=32)
     ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)

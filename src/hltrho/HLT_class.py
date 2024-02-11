@@ -2,14 +2,14 @@ from mpmath import mp, mpf
 import sys
 import numpy as np
 import os
-from rhos.rhoMath import *
-from rhos.rhoUtils import LogMessage, Inputs, MatrixBundle
-from rhos.rhoUtils import *
-from rhos.transform import *
-from rhos.abw import *
-from rhos.core import *
-from rhos.core import A0E_mp
-from rhos.abw import gAg, gBg
+from .utils.rhoMath import *
+from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle
+from .utils.rhoUtils import *
+from .transform import *
+from .abw import *
+from .core import *
+from .core import A0E_mp
+from .abw import gAg, gBg
 import matplotlib.pyplot as plt
 
 _big = 100
@@ -685,7 +685,7 @@ class HLTWrapper:
             )
 
 
-    def plotRhos(self, savePlot=True):
+    def plothltrho(self, savePlot=True):
         plt.errorbar(
             x=self.espace / self.par.massNorm,
             y=np.array(self.rho_result, dtype=float),
@@ -737,7 +737,7 @@ class HLTWrapper:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
-                    "RhoSigma{:2.2e}".format(self.par.sigma)
+                    "hltrhoigma{:2.2e}".format(self.par.sigma)
                     + "Enorm{:2.2e}".format(self.par.massNorm)
                     + ".png",
                 ),

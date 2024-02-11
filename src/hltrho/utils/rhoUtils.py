@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import random as rd
 import os
 import math
-from rhos.rhoStat import averageVector_fp, getCovMatrix_fp
-from rhos.core import Smatrix_mp
-from rhos.rhoMath import norm2_mp
+from .rhoStat import averageVector_fp, getCovMatrix_fp
+from ..core import Smatrix_mp
+from .rhoMath import norm2_mp
 import time
 import mpmath as mp
 

@@ -15,29 +15,30 @@ import os
 import matplotlib.pyplot as plt
 
 
-import rhoUtils as u
-from .rhoUtils import init_precision
-from .rhoUtils import LogMessage
-from .rhoUtils import end
-from .rhoUtils import Obs
-from .rhoUtils import adjust_precision
-from .rhoUtils import Inputs
-from .rhoUtils import *
-from .rhoStat import *
-from .rhoMath import *
-from .core import *
-from .rhoParser import *
-from .transform import *
-from .abw import *
-from .rhoParallelUtils import *
-from .HLT_class import *
-from .GPHLT_class import *
-from .GP_class import *
-from .correlatorUtils import foldPeriodicCorrelator
-from .correlatorUtils import symmetrisePeriodicCorrelator
-from .mpmath import mp, mpf
-from .InverseProblemWrapper import *
-from .plotutils import *
+import hltrho.utils.rhoUtils as u
+from hltrho.utils.rhoUtils import init_precision
+from hltrho.utils.rhoUtils import LogMessage
+from hltrho.utils.rhoUtils import end
+from hltrho.utils.rhoUtils import Obs
+from hltrho.utils.rhoUtils import adjust_precision
+from hltrho.utils.rhoUtils import Inputs
+from hltrho.utils.rhoUtils import *
+from hltrho.utils.rhoStat import *
+from hltrho.utils.rhoMath import *
+from hltrho.core import *
+from hltrho.utils.rhoParser import *
+from hltrho.transform import *
+from hltrho.abw import *
+from hltrho.utils.rhoParallelUtils import *
+from hltrho.HLT_class import *
+from hltrho.GPHLT_class import *
+from hltrho.GP_class import *
+from hltrho.correlator.correlatorUtils import foldPeriodicCorrelator
+from hltrho.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+from mpmath import mp, mpf
+from hltrho.InverseProblemWrapper import *
+from hltrho.plotutils import *
+import hltrho
 
 
 pion_mass = 0.140       # in Gev
@@ -56,6 +57,7 @@ def init_variables(args_):
     in_.periodicity = args_.periodicity
     in_.prec = args_.prec
     in_.outdir = args_.outdir
+    in_.kerneltype = args_.kerneltype
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
