@@ -9,26 +9,19 @@ Niccolò Forzano, Alessandro Lupo.
 
 ## Installation
 
-Being within the root directory rhos/, where 'pyproject.toml' is located, one can build the package
+One can download, build and install the package
 
 ```bash
-python3 -m build
-```
-
-This will create a new subdirectory 'dist'. Then, one can install the distribution package
-
-```bash
-cd dist/
-python3 -m pip install ./HLTRho-0.0.1.tar.gz
+pip install https://github.com/LupoA/rhos
 ```
 
 ## Usage
 
 ```python
-import rhos
+import hltrho
 
 # e.g. compute the S matrix
-rhos.core.Smatrix_mp(t_max, alpha)
+hltrho.core.Smatrix_mp(t_max, alpha)
 ```
 
 ## Contributing
