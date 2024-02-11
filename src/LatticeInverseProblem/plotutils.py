@@ -224,7 +224,7 @@ def plotAllKernels(invLapW):
             print(invLapW.espace[_e], invLapW.gt_Bayes[_e], file=output)
             plotKernel(invLapW, invLapW.gt_Bayes[_e], ne_=40, omega=invLapW.espace[_e], label = 'Bayes', alpha_ = invLapW.algorithmPar.alphaA, ker_type=invLapW.par.kerneltype)
 
-def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type = 'GAUSS'):
+def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type = 'FULLNORMGAUSS'):
     setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 10))
     energies = np.linspace(invLapW.par.massNorm*0.05, invLapW.par.massNorm*3.0, ne_)
@@ -252,7 +252,9 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type = 'GAUSS'):
 
         y_to_plot = ker(energies, invLapW.par.sigma, omega)
 
-    elif ker_type == 'GAUSS':
+    elif ker_type == 'FULLNORMGAUSS':
+        y_to_plot = gauss_fp(energies, omega, invLapW.par.sigma, norm="full")
+    elif ker_type == 'HALFNORMGAUSS':
         y_to_plot = gauss_fp(energies, omega, invLapW.par.sigma, norm="half")
 
     plt.plot(

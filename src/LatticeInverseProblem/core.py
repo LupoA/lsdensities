@@ -79,9 +79,34 @@ def generalised_ft(t, alpha, sigma, e, e0):
     res = mp.fmul(res, arg) # Erfc() * exp()
     return res
 
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='GAUSS'):
+def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
+    newt = mp.fsub(t, alpha)  #
+    aux = mp.fmul(sigma, sigma)  # s^2
+    arg = mp.fmul(aux, newt)  # s^2 (t-alpha)
+    aux = mp.fmul(arg, newt)  # s^2 (alpha-t)^2
+    aux = mp.fmul(aux, mpf("0.5"))  # s^2 (alpha-t)^2 /2
+    res = mp.exp(aux)  # exp{s^2 (alpha-t)^2 /2}
+    aux = mp.fneg(newt)  # alpha-t
+    aux = mp.fmul(e, aux)  # e(alpha-t)
+    aux = mp.exp(aux)
+    res = mp.fmul(res, aux)  # exp{s^2 (alpha-t)^2 /2} exp{estar (alpha-t) }
+    arg = mp.fadd(arg, e0)
+    arg = mp.fsub(arg, e)
+    arg = mp.fdiv(arg, sigma)
+    aux = mp.sqrt(2)
+    arg = mp.fdiv(arg, aux)
+    arg = mp.erfc(arg)  # this is the COMPLEMENTARY erf
+    res = mp.fmul(res, arg)
+    aux = mp.fdiv(e, aux)
+    aux = mp.fdiv(aux, sigma)
+    aux = mp.erf(aux)
+    aux = mp.fadd(mpf(1), aux)
+    res = mp.fdiv(res, aux)
+    return res
 
-    if ker_type =='GAUSS':
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='FULLNORMGAUSS'):
+
+    if ker_type =='FULLNORMGAUSS':
         res = generalised_ft(t, alpha, sigma_, e, e0)
         if type == "COSH":
             assert T > 0
@@ -89,6 +114,12 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='GAUSS'):
             res = mp.fadd(res, pterm)
         res *= 0.5
 
+    elif ker_type =='HALFNORMGAUSS':
+        res = generalised_ft_halfnorm(t, alpha, sigma_, e, e0)
+        if type == "COSH":
+            assert T > 0
+            pterm = generalised_ft_halfnorm(T - t, alpha, sigma_, e, e0)
+            res = mp.fadd(res, pterm)
     elif ker_type == 'CAUCHY':
         def ker(k, sigma_, omega_):
             aux = omega_ - k
@@ -113,8 +144,8 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='GAUSS'):
 
     return res
 
-def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='GAUSS'):
-    if ker_type == 'GAUSS':
+def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='FULLNORMGAUSS'):
+    if ker_type == 'FULLNORMGAUSS':
         aux = mp.fmul(sigma_, sigma_)   # start by the argument of erf
         aux = mp.fdiv(aux, mpf(2))  # s^2 / 2
         aux = mp.fmul(aux, alpha)   # a s^2 / 2
@@ -136,6 +167,33 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='GAUSS'):
             aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alphaomega
             aux = mp.exp(aux)
             res = mp.fmul(res, aux)
+    elif ker_type == 'HALFNORMGAUSS':
+        aux = mp.fmul(sigma_, sigma_)
+        aux = mp.fdiv(aux, mpf(2))
+        aux = mp.fmul(aux, alpha)
+        aux = mp.fadd(e_, aux)
+        aux = mp.fsub(aux, e0)
+        res = mp.fdiv(aux, sigma_)
+        res = mp.erf(res)  #   Erf
+        res = mp.fadd(1, res)  # 1+erf, the numerator
+        aux_ = mp.sqrt(mp.pi)
+        res = mp.fdiv(res, aux_)  # 1+erf /pi
+        res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
+        aux_ = mp.sqrt(2)
+        aux_ = mp.fdiv(e_, aux_)
+        aux_ = mp.fdiv(aux_, sigma_)
+        aux_ = mp.erf(aux_)
+        aux_ = mp.fadd(aux_, 1)
+        aux_ = mp.fmul(aux_, aux_)
+        res = mp.fdiv(res, aux_)
+        # alpha implementation
+        aux = mp.fmul(alpha, e_)  # alpha*e
+        aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+        aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
+        aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
+        aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
+        aux = mp.exp(aux)
+        res = mp.fmul(res, aux)
     elif ker_type == 'CAUCHY':
         def ker(k, sigma_, omega_):
             aux = omega_ - k
