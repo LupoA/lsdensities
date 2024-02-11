@@ -1,5 +1,5 @@
 [project]
-name = "HLTRho"
+name = "LatticeInverseProblem"
 version = "0.0.1"
 authors = [
   { name="Alessandro Lupo", email="alessandro.lupo@cpt.univ-mrs.fr" },
