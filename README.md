@@ -1,7 +1,7 @@
-# HLTRho: Spectral densities from two-point correlation functions
+# Lattice Inverse Problem: Spectral densities from two-point correlation functions
 
-HLTRho is a Python library for operating spectral density reconstruction and
-related studies, by using the HLT (Hansen-Lupo-Tantalo) method.
+LatticeInverseProblem is a Python library for operating spectral density reconstruction and
+related studies, by using the HLT (Hansen-Lupo-Tantalo) method or Gaussian processes.
 
 ## Authors
 
@@ -18,10 +18,10 @@ pip install https://github.com/LupoA/rhos
 ## Usage
 
 ```python
-import hltrho
+import LatticeInverseProblem
 
 # e.g. compute the S matrix
-hltrho.core.Smatrix_mp(t_max, alpha)
+LatticeInverseProblem.core.Smatrix_mp(t_max, alpha)
 ```
 
 ## Contributing

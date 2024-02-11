@@ -7,9 +7,9 @@ from lmfit import Model, Parameters, minimize, Minimizer
 import scipy
 from mpmath import mp, mpf
 
-import hltrho.utils.rhoUtils as u
-from hltrho.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from hltrho import *
+import LatticeInverseProblem.utils.rhoUtils as u
+from LatticeInverseProblem.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from LatticeInverseProblem import *
 
 
 def main():
@@ -91,8 +91,8 @@ def main():
     # Get a list of all the file names in the directory
     file_names = os.listdir(path)
 
-    # Filter the file names to include only those starting with 'hltrhoamplesE'
-    file_names = [file_name for file_name in file_names if file_name.startswith('hltrhoamplesE')]
+    # Filter the file names to include only those starting with 'LatticeInverseProblemamplesE'
+    file_names = [file_name for file_name in file_names if file_name.startswith('LatticeInverseProblemamplesE')]
 
     # Extract the energy values from the file names
     energies = [file_name.split('E')[1].split('sig')[0] for file_name in file_names]
@@ -121,7 +121,7 @@ def main():
 
     # Fill the matrix using the values from the files
     for i, energy in enumerate(energies):
-        file_name = f'hltrhoamplesE{energy}sig{sigma*mpi}'
+        file_name = f'LatticeInverseProblemamplesE{energy}sig{sigma*mpi}'
         file_path = os.path.join(path, file_name)
         with open(file_path, 'r') as file:
             lines = file.readlines()

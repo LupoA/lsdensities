@@ -15,30 +15,30 @@ import os
 import matplotlib.pyplot as plt
 
 
-import hltrho.utils.rhoUtils as u
-from hltrho.utils.rhoUtils import init_precision
-from hltrho.utils.rhoUtils import LogMessage
-from hltrho.utils.rhoUtils import end
-from hltrho.utils.rhoUtils import Obs
-from hltrho.utils.rhoUtils import adjust_precision
-from hltrho.utils.rhoUtils import Inputs
-from hltrho.utils.rhoUtils import *
-from hltrho.utils.rhoStat import *
-from hltrho.utils.rhoMath import *
-from hltrho.core import *
-from hltrho.utils.rhoParser import *
-from hltrho.transform import *
-from hltrho.abw import *
-from hltrho.utils.rhoParallelUtils import *
-from hltrho.HLT_class import *
-from hltrho.GPHLT_class import *
-from hltrho.GP_class import *
-from hltrho.correlator.correlatorUtils import foldPeriodicCorrelator
-from hltrho.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+import LatticeInverseProblem.utils.rhoUtils as u
+from LatticeInverseProblem.utils.rhoUtils import init_precision
+from LatticeInverseProblem.utils.rhoUtils import LogMessage
+from LatticeInverseProblem.utils.rhoUtils import end
+from LatticeInverseProblem.utils.rhoUtils import Obs
+from LatticeInverseProblem.utils.rhoUtils import adjust_precision
+from LatticeInverseProblem.utils.rhoUtils import Inputs
+from LatticeInverseProblem.utils.rhoUtils import *
+from LatticeInverseProblem.utils.rhoStat import *
+from LatticeInverseProblem.utils.rhoMath import *
+from LatticeInverseProblem.core import *
+from LatticeInverseProblem.utils.rhoParser import *
+from LatticeInverseProblem.transform import *
+from LatticeInverseProblem.abw import *
+from LatticeInverseProblem.utils.rhoParallelUtils import *
+from LatticeInverseProblem.HLT_class import *
+from LatticeInverseProblem.GPHLT_class import *
+from LatticeInverseProblem.GP_class import *
+from LatticeInverseProblem.correlator.correlatorUtils import foldPeriodicCorrelator
+from LatticeInverseProblem.correlator.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
-from hltrho.InverseProblemWrapper import *
-from hltrho.plotutils import *
-import hltrho
+from LatticeInverseProblem.InverseProblemWrapper import *
+from LatticeInverseProblem.plotutils import *
+import LatticeInverseProblem
 
 
 pion_mass = 0.140       # in Gev

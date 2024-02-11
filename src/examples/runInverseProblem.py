@@ -1,9 +1,9 @@
 import sys
 import random
 
-import hltrho.utils.rhoUtils as u
-from hltrho.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from hltrho import *
+import LatticeInverseProblem.utils.rhoUtils as u
+from LatticeInverseProblem.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from LatticeInverseProblem import *
 
 def init_variables(args_):
     in_ = Inputs()

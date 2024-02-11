@@ -11,7 +11,7 @@ from .core import *
 from .core import A0E_mp
 from .abw import gAg, gBg
 import matplotlib.pyplot as plt
-from hltrho.plotutils import *
+from .plotutils import *
 
 _big = 100
 

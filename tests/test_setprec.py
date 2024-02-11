@@ -1,28 +1,28 @@
 import sys
 
-import hltrho.rhoUtils as u
-from hltrho.rhoUtils import init_precision
-from hltrho.rhoUtils import LogMessage
-from hltrho.rhoUtils import end
-from hltrho.rhoUtils import Obs
-from hltrho.rhoUtils import adjust_precision
-from hltrho.rhoUtils import Inputs
-from hltrho.rhoUtils import *
-from hltrho.rhoStat import *
-from hltrho.rhoMath import *
-from hltrho.core import *
-from hltrho.rhoParser import *
-from hltrho.transform import *
-from hltrho.abw import *
-from hltrho.rhoParallelUtils import *
-from hltrho.HLT_class import *
-from hltrho.GPHLT_class import *
-from hltrho.GP_class import *
-from hltrho.correlatorUtils import foldPeriodicCorrelator
-from hltrho.correlatorUtils import symmetrisePeriodicCorrelator
+import lattice-inverse-problem.rhoUtils as u
+from lattice-inverse-problem.rhoUtils import init_precision
+from lattice-inverse-problem.rhoUtils import LogMessage
+from lattice-inverse-problem.rhoUtils import end
+from lattice-inverse-problem.rhoUtils import Obs
+from lattice-inverse-problem.rhoUtils import adjust_precision
+from lattice-inverse-problem.rhoUtils import Inputs
+from lattice-inverse-problem.rhoUtils import *
+from lattice-inverse-problem.rhoStat import *
+from lattice-inverse-problem.rhoMath import *
+from lattice-inverse-problem.core import *
+from lattice-inverse-problem.rhoParser import *
+from lattice-inverse-problem.transform import *
+from lattice-inverse-problem.abw import *
+from lattice-inverse-problem.rhoParallelUtils import *
+from lattice-inverse-problem.HLT_class import *
+from lattice-inverse-problem.GPHLT_class import *
+from lattice-inverse-problem.GP_class import *
+from lattice-inverse-problem.correlatorUtils import foldPeriodicCorrelator
+from lattice-inverse-problem.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
-from hltrho.InverseProblemWrapper import *
-from hltrho.plotutils import *
+from lattice-inverse-problem.InverseProblemWrapper import *
+from lattice-inverse-problem.plotutils import *
 
 
 def init_precision():
