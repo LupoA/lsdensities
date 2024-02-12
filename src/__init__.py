@@ -1,9 +1,3 @@
-sys.path.append("..")
-
-
-sys.path.append("rhos")
-sys.path.append("../rhos")
-
 from .abw import *
 from .core import *
 from .correlatorUtils import *
@@ -20,9 +14,6 @@ from .rhoParser import *
 from .rhoStat import *
 from .rhoUtils import *
 from .transform import *
-
-sys.path.append("exec")
-sys.path.append("../exec")
 
 from .runExact import *
 from .runInverseProblem import *
