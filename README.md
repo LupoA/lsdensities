@@ -1,4 +1,4 @@
-# Lattice Inverse Problem: Spectral densities from two-point correlation functions
+# lsdensities: Spectral densities from two-point correlation functions
 
 LatticeInverseProblem is a Python library for operating spectral density reconstruction and
 related studies, by using the HLT (Hansen-Lupo-Tantalo) method or Gaussian processes.
@@ -18,10 +18,10 @@ pip install https://github.com/LupoA/rhos
 ## Usage
 
 ```python
-import LatticeInverseProblem
+import lsdensities
 
 # e.g. compute the S matrix
-LatticeInverseProblem.core.Smatrix_mp(t_max, alpha)
+lsdensities.core.Smatrix_mp(t_max, alpha)
 ```
 
 ## Contributing
