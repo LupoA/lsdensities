@@ -1,6 +1,6 @@
 # lsdensities: Spectral densities from two-point correlation functions
 
-LatticeInverseProblem is a Python library for operating spectral density reconstruction and
+lsdensities is a Python library for operating spectral density reconstruction and
 related studies, by using the HLT (Hansen-Lupo-Tantalo) method or Gaussian processes.
 
 ## Authors
