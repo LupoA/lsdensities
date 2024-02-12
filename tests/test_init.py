@@ -1,28 +1,28 @@
 import sys
 
-import lattice-inverse-problem.rhoUtils as u
-from lattice-inverse-problem.rhoUtils import init_precision
-from lattice-inverse-problem.rhoUtils import LogMessage
-from lattice-inverse-problem.rhoUtils import end
-from lattice-inverse-problem.rhoUtils import Obs
-from lattice-inverse-problem.rhoUtils import adjust_precision
-from lattice-inverse-problem.rhoUtils import Inputs
-from lattice-inverse-problem.rhoUtils import *
-from lattice-inverse-problem.rhoStat import *
-from lattice-inverse-problem.rhoMath import *
-from lattice-inverse-problem.core import *
-from lattice-inverse-problem.rhoParser import *
-from lattice-inverse-problem.transform import *
-from lattice-inverse-problem.abw import *
-from lattice-inverse-problem.rhoParallelUtils import *
-from lattice-inverse-problem.HLT_class import *
-from lattice-inverse-problem.GPHLT_class import *
-from lattice-inverse-problem.GP_class import *
-from lattice-inverse-problem.correlatorUtils import foldPeriodicCorrelator
-from lattice-inverse-problem.correlatorUtils import symmetrisePeriodicCorrelator
+import lsdensities.rhoUtils as u
+from lsdensities.rhoUtils import init_precision
+from lsdensities.rhoUtils import LogMessage
+from lsdensities.rhoUtils import end
+from lsdensities.rhoUtils import Obs
+from lsdensities.rhoUtils import adjust_precision
+from lsdensities.rhoUtils import Inputs
+from lsdensities.rhoUtils import *
+from lsdensities.rhoStat import *
+from lsdensities.rhoMath import *
+from lsdensities.core import *
+from lsdensities.rhoParser import *
+from lsdensities.transform import *
+from lsdensities.abw import *
+from lsdensities.rhoParallelUtils import *
+from lsdensities.HLT_class import *
+from lsdensities.GPHLT_class import *
+from lsdensities.GP_class import *
+from lsdensities.correlatorUtils import foldPeriodicCorrelator
+from lsdensities.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
-from lattice-inverse-problem.InverseProblemWrapper import *
-from lattice-inverse-problem.plotutils import *
+from lsdensities.InverseProblemWrapper import *
+from lsdensities.plotutils import *
 
 
 

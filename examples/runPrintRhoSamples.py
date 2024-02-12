@@ -1,10 +1,10 @@
 import sys
 
 
-import LatticeInverseProblem.utils.rhoUtils as u
-from LatticeInverseProblem.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from LatticeInverseProblem.utils.rhoParser import parseArgumentPrintSamples
-from LatticeInverseProblem import *
+import lsdensities.utils.rhoUtils as u
+from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from lsdensities.utils.rhoParser import parseArgumentPrintSamples
+from lsdensities import *
 
 
 def init_variables(args_):
@@ -113,7 +113,7 @@ def main():
 
     for _e in range(par.Ne):
         estar_ = espace[_e]
-        fname = 'LatticeInverseProblemamplesE'+str(estar_)+'sig'+str(par.sigma)
+        fname = 'lsdensitiesamplesE'+str(estar_)+'sig'+str(par.sigma)
         fpath = os.path.join(par.logpath, fname)
         _Bnorm = (cNorm / (estar_ * estar_))
         _factor = (lambda_e[_e] * A0set[_e]) / _Bnorm

@@ -1,30 +1,30 @@
 import sys
 
 
-import LatticeInverseProblem.utils.rhoUtils as u
-from LatticeInverseProblem.utils.rhoUtils import init_precision
-from LatticeInverseProblem.utils.rhoUtils import LogMessage
-from LatticeInverseProblem.utils.rhoUtils import end
-from LatticeInverseProblem.utils.rhoUtils import Obs
-from LatticeInverseProblem.utils.rhoUtils import adjust_precision
-from LatticeInverseProblem.utils.rhoUtils import Inputs
-from LatticeInverseProblem.utils.rhoUtils import *
-from LatticeInverseProblem.utils.rhoStat import *
-from LatticeInverseProblem.utils.rhoMath import *
-from LatticeInverseProblem.core import *
-from LatticeInverseProblem.utils.rhoParser import *
-from LatticeInverseProblem.transform import *
-from LatticeInverseProblem.abw import *
-from LatticeInverseProblem.utils.rhoParallelUtils import *
-from LatticeInverseProblem.HLT_class import *
-from LatticeInverseProblem.GPHLT_class import *
-from LatticeInverseProblem.GP_class import *
-from LatticeInverseProblem.correlator.correlatorUtils import foldPeriodicCorrelator
-from LatticeInverseProblem.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+import lsdensities.utils.rhoUtils as u
+from lsdensities.utils.rhoUtils import init_precision
+from lsdensities.utils.rhoUtils import LogMessage
+from lsdensities.utils.rhoUtils import end
+from lsdensities.utils.rhoUtils import Obs
+from lsdensities.utils.rhoUtils import adjust_precision
+from lsdensities.utils.rhoUtils import Inputs
+from lsdensities.utils.rhoUtils import *
+from lsdensities.utils.rhoStat import *
+from lsdensities.utils.rhoMath import *
+from lsdensities.core import *
+from lsdensities.utils.rhoParser import *
+from lsdensities.transform import *
+from lsdensities.abw import *
+from lsdensities.utils.rhoParallelUtils import *
+from lsdensities.HLT_class import *
+from lsdensities.GPHLT_class import *
+from lsdensities.GP_class import *
+from lsdensities.correlator.correlatorUtils import foldPeriodicCorrelator
+from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
-from LatticeInverseProblem.InverseProblemWrapper import *
-from LatticeInverseProblem.plotutils import *
-import LatticeInverseProblem
+from lsdensities.InverseProblemWrapper import *
+from lsdensities.plotutils import *
+import lsdensities
 
 
 def init_variables(args_):
@@ -119,7 +119,7 @@ def main():
     lambdaMax = 1e+8
 
     #   Prepare
-    hltParams = LatticeInverseProblem.HLT_class.AlgorithmParameters(
+    hltParams = lsdensities.HLT_class.AlgorithmParameters(
         alphaA=0,
         alphaB=1/2,
         alphaC=+1.99,
@@ -130,10 +130,10 @@ def main():
         kfactor=0.1,
         lambdaMin=1e-6
     )
-    matrix_bundle = LatticeInverseProblem.HLT_class.MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
+    matrix_bundle = lsdensities.HLT_class.MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
-    HLT = LatticeInverseProblem.HLT_class.HLTWrapper(
+    HLT = lsdensities.HLT_class.HLTWrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
     HLT.prepareHLT()

@@ -59,19 +59,19 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
 
 
 def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
-    import LatticeInverseProblem.utils.rhoUtils
+    import lsdensities.utils.rhoUtils
     random.seed(1994)
     randv = np.zeros(par_.num_samples)
     if is_folded == False:
         for b in range(start, end):
-            randv = LatticeInverseProblem.utils.rhoUtils.ranvec(
+            randv = lsdensities.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
             ).astype(int)
             for i in range(par_.time_extent):
                 out_[b][i] = np.mean(in_[randv[:], i])
     if is_folded == True:
         for b in range(start, end):
-            randv = LatticeInverseProblem.utils.rhoUtils.ranvec(
+            randv = lsdensities.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
             ).astype(int)
             for i in range(int(par_.time_extent / 2) + 1):
