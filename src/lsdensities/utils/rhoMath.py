@@ -32,6 +32,12 @@ def gauss_fp(x, x0, sigma, norm="Full"):
         return (np.exp(-((x - x0) ** 2) / (2 * sigma**2))) / halfnorm_fp(x0, sigma)
 
 
+def cauchy(k, sigma_, omega_):
+    aux = omega_ - k
+    aux = aux * aux + sigma_ * sigma_
+    aux = sigma_ / aux
+    return aux
+
 def norm2_fp(matrix):  # for square matrices only
     assert matrix.shape[0] == matrix.shape[1]
     return LA.norm(matrix) / np.sqrt(matrix.shape[0])

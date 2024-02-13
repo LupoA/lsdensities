@@ -14,7 +14,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-
 import lsdensities.utils.rhoUtils as u
 from lsdensities.utils.rhoUtils import init_precision
 from lsdensities.utils.rhoUtils import LogMessage
@@ -39,7 +38,6 @@ from mpmath import mp, mpf
 from lsdensities.InverseProblemWrapper import *
 from lsdensities.plotutils import *
 import lsdensities
-
 
 pion_mass = 0.140       # in Gev
 a = 0.4                 # in Gev ^-1 ( 1 fm = 5.068 GeV^-1 )
@@ -102,7 +100,12 @@ def generate(par, seed, espace):
 
     for e_i in range(par.Ne):
         for _n in range(STATES):
-            rhoStrue[e_i] += gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="full") * weights[_n]
+            if par.kerneltype == 'FULLNORMGAUSS':
+                rhoStrue[e_i] += gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="full") * weights[_n]
+            elif par.kerneltype == 'HALFNORMGAUSS':
+                rhoStrue[e_i] += gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="half") * weights[_n]
+            elif par.kerneltype == 'CAUCHY':
+                rhoStrue[e_i] += cauchy(peaks_location[_n], par.sigma, espace[e_i]) * weights[_n]
 
     if par.periodicity == "EXP":
         return exact_correlator, espace, rhoStrue
@@ -151,6 +154,8 @@ def main():
         print(LogMessage(), "Energy [a^-1]", espace[e_i])
         _g_t_estar = h_Et_mp_Eslice(Sinv, par, espace[e_i], alpha_=0)
         rhos[e_i] = y_combine_central_Eslice_mp(_g_t_estar, exact_correlator, par)
+        print('Exact Rho: ', rhoStrue[e_i])
+        print('Reconstructed Rho: ', rhos[e_i])
 
     plt.plot(
         espace/a,
@@ -171,6 +176,7 @@ def main():
         label="Reconstructed",
         color='r',
     )
+
     plt.xlabel("GeV")
     plt.title("# States : {:2d}".format(STATES))
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)

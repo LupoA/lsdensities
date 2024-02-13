@@ -20,8 +20,8 @@ def parseArgumentPeak():
         "--prec",
         metavar="NumericalPrecision",
         type=int,
-        help="Numerical precision, approximatively in decimal digits. Default=64",
-        default=64,
+        help="Numerical precision, approximatively in decimal digits. Default=105",
+        default=105,
     )
     parser.add_argument(
         "--outdir", metavar="OutputDirectory", help="Directory for output", default="."
@@ -106,8 +106,8 @@ def parseArgumentRhoFromData():
         "--prec",
         metavar="NumericalPrecision",
         type=int,
-        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=280",
-        default=280,
+        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=105",
+        default=105,
     )
     parser.add_argument(
         "--tmax",
@@ -213,8 +213,8 @@ def parseArgumentSynthData():
         "--prec",
         metavar="NumericalPrecision",
         type=int,
-        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=280",
-        default=280,
+        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=105",
+        default=105,
     )
     parser.add_argument(
         "--tmax",
@@ -275,8 +275,8 @@ def parseArgumentSynthData():
     parser.add_argument(
         "--ne",
         type=int,
-        help="Number of points in energy at which the reconstruction is evaluated, between 0 and emax. Default=50",
-        default=50,
+        help="Number of points in energy at which the reconstruction is evaluated, between 0 and emax. Default=20",
+        default=20,
     )
     parser.add_argument(
         "--periodicity",
@@ -319,8 +319,8 @@ def parseArgumentPrintSamples():
         "--prec",
         metavar="NumericalPrecision",
         type=int,
-        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=280",
-        default=280,
+        help="Numerical precision, approximatively in decimal digits. NOTE: if too high it will be automatically reduced to an optimal value. Default=105",
+        default=105,
     )
     parser.add_argument(
         "--tmax",

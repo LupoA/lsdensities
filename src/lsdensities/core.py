@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import time
 import math
-
+from .utils.rhoMath import cauchy
 
 def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
     S_ = mp.matrix(tmax_, tmax_)
@@ -121,28 +121,28 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='FULLNORMG
             pterm = generalised_ft_halfnorm(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
     elif ker_type == 'CAUCHY':
-        def ker(k, sigma_, omega_):
-            aux = omega_ - k
-            aux = aux * aux + sigma_ * sigma_
-            aux = sigma_ / aux
-            return aux
-
         # Define the function to be integrated
         def integrand(k):
             aux = mp.exp(alpha * k)
             aux2 = - t * k
             aux2 = mp.exp(aux2)
-            aux3 = - (T - t) * k
-            aux3 = mp.exp(aux3)
-            aux2 = aux2 + aux3
-            aux = aux * aux2 * ker(k, sigma_, e)
+            if type == 'COSH':
+                assert T > 0
+                aux3 = - (T - t) * k
+                aux3 = mp.exp(aux3)
+                aux2 = aux2 + aux3
+            aux = aux * aux2 * cauchy(k, sigma_, e)
             return aux
 
-        from scipy.integrate import quad as scipy_quad
-        res, _ = scipy_quad(lambda k: float(integrand(k)), 0.0, np.inf)
-        # res = mp.quad(integrand, [e0, mpf(mp.inf)], maxdegree=300)
+
+        res = mp.quad(integrand, [e0, mp.inf], method='gauss-legendre')
+
+        #from scipy.integrate import quad as scipy_quad
+        #res, _ = scipy_quad(lambda k: float(integrand(k)), 0.0, np.inf)
+
 
     return res
+
 
 def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='FULLNORMGAUSS'):
     if ker_type == 'FULLNORMGAUSS':
@@ -195,24 +195,16 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='FULLNORMGAUSS'):
         aux = mp.exp(aux)
         res = mp.fmul(res, aux)
     elif ker_type == 'CAUCHY':
-        def ker(k, sigma_, omega_):
-            aux = omega_ - k
-            aux = aux * aux + sigma_ * sigma_
-            aux = sigma_ / aux
-            return aux
-
-            # Define the function to be integrated
-
+        # Define the function to be integrated
         def integrand2(k):
             aux = alpha * k
             aux = mp.exp(aux)
-            aux2 = ker(k, sigma_, e_) ** 2
+            aux2 = cauchy(k, sigma_, e_) ** 2
             aux = aux * aux2
             return aux
 
-        from scipy.integrate import quad as scipy_quad
-        res, _ = scipy_quad(lambda k: float(integrand2(k)), 0.0, np.inf)
-        # res = mp.quad(integrand, [e0, mp.inf], maxdegree=300)
+
+        res = mp.quad(integrand2, [e0, mp.inf], method='gauss-legendre')
     return res
 
 def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
