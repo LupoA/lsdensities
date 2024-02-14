@@ -15,9 +15,9 @@ from lsdensities import *
 def main():
 
     ############################# Settings #############################################
-    path = './results/tmax32sigma0.161825Ne5nboot300mNorm0.6473prec280Na1/Logs'
-    file_path_input = './corr_NEWPAUL_as_gi_nt64_N40_N80_gauss_s0p23/tmax32sigma0.161825Ne5nboot300mNorm0.6473prec280Na1/Logs/ResultHLT.txt'
-    output_name = './fitresults/fit_results_NEWPAUL_nt64_cauchy_as_gi_double.pdf'
+    path = './results/tmax32sigma0.1554575Ne8nboot300mNorm0.62183prec40Na1/Logs'
+    file_path_input = './M5/corr_NEWPAUL_nt64mf0p72_cauchy_gi_as_N40_N40_s0p25/tmax32sigma0.1554575Ne20nboot300mNorm0.62183prec40Na1/Logs/fit_results_nt64_mf0p72_cauchy_gi_as_N40_N40_s0p25.txt'
+    output_name = './fitresults/fit_results_NEWPAUL_nt64_mf0p72_as_g0gi_double.pdf'
     # Channel choices: 'PS', 'V', 'T', 'AV', 'AT', 'S'
     channel = 'V'
     # Representation choices: 'fund', 'as'
@@ -28,7 +28,7 @@ def main():
     ####################################################################################
     ########################### Preferences ################################
     # If you want to fit with Cauchy (False == Gaussians)
-    cauchy_fit = False
+    cauchy_fit = True
     # If both false, it's two Gaussians/Cauchy fit
     triple_fit = False
     four_fit = False
@@ -36,13 +36,16 @@ def main():
     plot_cov_mat = False
     plot_corr_mat = False
     flag_chi2 = True    # To compute and show the correlated chi-square
+
+    if four_fit == True:
+        triple_fit = True
     ####################################################################################
     #####################Fitting initial parameter guesses #############################
     params = Parameters()
-    params.add('amplitude_1', value=3.638752601521968e-06, min=0.0)
+    params.add('amplitude_1', value=1.1882567280595472e-07, min=0.0)
     params.add('mean_1', value=1.0, min=0.97, max=1.03)
-    params.add('amplitude_2', value=3.4394563454225194e-06, min=0.0)
-    params.add('mean_2', value=1.45, min=1.2, max=1.45)
+    params.add('amplitude_2', value=1.5101807628190783e-07, min=0.0)
+    params.add('mean_2', value=1.45, min=1.25, max=1.6)
     if triple_fit == True:
         params.add('amplitude_3', value=2.608025553079287e-06, min=0.0)
         params.add('mean_3', value=2.5, min=2.2, max=2.7)
@@ -57,8 +60,6 @@ def main():
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    if four_fit == True:
-        triple_fit = True
     # Check if the provided channel is valid
     valid_channels = ['PS', 'V', 'T', 'AV', 'AT', 'S']
     if channel not in valid_channels:
@@ -486,6 +487,44 @@ def main():
         print(LogMessage(), 'Amplitude3: ', amplitude3, '+-', damplitude3, "\t", 'Mean3: ', mean3, '+-', dmean3)
     if four_fit == True:
         print(LogMessage(), 'Amplitude4: ', amplitude4, '+-', damplitude4, "\t", 'Mean4: ', mean4, '+-', dmean4)
+
+
+    # Print results to a file
+    with open('Spectrum.txt', 'w') as file:
+        # Print column headers
+        headers = ['#aE_0', 'errorE0', '#aE_1', 'errorE1']
+
+        if triple_fit:
+            headers.extend(['#aE_2', 'errorE2'])
+        if four_fit:
+            headers.extend(['#aE_3', 'errorE3'])
+
+        headers.extend(['Amplitude1', 'errorAmplitude1', 'Amplitude2', 'errorAmplitude2'])
+
+        if triple_fit:
+            headers.extend(['Amplitude3', 'errorAmplitude3'])
+        if four_fit:
+            headers.extend(['Amplitude4', 'errorAmplitude4'])
+
+        print(*headers, sep=' ', file=file)
+
+        # Print values in columns
+        values = [mean1*mpi, dmean1*mpi, mean2*mpi, dmean2*mpi]
+
+        if triple_fit:
+            values.extend([mean3*mpi, dmean3*mpi])
+        if four_fit:
+            values.extend([mean4*mpi, dmean4*mpi])
+
+        values.extend([amplitude1, damplitude1, amplitude2, damplitude2])
+
+        if triple_fit:
+            values.extend([amplitude3, damplitude3])
+        if four_fit:
+            values.extend([amplitude4, damplitude4])
+
+        values = [str(value) for value in values if not isinstance(value, bool) and not isinstance(value, str)]
+        print(*values, sep=' ', file=file)
 
     result1 = gaussian(x1, amplitude1, mean1)
     transpose_y_gaussian1 = [[y_gaussian_1[j][i] for j in range(nboot)] for i in range(len(x1))]
