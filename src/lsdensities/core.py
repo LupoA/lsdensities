@@ -134,13 +134,9 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type='FULLNORMG
             aux = aux * aux2 * cauchy(k, sigma_, e)
             return aux
 
-
         res = mp.quad(integrand, [e0, mp.inf], method='gauss-legendre')
-
-        #from scipy.integrate import quad as scipy_quad
-        #res, _ = scipy_quad(lambda k: float(integrand(k)), 0.0, np.inf)
-
-
+    else:
+        raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res
 
 
@@ -202,7 +198,8 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type='FULLNORMGAUSS'):
             aux2 = cauchy(k, sigma_, e_) ** 2
             aux = aux * aux2
             return aux
-
+    else:
+        raise ValueError("Invalid smearing kernel (par.ker_type)")
 
         res = mp.quad(integrand2, [e0, mp.inf], method='gauss-legendre')
     return res

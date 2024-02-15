@@ -88,7 +88,7 @@ def parseArgumentPeak():
         "--kerneltype",
         type=str,
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
-        default="GAUSS",
+        default="FULLNORMGAUSS",
     )
     args = parser.parse_args()
     return args
@@ -187,7 +187,7 @@ def parseArgumentRhoFromData():
         "--kerneltype",
         type=str,
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
-        default="GAUSS",
+        default="FULLNORMGAUSS",
     )
     args = parser.parse_args()
     return args
@@ -294,7 +294,7 @@ def parseArgumentSynthData():
         "--kerneltype",
         type=str,
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
-        default="GAUSS",
+        default="FULLNORMGAUSS",
     )
     args = parser.parse_args()
     return args
@@ -400,7 +400,7 @@ def parseArgumentPrintSamples():
         "--kerneltype",
         type=str,
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
-        default="GAUSS",
+        default="FULLNORMGAUSS",
     )
     args = parser.parse_args()
     return args
