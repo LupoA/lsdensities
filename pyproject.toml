@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lsdensities"
+version = "0.0.1"
+authors = [
+  { name="Alessandro Lupo", email="alessandro.lupo@cpt.univ-mrs.fr" },
+  { name="Niccolo' Forzano", email="2227764@swansea.ac.uk" },
+]
+description = "lsdensities: Spectral densities from two-point correlation functions"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "mpmath",
+    "scipy",
+    "matplotlib",
+    "progressbar",
+]
+
+[project.urls]
+Homepage = "https://github.com/LupoA/rhos"
+Issues = "https://github.com/LupoA/rhos/issues/"
