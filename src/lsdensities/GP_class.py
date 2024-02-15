@@ -756,6 +756,7 @@ class GaussianProcessWrapper:
             )
 
     def plothltrho(self, savePlot=True):
+
         plt.errorbar(
             x=self.espace / self.par.massNorm,
             y=np.array(self.rho_result, dtype=float),

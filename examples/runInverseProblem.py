@@ -1,9 +1,9 @@
 import sys
 import random
-
 import lsdensities.utils.rhoUtils as u
 from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
 from lsdensities import *
+
 
 def init_variables(args_):
     in_ = Inputs()

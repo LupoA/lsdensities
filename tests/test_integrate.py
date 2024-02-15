@@ -1,6 +1,4 @@
 import sys
-
-
 import lsdensities.rhoUtils as u
 from lsdensities.rhoUtils import init_precision
 from lsdensities.rhoUtils import LogMessage
@@ -24,8 +22,6 @@ from lsdensities.correlatorUtils import symmetrisePeriodicCorrelator
 from mpmath import mp, mpf
 from lsdensities.InverseProblemWrapper import *
 from lsdensities.plotutils import *
-
-
 import time
 
 def integrate_exponential(alpha, s, t1,t2, E0, periodicity, T, precision):

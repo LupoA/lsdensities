@@ -101,6 +101,11 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
+    with open(os.path.join(par.outdir,'corrmatrix.txt'), "w") as output:
+        for i in range(par.time_extent):
+            for j in range(par.time_extent):
+                print(i, j, corr.corrmat[i,j], file=output)
+
     #   Make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
     # mpcorr_sample = mp.matrix(par.num_boot, tmax)
@@ -110,11 +115,10 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     lambdaMax = 1e+4
-
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=-1.99,
+        alphaB=1/2,
         alphaC=+1.99,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax/2,
@@ -126,7 +130,7 @@ def main():
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
-    HLTGP = HLTWGPrapper(
+    HLTGP = HLTGPWrapper(
         par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr
     )
     HLTGP.prepareHLT()

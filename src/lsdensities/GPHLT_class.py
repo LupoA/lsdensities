@@ -70,7 +70,7 @@ class A0_t:
         self.is_filled = True
 
 
-class HLTWGPrapper:
+class HLTGPWrapper:
     def __init__(
         self,
         par: Inputs,
@@ -724,15 +724,6 @@ class HLTWGPrapper:
             ecolor=CB_colors[0],
             markerfacecolor=CB_colors[0],
         )
-        if(0):
-            '''ax[0].axhspan(
-            ymin=float(self.rho_result[self.espace_dictionary[estar]]
-                       - self.drho_result[self.espace_dictionary[estar]]),
-            ymax=float(self.rho_result[self.espace_dictionary[estar]]
-                       + self.drho_result[self.espace_dictionary[estar]]),
-            alpha=0.3,
-            color=CB_colors[4],
-        )'''
         if enableBootstrapErr_ == True:
             ax.errorbar(
                 x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),

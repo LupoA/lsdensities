@@ -114,7 +114,6 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
             invLapW.rho_list[invLapW.espace_dictionary[estar]],
             invLapW.errBoot_list[invLapW.espace_dictionary[estar]], label='Bootstrap Error', markerId=1, colorID=1)
 
-
     ax2.set_xlabel(r"$\lambda$", fontsize=32)
     ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
     ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
@@ -299,6 +298,7 @@ def plotSpectralDensity(invLapW):
         + r" = {:2.2f}".format(invLapW.par.sigma / invLapW.par.massNorm)
         + r"$M_{\rm ref}$"
     )
+
     plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultHLT, dtype=float), np.array(invLapW.rho_quadrature_err_HLT, dtype=float), label='HLT', markerId=0, colorID=0)
 
     plotwErr(ax, invLapW.espace / invLapW.par.massNorm, np.array(invLapW.rhoResultBayes, dtype=float),

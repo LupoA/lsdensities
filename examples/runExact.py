@@ -157,6 +157,7 @@ def main():
         print('Exact Rho: ', rhoStrue[e_i])
         print('Reconstructed Rho: ', rhos[e_i])
 
+
     plt.plot(
         espace/a,
         np.array(rhoStrue, dtype=float),
@@ -176,7 +177,6 @@ def main():
         label="Reconstructed",
         color='r',
     )
-
     plt.xlabel("GeV")
     plt.title("# States : {:2d}".format(STATES))
     plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
