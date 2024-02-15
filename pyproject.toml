@@ -9,7 +9,7 @@ authors = [
   { name="Alessandro Lupo", email="alessandro.lupo@cpt.univ-mrs.fr" },
   { name="Niccolo' Forzano", email="2227764@swansea.ac.uk" },
 ]
-description = "lsdensities: Spectral densities from two-point correlation functions"
+description = "lsdensities: Lattice spectral densities"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -26,5 +26,5 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/LupoA/rhos"
-Issues = "https://github.com/LupoA/rhos/issues/"
+Homepage = "https://github.com/LupoA/lsdensities"
+Issues = "https://github.com/LupoA/lsdensities/issues/"
