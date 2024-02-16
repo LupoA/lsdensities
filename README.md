@@ -41,20 +41,33 @@ provides utilities for estimating errors and treating
 the bias both in the HLT and in the Bayesian framework.
 
 Function call example:
+
 ```python
+import mpmath as mp
 import lsdensities
 
 # compute the smeared spectral density at some energy,
 # from a lattice correlator
 
-inputMatrix = lsdensities.core.Smatrix_mp(time_extent)
+parameters = Inputs()
+parameters.tmax = 16  # number of data points
+parameters.kerneltype = 'FULLNORMGAUSS'  # Kernel smearing spectral density
+parameters.sigma = 0.1  # smearing radius in given energy units
+energy = 0.5  # energy at which the smeared spectral density is evaluated in given energy units
+parameters.assign_values()  # assign internal variables based on given inputs
 
-coeff = lsdensities.transform.h_Et_mp_Eslice(inputMatrix, 
-                                             parameters, 
-                                             energy)
+lattice_correlator = mp.matrix(parameters.tmax, 1)  #  to be filled with lattice data
+lattice_covariance = mp.matrix(parameters.tmax)     #  to be filled with data covariance
 
-res = lsdensities.transform.y_combine_central_Eslice_mp(coeff, 
-                                                        lattice_correlator, 
+regularising_parameter = 0.1   # regularising parameters
+input_matrix = lsdensities.core.Smatrix_mp(parameters.tmax) + (regularising_parameter * lattice_covariance)
+
+coeff = lsdensities.transform.h_Et_mp_Eslice(input_matrix**(-1),  #   linear coefficients
+                                             parameters,
+                                             energy)    
+
+result = lsdensities.transform.y_combine_central_Eslice_mp(coeff,   #   linear combination of data and coefficients
+                                                        lattice_correlator,
                                                         parameters)
 ```
 
