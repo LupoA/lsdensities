@@ -1,10 +1,10 @@
 from mpmath import mp, mpf
 import numpy as np
 import os
-from .utils.rhoUtils import Obs, bcolors, plot_markers, CB_colors, timesfont, LogMessage, Inputs, MatrixBundle, CB_color_cycle
-from .utils.rhoMath import invert_matrix_ge
-from .core import A0E_mp
-from .transform import h_Et_mp_Eslice, combine_fMf_Eslice
+from .utils.rhoUtils import Obs, bcolors, plot_markers, CB_colors, timesfont, LogMessage, Inputs, MatrixBundle, CB_color_cycle, tnr
+from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
+from .core import A0E_mp, integrandSigmaMat
+from .transform import h_Et_mp_Eslice, combine_fMf_Eslice, combine_base_Eslice, y_combine_central_Eslice_mp
 from .abw import gAg, gBg
 import matplotlib.pyplot as plt
 

@@ -1,5 +1,6 @@
-from ..utils.rhoUtils import Obs
+from ..utils.rhoUtils import Obs, LogMessage
 import argparse
+import numpy as np
 
 #   Usage:
 #       from correlatorUtils import effective_mass

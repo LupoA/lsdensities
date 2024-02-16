@@ -2,6 +2,7 @@ import numpy as np
 from numpy import linalg as LA
 import math
 import scipy.linalg as sp_linalg
+from mpmath import mp
 
 
 def kronecker_fp(a, b):
@@ -51,7 +52,7 @@ def choelesky_invert_scipy(
     return out_
 
 
-from mpmath import mp
+
 
 
 def norm2_mp(matrix):  # for square matrices only

@@ -1,7 +1,7 @@
 from mpmath import mp, mpf
 from progressbar import ProgressBar
 from .core import ft_mp, gte
-from .utils.rhoStat import averageScalar_mp
+from .utils.rhoStat import averageScalar_mp, averageVector_mp
 
 
 def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):

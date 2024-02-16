@@ -6,8 +6,7 @@ import math
 from ..core import Smatrix_mp
 from .rhoMath import norm2_mp
 import time
-import mpmath as mp
-from mpmath import mp
+from mpmath import mp, mpf
 
 target_result_precision = 1e-8
 
@@ -230,18 +229,18 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
         )
         # loop over file: read and store
         indx = 0
-        for l in file:
+        for lndex in file:
             # Read and store
-            t = int(l.split(" ")[0])
+            t = int(lndex.split(" ")[0])
             n = int(indx / header_T)
             # print(l.rstrip(), "     ", t, n)
-            mcorr_.sample[n, t] = float(l.split(" ")[1])
+            mcorr_.sample[n, t] = float(lndex.split(" ")[1])
             indx += 1
     #   Returns np array of correlators
     return mcorr_, header_T, header_nms
 
 
-from mpmath import mpf
+
 
 
 def init_precision(digits_):
@@ -345,8 +344,8 @@ class MatrixBundle:
         self.B = Bmatrix
         self.bnorm = bnorm
 
-    def compute_W(self, l, a0):
-        return self.S + (l * a0) / ((1 - l) * self.bnorm) * self.B
+    def compute_W(self, lmda, a0):
+        return self.S + (lmda * a0) / ((1 - lmda) * self.bnorm) * self.B
 
 
 def adjust_precision(tmax: int):

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import random
+from mpmath import mp
 
 
 def averageVector_fp(vector, get_error=True, get_var=False):
@@ -121,7 +122,7 @@ def covToCorr_fp(in_, cov_, vmax, showplot=False):
     return corrmat_
 
 
-from mpmath import mp
+
 
 
 def averageVector_mp(in_, bootstrap=True):
