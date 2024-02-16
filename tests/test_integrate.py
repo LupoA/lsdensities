@@ -1,28 +1,8 @@
-import sys
-import lsdensities.rhoUtils as u
-from lsdensities.rhoUtils import init_precision
-from lsdensities.rhoUtils import LogMessage
-from lsdensities.rhoUtils import end
-from lsdensities.rhoUtils import Obs
-from lsdensities.rhoUtils import adjust_precision
-from lsdensities.rhoUtils import Inputs
-from lsdensities.rhoUtils import *
-from lsdensities.rhoStat import *
-from lsdensities.rhoMath import *
-from lsdensities.core import *
-from lsdensities.rhoParser import *
-from lsdensities.transform import *
-from lsdensities.abw import *
-from lsdensities.rhoParallelUtils import *
-from lsdensities.HLT_class import *
-from lsdensities.GPHLT_class import *
-from lsdensities.GP_class import *
-from lsdensities.correlatorUtils import foldPeriodicCorrelator
-from lsdensities.correlatorUtils import symmetrisePeriodicCorrelator
-from mpmath import mp, mpf
-from lsdensities.InverseProblemWrapper import *
-from lsdensities.plotutils import *
+from lsdensities.utils.rhoUtils import LogMessage
+from lsdensities.core import integrandSigmaMat
+from mpmath import mp
 import time
+
 
 def integrate_exponential(alpha, s, t1,t2, E0, periodicity, T, precision):
     delta_x = 1e-3
@@ -30,10 +10,10 @@ def integrate_exponential(alpha, s, t1,t2, E0, periodicity, T, precision):
 
     x = E0
     while True:
-        integral = mp.fadd(integral, integrandSigmaMat_DEBUG(x, alpha, s, t1, t2, E0, periodicity, T) * delta_x)
+        integral = mp.fadd(integral, integrandSigmaMat(x, alpha, s, t1, t2, E0, periodicity, T) * delta_x)
         x += delta_x
 
-        if integrandSigmaMat_DEBUG(x, alpha, s, t1, t2, E0, periodicity, T) < precision:
+        if integrandSigmaMat(x, alpha, s, t1, t2, E0, periodicity, T) < precision:
             break
 
     return integral
@@ -43,7 +23,7 @@ def main():
     mp.dps = 120
 
     start = time.time()
-    integral = mp.quad(lambda x: integrandSigmaMat_DEBUG(x, 0, s=0.1, t1=3, t2=3, E0=0, periodicity='COSH', T=16),
+    integral = mp.quad(lambda x: integrandSigmaMat(x, 0, s=0.1, t1=3, t2=3, E0=0, periodicity='COSH', T=16),
                        [0, mp.inf], error=True, method='tanh-sinh')
     end=time.time()
     print(LogMessage(), float(integral[0]), "in ", end-start, "s")
@@ -58,3 +38,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

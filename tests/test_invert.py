@@ -1,29 +1,7 @@
-import sys
-
-
-import lsdensities.rhoUtils as u
-from lsdensities.rhoUtils import init_precision
-from lsdensities.rhoUtils import LogMessage
-from lsdensities.rhoUtils import end
-from lsdensities.rhoUtils import Obs
-from lsdensities.rhoUtils import adjust_precision
-from lsdensities.rhoUtils import Inputs
-from lsdensities.rhoUtils import *
-from lsdensities.rhoStat import *
-from lsdensities.rhoMath import *
-from lsdensities.core import *
-from lsdensities.rhoParser import *
-from lsdensities.transform import *
-from lsdensities.abw import *
-from lsdensities.rhoParallelUtils import *
-from lsdensities.HLT_class import *
-from lsdensities.GPHLT_class import *
-from lsdensities.GP_class import *
-from lsdensities.correlatorUtils import foldPeriodicCorrelator
-from lsdensities.correlatorUtils import symmetrisePeriodicCorrelator
-from mpmath import mp, mpf
-from lsdensities.InverseProblemWrapper import *
-from lsdensities.plotutils import *
+from lsdensities.utils.rhoMath import norm2_mp
+from lsdensities.core import Smatrix_mp
+from lsdensities.utils.rhoUtils import LogMessage
+from mpmath import mp
 
 
 def init_precision():
@@ -50,3 +28,4 @@ if __name__ == "__main__":
 
     assert shouldbeone - 1 < mp.dps / 2
     exit(1)
+
