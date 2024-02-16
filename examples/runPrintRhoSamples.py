@@ -1,11 +1,16 @@
-import sys
-
-
 import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
+from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs, create_out_paths, plot_markers, CB_colors, timesfont
 from lsdensities.utils.rhoParser import parseArgumentPrintSamples
-from lsdensities import *
-
+from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
+from mpmath import mp, mpf
+from lsdensities.core import A0E_mp, Smatrix_mp
+from lsdensities.abw import gAg, gBg
+from lsdensities.transform import h_Et_mp_Eslice, y_combine_sample_Eslice_mp_ToFile
+import os
+import time
+from lsdensities.utils.rhoMath import invert_matrix_ge
+import matplotlib.pyplot as plt
 
 def init_variables(args_):
     in_ = Inputs()
@@ -50,13 +55,13 @@ def main():
     lambda_e = inputrhofile[:, 1]
     in_rho = inputrhofile[:, 2]
     in_stat = inputrhofile[:, 3]
-    in_sys = inputrhofile[:, 4]
-    in_quadrature = inputrhofile[:, 5]
+    inputrhofile[:, 4]
+    inputrhofile[:, 5]
     par.Ne = len(energy)
     espace = np.zeros(par.Ne)
     rho = np.zeros(par.Ne)
     drho = np.zeros(par.Ne)
-    sysrho = np.zeros(par.Ne)
+    np.zeros(par.Ne)
     for _e in range(par.Ne):
         espace[_e] = energy[_e]
 

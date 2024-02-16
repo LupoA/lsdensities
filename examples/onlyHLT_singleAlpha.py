@@ -1,30 +1,11 @@
-import sys
-
-
-import rhoUtils as u
-from .rhoUtils import init_precision
-from .rhoUtils import LogMessage
-from .rhoUtils import end
-from .rhoUtils import Obs
-from .rhoUtils import adjust_precision
-from .rhoUtils import Inputs
-from .rhoUtils import *
-from .rhoStat import *
-from .rhoMath import *
-from .core import *
-from .rhoParser import *
-from .transform import *
-from .abw import *
-from .rhoParallelUtils import *
-from .HLT_class import *
-from .GPHLT_class import *
-from .GP_class import *
-from .correlatorUtils import foldPeriodicCorrelator
-from .correlatorUtils import symmetrisePeriodicCorrelator
-from .mpmath import mp, mpf
-from .InverseProblemWrapper import *
-from .plotutils import *
-
+import lsdensities.utils.rhoUtils as u
+from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs
+from lsdensities.utils.rhoParser import parseArgumentRhoFromData
+from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
+from mpmath import mpf
+from lsdensities.HLT_class import AlgorithmParameters, MatrixBundle, HLTWrapper
+from lsdensities.utils.rhoUtils import adjust_precision
+from lsdensities.core import Smatrix_mp
 eNorm = False
 
 # TODO at present: float implemented, mp not implemented
@@ -51,7 +32,6 @@ def init_variables(args_):
         in_.emin = args_.emin
     in_.e0 = args_.e0
     in_.Ne = args_.ne
-    in_.alpha = args_.alpha
     return in_
 
 
@@ -87,7 +67,7 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     #   Prepare
-    S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent)
+    S = Smatrix_mp(tmax, type=par.periodicity, T=par.time_extent, alpha_=0)
     hltParams = AlgorithmParameters(
         alphaA=0,
         alphaB=0,
@@ -112,7 +92,7 @@ def main():
 
     _ = HLT.estimate_sys_error(estar)
 
-    assert HLT.result_is_filled[3] == True
+    assert HLT.result_is_filled[3] is True
     print(
         LogMessage(),
         "rho, drho, sys",
@@ -149,3 +129,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

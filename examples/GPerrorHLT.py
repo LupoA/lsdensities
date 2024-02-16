@@ -1,29 +1,12 @@
-import sys
-
-
-import rhoUtils as u
-from .rhoUtils import init_precision
-from .rhoUtils import LogMessage
-from .rhoUtils import end
-from .rhoUtils import Obs
-from .rhoUtils import adjust_precision
-from .rhoUtils import Inputs
-from .rhoUtils import *
-from .rhoStat import *
-from .rhoMath import *
-from .core import *
-from .rhoParser import *
-from .transform import *
-from .abw import *
-from .rhoParallelUtils import *
-from .HLT_class import *
-from .GPHLT_class import *
-from .GP_class import *
-from .correlatorUtils import foldPeriodicCorrelator
-from .correlatorUtils import symmetrisePeriodicCorrelator
-from .mpmath import mp, mpf
-from .InverseProblemWrapper import *
-from .plotutils import *
+import lsdensities.utils.rhoUtils as u
+from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs
+from lsdensities.utils.rhoParser import parseArgumentRhoFromData
+from lsdensities.utils.rhoUtils import create_out_paths
+from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
+from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
+import os
+from mpmath import mp, mpf
+from lsdensities.GPHLT_class import AlgorithmParameters, MatrixBundle, HLTGPWrapper
 
 
 def init_variables(args_):
@@ -33,6 +16,7 @@ def init_variables(args_):
     in_.prec = args_.prec
     in_.datapath = args_.datapath
     in_.outdir = args_.outdir
+    in_.kerneltype = args_.kerneltype
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
@@ -138,10 +122,11 @@ def main():
     #   Run
     HLTGP.run(how_many_alphas=par.Na, plot_live=True, enableBootErr=True)
     HLTGP.plotParameterScan(how_many_alphas=par.Na, save_plots=True)
-    HLTGP.plotRhos(savePlot=True)
+    HLTGP.plothltrho(savePlot=True)
 
     end()
 
 
 if __name__ == "__main__":
     main()
+

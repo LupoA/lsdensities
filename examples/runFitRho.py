@@ -3,20 +3,16 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 import os
-from lmfit import Model, Parameters, minimize, Minimizer
-import scipy
-from mpmath import mp, mpf
+from lmfit import Parameters, Minimizer
+from lsdensities.utils.rhoUtils import LogMessage
 
-import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Obs, adjust_precision, Inputs
-from lsdensities import *
 
 
 def main():
 
     ############################# Settings #############################################
-    path = './results/tmax32sigma0.1554575Ne8nboot300mNorm0.62183prec40Na1/Logs'
-    file_path_input = './M5/corr_NEWPAUL_nt64mf0p72_cauchy_gi_as_N40_N40_s0p25/tmax32sigma0.1554575Ne20nboot300mNorm0.62183prec40Na1/Logs/fit_results_nt64_mf0p72_cauchy_gi_as_N40_N40_s0p25.txt'
+    path = './results/tmax24sigma0.12Ne5nboot300mNorm0.4prec105Na1/Logs/'
+    file_path_input = './corr_NEWPAUL_out_s0p30/tmax24sigma0.12Ne5nboot300mNorm0.4prec105Na1/Logs/ResultHLT.txt'
     output_name = './fitresults/fit_results_NEWPAUL_nt64_mf0p72_as_g0gi_double.pdf'
     # Channel choices: 'PS', 'V', 'T', 'AV', 'AT', 'S'
     channel = 'V'
@@ -37,7 +33,7 @@ def main():
     plot_corr_mat = False
     flag_chi2 = True    # To compute and show the correlated chi-square
 
-    if four_fit == True:
+    if four_fit is True:
         triple_fit = True
     ####################################################################################
     #####################Fitting initial parameter guesses #############################
@@ -46,10 +42,10 @@ def main():
     params.add('mean_1', value=1.0, min=0.97, max=1.03)
     params.add('amplitude_2', value=1.5101807628190783e-07, min=0.0)
     params.add('mean_2', value=1.45, min=1.25, max=1.6)
-    if triple_fit == True:
+    if triple_fit is True:
         params.add('amplitude_3', value=2.608025553079287e-06, min=0.0)
         params.add('mean_3', value=2.5, min=2.2, max=2.7)
-    if four_fit == True:
+    if four_fit is True:
         params.add('amplitude_4', value=4.875793098794379e-10, min=0, max=1e-10)
         params.add('mean_4', value=2.5, min=2.5, max=2.8)
     #####################################################################################
@@ -109,11 +105,11 @@ def main():
     amplitude_vals2 = []
     mean_vals2 = []
 
-    if triple_fit == True:
+    if triple_fit is True:
         amplitude_vals3 = []
         mean_vals3 = []
 
-    if four_fit == True:
+    if four_fit is True:
         amplitude_vals4 = []
         mean_vals4 = []
 
@@ -160,7 +156,7 @@ def main():
             cov_matrix[j][k] *= factors[k] * factors[j]
             # cov_matrix[j][k] *= 1.0
 
-    if print_cov_matrix == True:
+    if print_cov_matrix is True:
         print(LogMessage(), "Evaluate covariance")
         with open(os.path.join('./covarianceMatrix_rho.txt'), "w") as output:
             for i in range(len(np.diag(cov_matrix))):
@@ -187,7 +183,7 @@ def main():
         plt.show()
         plt.clf()
 
-    inv_cov = np.linalg.inv(cov_matrix)
+    np.linalg.inv(cov_matrix)
     # Activating text rendering by LaTeX
     #plt.style.use("paperdraft.mplstyle")
     # Extract the required columns
@@ -264,10 +260,10 @@ def main():
         e1 = params['mean_2']
         ampl_1 = params['amplitude_1']
         ampl_2 = params['amplitude_2']
-        if triple_fit == True:
+        if triple_fit is True:
             e2 = params['mean_3']
             ampl_3 = params['amplitude_3']
-        if four_fit == True:
+        if four_fit is True:
             e3 = params['mean_4']
             ampl_4 = params['amplitude_4']
 
@@ -275,16 +271,16 @@ def main():
 
         model = double_gaussian2(ampl_1, e0, ampl_2, e1, x)
 
-        if cauchy_fit == True:
+        if cauchy_fit is True:
             model = double_cauchy2(ampl_1, e0, ampl_2, e1, x)
 
-        if triple_fit == True:
+        if triple_fit is True:
             model = triple_gaussian2(ampl_1, e0, ampl_2, e1, ampl_3, e2, x)
-            if cauchy_fit == True:
+            if cauchy_fit is True:
                 model = triple_cauchy2(ampl_1, e0, ampl_2, e1, ampl_3, e2, x)
-        if four_fit == True:
+        if four_fit is True:
             model = four_gaussian2(ampl_1, e0, ampl_2, e1, ampl_3, e2, ampl_4, e3, x)
-            if cauchy_fit == True:
+            if cauchy_fit is True:
                 model = four_cauchy2(ampl_1, e0, ampl_2, e1, ampl_3, e2, ampl_4, e3, x)
 
         diff = abs(data - model)
@@ -293,7 +289,7 @@ def main():
     def correlated_residual(amplitude1, mean1, amplitude2, mean2, x, data, cov):
         cov_inv = np.linalg.inv(cov)
         model = double_gaussian2(amplitude1, mean1, amplitude2, mean2, x)
-        if cauchy_fit == True:
+        if cauchy_fit is True:
             model = double_cauchy2(amplitude1, mean1, amplitude2, mean2, x)
 
         diff = data - model
@@ -302,7 +298,7 @@ def main():
     def correlated_residual_three(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, x, data, cov):
         cov_inv = np.linalg.inv(cov)
         model = triple_gaussian2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, x)
-        if cauchy_fit == True:
+        if cauchy_fit is True:
             model = triple_cauchy2(amplitude1, mean1, amplitude2, mean2, x)
         diff = model - data
         residual = diff * cov_inv * diff.T
@@ -312,7 +308,7 @@ def main():
                                  cov):
         cov_inv = np.linalg.inv(cov)
         model = four_gaussian2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, amplitude4, mean4, x)
-        if cauchy_fit == True:
+        if cauchy_fit is True:
             model = four_cauchy2(amplitude1, mean1, amplitude2, mean2, x)
         diff = abs(model - data)
         residual = diff * cov_inv * diff.T
@@ -329,9 +325,9 @@ def main():
         # Generate the fitted curve
         x_fit = np.linspace(plot_min_lim, plot_max_lim, 1000)
 
-        y_fit = double_gaussian(result.params, x_fit)
-        if cauchy_fit == True:
-            y_fit = double_cauchy(result.params, x_fit)
+        double_gaussian(result.params, x_fit)
+        if cauchy_fit is True:
+            double_cauchy(result.params, x_fit)
 
         # Plot the fitted curve
         #        plt.plot(x_fit, y_fit, label='Fitted Curve', linewidth=1.3, color='red', alpha=0.2)
@@ -341,11 +337,11 @@ def main():
         amplitude_vals2.append(float(result.params['amplitude_2']))
         mean_vals2.append(float(result.params['mean_2']))
 
-        if triple_fit == True:
+        if triple_fit is True:
             amplitude_vals3.append(float(result.params['amplitude_3']))
             mean_vals3.append(float(result.params['mean_3']))
 
-        if four_fit == True:
+        if four_fit is True:
             amplitude_vals4.append(float(result.params['amplitude_4']))
             mean_vals4.append(float(result.params['mean_4']))
 
@@ -356,11 +352,11 @@ def main():
         print(LogMessage(), 'Amplitude_2: ', float(result.params['amplitude_2']))
         print(LogMessage(), 'Mean_2: ', float(result.params['mean_2']))
 
-        if triple_fit == True:
+        if triple_fit is True:
             print(LogMessage(), 'Amplitude_3: ', float(result.params['amplitude_3']))
             print(LogMessage(), 'Mean_3: ', float(result.params['mean_3']))
 
-        if four_fit == True:
+        if four_fit is True:
             print(LogMessage(), 'Amplitude_4: ', float(result.params['amplitude_4']))
             print(LogMessage(), 'Mean_4: ', float(result.params['mean_4']))
         print(LogMessage(), '#############################')
@@ -373,12 +369,12 @@ def main():
     dmean1 = np.std(mean_vals1)
     mean2 = np.average(mean_vals2)
     dmean2 = np.std(mean_vals2)
-    if triple_fit == True:
+    if triple_fit is True:
         amplitude3 = np.average(amplitude_vals3)
         damplitude3 = np.std(amplitude_vals3)
         mean3 = np.average(mean_vals3)
         dmean3 = np.std(mean_vals3)
-    if four_fit == True:
+    if four_fit is True:
         amplitude4 = np.average(amplitude_vals4)
         damplitude4 = np.std(amplitude_vals4)
         mean4 = np.average(mean_vals4)
@@ -396,35 +392,35 @@ def main():
         y_gaussian_sum[k] = (y_gaussian_1[k] + y_gaussian_2[k])
         # plt.plot(x_fit, gaussian(x_fit, amplitude_vals1_new[k], mean_vals1_new[k]), label='Gaussian 1', color='orange', linewidth=1.3, alpha=0.2)
         # plt.plot(x_fit, gaussian(x_fit, amplitude_vals2_new[k], mean_vals2_new[k]), label='Gaussian 2', color='blue', linewidth=1.3, alpha=0.2)
-        if cauchy_fit == True:
+        if cauchy_fit is True:
             y_gaussian_1[k] = cauchy(x_fit, amplitude_vals1[k], mean_vals1[k])
             y_gaussian_2[k] = cauchy(x_fit, amplitude_vals2[k], mean_vals2[k])
             y_gaussian_sum[k] = (y_gaussian_1[k] + y_gaussian_2[k])
 
-        if triple_fit == True:
+        if triple_fit is True:
             y_gaussian_3[k] = gaussian(x_fit, amplitude_vals3[k], mean_vals3[k])
             y_gaussian_sum[k] = y_gaussian_1[k] + y_gaussian_2[k] + y_gaussian_3[k]
             # plt.plot(x_fit, y_gaussian_3, label='Gaussian 3', color='gray', linewidth=1.6, alpha=0.2)
-            if cauchy_fit == True:
+            if cauchy_fit is True:
                 y_gaussian_3[k] = cauchy(x_fit, amplitude_vals3[k], mean_vals3[k])
                 y_gaussian_sum[k] = y_gaussian_1[k] + y_gaussian_2[k] + y_gaussian_3[k]
-        if four_fit == True:
+        if four_fit is True:
             y_gaussian_4[k] = gaussian(x_fit, amplitude_vals4[k], mean_vals4[k])
             y_gaussian_sum[k] = y_gaussian_1[k] + y_gaussian_2[k] + y_gaussian_3[k] + y_gaussian_4[k]
             # plt.plot(x_fit, y_gaussian_4, label='Gaussian 4', color='brown', linewidth=1.3, alpha=0.2)
-            if cauchy_fit == True:
+            if cauchy_fit is True:
                 y_gaussian_4[k] = cauchy(x_fit, amplitude_vals4[k], mean_vals4[k])
                 y_gaussian_sum[k] = y_gaussian_1[k] + y_gaussian_2[k] + y_gaussian_3[k] + y_gaussian_4[k]
 
     x1 = np.linspace(plot_min_lim, plot_max_lim, 1000)
 
-    if triple_fit == True:
-        if four_fit == True:
-            if cauchy_fit == False:
+    if triple_fit is True:
+        if four_fit is True:
+            if cauchy_fit is False:
                 plt.plot(x1, gaussian(x1, amplitude4, mean4), color='mediumturquoise')
             else:
                 plt.plot(x1, cauchy(x1, amplitude4, mean4), color='mediumturquoise')
-            if cauchy_fit == False:
+            if cauchy_fit is False:
                 plt.plot(x1,
                          four_gaussian2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, amplitude4, mean4, x1),
                          color='gray')
@@ -433,14 +429,14 @@ def main():
                          four_cauchy2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, amplitude4, mean4, x1),
                          color='gray')
         else:
-            if cauchy_fit == False:
+            if cauchy_fit is False:
                 plt.plot(x1, triple_gaussian2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, x1),
                          color='gray')
             else:
                 plt.plot(x1, triple_cauchy2(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3, x1),
                          color='gray')
     else:
-        if cauchy_fit == False:
+        if cauchy_fit is False:
             plt.plot(x1, double_gaussian2(amplitude1, mean1, amplitude2, mean2, x1), color='orange')
         else:
             plt.plot(x1, double_cauchy2(amplitude1, mean1, amplitude2, mean2, x1), color='orange')
@@ -471,9 +467,9 @@ def main():
     print(LogMessage(), 'E0: ', mean1, '+-', dmean1, '\t', '(', mean1 * mpi, '+-', dmean1 * mpi, ')')
     print(LogMessage(), 'E1: ', mean2, '+-', dmean2, '\t', '(', mean2 * mpi, '+-', dmean2 * mpi, ')')
 
-    if triple_fit == True:
+    if triple_fit is True:
         print(LogMessage(), 'E2: ', mean3, '+-', dmean3, '\t', '(', mean3 * mpi, '+-', dmean3 * mpi, ')')
-    if four_fit == True:
+    if four_fit is True:
         print(LogMessage(), 'E3: ', mean4, '+-', dmean4, '\t', '(', mean4 * mpi, '+-', dmean4 * mpi, ')')
 
     print(LogMessage(), 'E1/E0: ', mean2 / mean1, '+-',
@@ -483,9 +479,9 @@ def main():
     print(LogMessage(), 'Amplitude1: ', amplitude1, '+-', damplitude1, "\t", 'Mean1: ', mean1, '+-', dmean1)
     print(LogMessage(), 'Amplitude2: ', amplitude2, '+-', damplitude2, "\t", 'Mean2: ', mean2, '+-', dmean2)
 
-    if triple_fit == True:
+    if triple_fit is True:
         print(LogMessage(), 'Amplitude3: ', amplitude3, '+-', damplitude3, "\t", 'Mean3: ', mean3, '+-', dmean3)
-    if four_fit == True:
+    if four_fit is True:
         print(LogMessage(), 'Amplitude4: ', amplitude4, '+-', damplitude4, "\t", 'Mean4: ', mean4, '+-', dmean4)
 
 
@@ -528,7 +524,7 @@ def main():
 
     result1 = gaussian(x1, amplitude1, mean1)
     transpose_y_gaussian1 = [[y_gaussian_1[j][i] for j in range(nboot)] for i in range(len(x1))]
-    if cauchy_fit == True:
+    if cauchy_fit is True:
         result1 = cauchy(x1, amplitude1, mean1)
         transpose_y_gaussian1 = [[y_gaussian_1[j][i] for j in range(nboot)] for i in range(len(x1))]
     upper_band1 = [0] * len(x1)
@@ -538,7 +534,7 @@ def main():
         error = 1.0 * np.std((transpose_y_gaussian1)[j])
         upper_band1[j] = result1[j] + error
         lower_band1[j] = result1[j] - error
-    if cauchy_fit == False:
+    if cauchy_fit is False:
         plt.plot(x1, gaussian(x1, amplitude1, mean1), color='chocolate', linewidth=1.6)
         plt.fill_between(x1, lower_band1, upper_band1, color='chocolate', alpha=0.2, label='Error Bands')
     else:
@@ -546,7 +542,7 @@ def main():
         plt.fill_between(x1, lower_band1, upper_band1, color='chocolate', alpha=0.2, label='Error Bands')
     result2 = gaussian(x1, amplitude2, mean2)
     transpose_y_gaussian2 = [[y_gaussian_2[j][i] for j in range(nboot)] for i in range(len(x1))]
-    if cauchy_fit == True:
+    if cauchy_fit is True:
         result2 = cauchy(x1, amplitude2, mean2)
         transpose_y_gaussian2 = [[y_gaussian_2[j][i] for j in range(nboot)] for i in range(len(x1))]
     upper_band2 = [0] * len(x1)
@@ -557,14 +553,14 @@ def main():
         upper_band2[j] = result2[j] + error
         lower_band2[j] = result2[j] - error
 
-    if cauchy_fit == False:
+    if cauchy_fit is False:
         plt.plot(x1, gaussian(x1, amplitude2, mean2), color='olive', linewidth=1.6)
         plt.fill_between(x1, lower_band2, upper_band2, color='olive', alpha=0.25, label='Error Bands')
     else:
         plt.plot(x1, cauchy(x1, amplitude2, mean2), color='olive', linewidth=1.6)
         plt.fill_between(x1, lower_band2, upper_band2, color='olive', alpha=0.25, label='Error Bands')
-    if four_fit == True:
-        if cauchy_fit == False:
+    if four_fit is True:
+        if cauchy_fit is False:
             plt.plot(x1, gaussian(x1, amplitude3, mean3), color='orange', linewidth=1.6)
 
             result3 = gaussian(x1, amplitude3, mean3)
@@ -651,8 +647,8 @@ def main():
             plt.fill_between(x1, lower_band4, upper_band4, color='pink', alpha=0.25, label='Error Bands')
 
         plt.fill_between(x1, lower_band5, upper_band5, color='gray', alpha=0.25, label='Error Bands')
-    elif triple_fit == True:
-        if cauchy_fit == False:
+    elif triple_fit is True:
+        if cauchy_fit is False:
             plt.plot(x1, gaussian(x1, amplitude3, mean3), color='orange', linewidth=1.6)
 
             result_sum = (gaussian(x1, amplitude2, mean2) + gaussian(x1, amplitude1, mean1) + gaussian(x1, amplitude3,
@@ -696,7 +692,7 @@ def main():
 
         plt.fill_between(x1, lower_band4, upper_band4, color='gray', alpha=0.25, label='Error Bands')
     else:
-        if cauchy_fit == False:
+        if cauchy_fit is False:
             plt.plot(x1, double_gaussian2(amplitude1, mean1, amplitude2, mean2, x1), color='orange', linewidth=1.8)
             result_sum = (gaussian(x1, amplitude2, mean2) + gaussian(x1, amplitude1, mean1))
         else:
@@ -715,8 +711,8 @@ def main():
         plt.fill_between(x1, lower_band3, upper_band3, color='orange', alpha=0.25, label='Error Bands')
 
     if flag_chi2:
-        if triple_fit == True:
-            if four_fit == True:
+        if triple_fit is True:
+            if four_fit is True:
                 if len(x) > 8:
                     chi_square_red = correlated_residual_four(amplitude1, mean1, amplitude2, mean2, amplitude3, mean3,
                                                               amplitude4, mean4, x, rho_central, cov_matrix) / (len(x) - 8)
