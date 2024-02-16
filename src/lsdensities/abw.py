@@ -1,10 +1,7 @@
 from mpmath import mp, mpf
-import sys
-import numpy as np
-
 from .utils.rhoUtils import LogMessage
-from .transform import *
-from .core import *
+from .transform import ft_mp
+from .core import A0_mp
 
 #   Functionals A, B and W
 
@@ -110,7 +107,7 @@ def gBg(gt, bmat, bnorm):
 def gWg(smat, cov, gt, estar, mplambda, a0_, bnorm, params, verbose=False):
     aterm = gAg(smat, gt, estar, params)
     aterm = mp.fdiv(aterm, a0_)
-    if verbose == True:
+    if verbose is True:
         print(
             LogMessage(),
             "ABW :::",
@@ -120,7 +117,7 @@ def gWg(smat, cov, gt, estar, mplambda, a0_, bnorm, params, verbose=False):
             float(aterm),
         )
     bterm = gBg(gt, cov, bnorm)
-    if verbose == True:
+    if verbose is True:
         print(
             LogMessage(),
             "ABW :::",

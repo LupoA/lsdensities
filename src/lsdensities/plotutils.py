@@ -1,10 +1,9 @@
-import sys
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from .utils.rhoUtils import *
-from .transform import *
-from .utils.rhoMath import *
+from .utils.rhoUtils import CB_colors, plot_markers, LogMessage, tnr
+from .transform import combine_base_Eslice
+from .utils.rhoMath import gauss_fp
 
 def setPlotOpt(plt):
     plt.rcParams["figure.figsize"] = 5, 2
@@ -87,7 +86,7 @@ def stabilityPlot(invLapW, estar, savePlot=True, plot_live=False):
     ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
     ax.set_xscale('log')
     plt.tight_layout()
-    if savePlot == True:
+    if savePlot is True:
         plt.savefig(
             os.path.join(
                 invLapW.par.plotpath,
@@ -95,7 +94,7 @@ def stabilityPlot(invLapW, estar, savePlot=True, plot_live=False):
             ),
             dpi=420,
         )
-    if plot_live == True:
+    if plot_live is True:
         plt.show()
     plt.clf()
     plt.close(fig)
@@ -145,7 +144,7 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
         + r" $M_{\rm ref}$"
     )
     plt.tight_layout()
-    if savePlot == True:
+    if savePlot is True:
         plt.savefig(
             os.path.join(
                 invLapW.par.plotpath,
@@ -153,7 +152,7 @@ def sharedPlot_stabilityPlusLikelihood(invLapW, estar, savePlot=True, plot_live=
             ),
             dpi=420,
         )
-    if plot_live == True:
+    if plot_live is True:
         plt.show()
     plt.close(fig)
     return
@@ -195,7 +194,7 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
     ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
     ax.set_xscale('log')
     plt.tight_layout()
-    if savePlot == True:
+    if savePlot is True:
         plt.savefig(
             os.path.join(
                 invLapW.par.plotpath,
@@ -203,7 +202,7 @@ def plotLikelihood(invLapW, estar, savePlot=True, plot_live=False):
             ),
             dpi=420,
         )
-    if plot_live == True:
+    if plot_live is True:
         plt.show()
     plt.close(fig)
     return

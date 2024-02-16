@@ -1,8 +1,4 @@
-import numpy as np
-import sys
-import math
-
-from ..utils.rhoUtils import *
+from ..utils.rhoUtils import Obs
 import argparse
 
 #   Usage:

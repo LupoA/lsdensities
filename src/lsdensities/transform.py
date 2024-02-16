@@ -1,10 +1,7 @@
 from mpmath import mp, mpf
 from progressbar import ProgressBar
-import sys
-from .core import *
-import time
-from .utils.rhoUtils import LogMessage
-from .utils.rhoStat import *
+from .core import ft_mp, gte
+from .utils.rhoStat import averageScalar_mp
 
 
 def h_Et_mp_Eslice(Tinv_, params, estar_, alpha_):

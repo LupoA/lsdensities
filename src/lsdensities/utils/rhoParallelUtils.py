@@ -1,7 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import random as rd
-import os
 from .rhoUtils import LogMessage, Inputs
 from .rhoStat import parallel_bootstrap_compact_fp
 import multiprocessing as multiprocessing
@@ -29,12 +26,12 @@ class ParallelBootstrapLoop:
         for i in range(self.num_processes):
             start = i * self.chunk_size
             end = min(start + self.chunk_size, self.looplen)
-            if self.is_folded == False:
+            if self.is_folded is False:
                 process = multiprocessing.Process(
                     target=parallel_bootstrap_compact_fp,
                     args=(self.par, self.inputsample, self.out_, start, end),
                 )
-            if self.is_folded == True:
+            if self.is_folded is True:
                 process = multiprocessing.Process(
                     target=parallel_bootstrap_compact_fp,
                     args=(

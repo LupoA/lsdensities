@@ -1,9 +1,4 @@
 from mpmath import mp, mpf
-from progressbar import ProgressBar
-import sys
-import numpy as np
-import time
-import math
 from .utils.rhoMath import cauchy
 
 def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):

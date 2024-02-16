@@ -1,14 +1,10 @@
 from mpmath import mp, mpf
-import sys
 import numpy as np
 import os
-from .utils.rhoMath import *
-from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle
-from .utils.rhoUtils import *
-from .transform import *
-from .abw import *
-from .core import *
+from .utils.rhoUtils import Obs, bcolors, plot_markers, CB_colors, timesfont, LogMessage, Inputs, MatrixBundle, CB_color_cycle
+from .utils.rhoMath import invert_matrix_ge
 from .core import A0E_mp
+from .transform import h_Et_mp_Eslice, combine_fMf_Eslice
 from .abw import gAg, gBg
 import matplotlib.pyplot as plt
 
@@ -182,23 +178,23 @@ class GaussianProcessWrapper:
     def prepareGP(self):
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
-        if self.read_SIGMA == False:
+        if self.read_SIGMA is False:
             self.SigmaMatA.evaluate()
-        if self.read_SIGMA == True:
+        if self.read_SIGMA is True:
             self.SigmaMatA.read()
 
         if self.par.Na == 2 or self.par.Na==3:
             self.A0_B.evaluate(self.espaceMP)
-            if self.read_SIGMA == False:
+            if self.read_SIGMA is False:
                 self.SigmaMatB.evaluate()
-            if self.read_SIGMA == True:
+            if self.read_SIGMA is True:
                 self.SigmaMatB.read()
 
         if self.par.Na==3:
             self.A0_C.evaluate(self.espaceMP)
-            if self.read_SIGMA == False:
+            if self.read_SIGMA is False:
                 self.SigmaMatC.evaluate()
-            if self.read_SIGMA == True:
+            if self.read_SIGMA is True:
                 self.SigmaMatC.read()
 
     def report(self):
@@ -600,7 +596,7 @@ class GaussianProcessWrapper:
         )
 
     def estimate_sys_error(self, estar_):
-        assert self.result_is_filled[self.espace_dictionary[estar_]] == True
+        assert self.result_is_filled[self.espace_dictionary[estar_]] is True
 
         _this_y = self.rho_result[self.espace_dictionary[estar_]]  #   rho at lambda*
         _that_y, _that_yerr, _that_x, _  = self.lambdaToRho(
@@ -670,7 +666,7 @@ class GaussianProcessWrapper:
             color='black',
             markerfacecolor=CB_colors[0],
         )
-        if plot_gaussian == True:
+        if plot_gaussian is True:
             plt.plot(
                 energies / self.par.massNorm,
                 gauss_fp(energies, omega, self.par.sigma, norm="half"),
@@ -706,7 +702,7 @@ class GaussianProcessWrapper:
             for e_i in range(self.par.Ne):
                 _, _, _= self.scanLambda(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
-                if saveplots==True:
+                if saveplots is True:
                     self.plotStability(estar=self.espace[e_i], savePlot=saveplots, plot_live=plot_live)
             print(
                 LogMessage(),
@@ -722,7 +718,7 @@ class GaussianProcessWrapper:
                 _, _, _, _, _, _ = self.scanLambdaAlpha(self.espace[e_i], how_many_alphas=how_many_alphas)
                 _ = self.estimate_sys_error(self.espace[e_i])
                 self.plotKernel(plot_gaussian=False)
-                if saveplots==True:
+                if saveplots is True:
                     self.plotStabilityMultipleAlpha(estar=self.espace[e_i], savePlot=saveplots, nalphas=how_many_alphas, plot_live=plot_live)
             print(
                 LogMessage(),
@@ -739,7 +735,7 @@ class GaussianProcessWrapper:
             )
 
     def plotParameterScan(self, how_many_alphas=1, save_plots=True, plot_live=False):
-        assert all(self.result_is_filled) == True
+        assert all(self.result_is_filled) is True
         if how_many_alphas == 1:
             for e_i in range(self.par.Ne):
                 self.plotStability(estar=self.espace[e_i], savePlot=save_plots)
@@ -804,7 +800,7 @@ class GaussianProcessWrapper:
         plt.legend(prop={"size": 12, "family": "Helvetica"})
         plt.grid()
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -852,7 +848,7 @@ class GaussianProcessWrapper:
         ax.grid()
 
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -860,7 +856,7 @@ class GaussianProcessWrapper:
                 ),
                 dpi=300,
             )
-        if plot_live == True:
+        if plot_live is True:
             plt.show()
         plt.clf()
         plt.close(fig)
@@ -938,7 +934,7 @@ class GaussianProcessWrapper:
 
 
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -946,7 +942,7 @@ class GaussianProcessWrapper:
                 ),
                 dpi=420,
             )
-        if plot_live==True:
+        if plot_live is True:
             plt.show()
         plt.clf()
         plt.close(fig)

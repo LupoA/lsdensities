@@ -1,15 +1,13 @@
-import sys
-
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
 import math
-from .rhoStat import averageVector_fp, getCovMatrix_fp
 from ..core import Smatrix_mp
 from .rhoMath import norm2_mp
 import time
 import mpmath as mp
+from mpmath import mp
 
 target_result_precision = 1e-8
 
@@ -127,9 +125,9 @@ class Obs:
             self.central[i], self.sigma[i] = np.average(self.sample[:, i]), np.std(
                 self.sample[:, i], ddof=1
             )
-        if self.is_resampled == False:
+        if self.is_resampled is False:
             self.err = self.sigma / np.sqrt(self.nms)
-        if self.is_resampled == True:
+        if self.is_resampled is True:
             self.err = self.sigma
 
     def evaluate_covmatrix(self, plot=False):
@@ -149,7 +147,7 @@ class Obs:
                 self.corrmat[vi][vj] = self.cov[vi][vj] / (
                     self.sigma[vi] * self.sigma[vj]
                 )
-        if plot == True:
+        if plot is True:
             plt.imshow(self.corrmat)
             plt.colorbar()
             plt.show()
@@ -180,7 +178,7 @@ class Obs:
     def plot(self, show=True, logscale=True, label=None, yscale=1):
         plt.tight_layout()
         plt.grid(alpha=0.1)
-        if logscale == True:
+        if logscale is True:
             plt.yscale("log")
         plt.errorbar(
             x=list(range(0, self.T)),
@@ -194,7 +192,7 @@ class Obs:
             color="#377eb8",
         )
         plt.legend(prop={"size": 12, "family": "Helvetica"})
-        if show == True:
+        if show is True:
             plt.show()
 
 
@@ -243,7 +241,7 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     return mcorr_, header_T, header_nms
 
 
-from mpmath import mp, mpf
+from mpmath import mpf
 
 
 def init_precision(digits_):
@@ -301,7 +299,7 @@ class Inputs:
         self.mpemin = mpf(str(self.emin))
         self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
-        self.directoryName = dirname = 'tmax' + str(self.tmax) + 'sigma' + str(self.sigma) + 'Ne' + str(self.Ne) + 'nboot' + str(
+        self.directoryName = 'tmax' + str(self.tmax) + 'sigma' + str(self.sigma) + 'Ne' + str(self.Ne) + 'nboot' + str(
             self.num_boot) + 'mNorm' + str(self.massNorm) + 'prec' + str(self.prec) + 'Na' + str(self.Na)
 
     def report(self):

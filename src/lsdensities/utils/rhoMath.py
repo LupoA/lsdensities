@@ -51,7 +51,7 @@ def choelesky_invert_scipy(
     return out_
 
 
-from mpmath import mp, mpf
+from mpmath import mp
 
 
 def norm2_mp(matrix):  # for square matrices only

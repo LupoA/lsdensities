@@ -1,14 +1,10 @@
-from mpmath import mp, mpf
-import sys
-import numpy as np
+from .utils.rhoUtils import Obs, bcolors, plot_markers, CB_colors, timesfont, LogMessage, Inputs, MatrixBundle, CB_color_cycle
+from .utils.rhoMath import invert_matrix_ge
 import os
-from .utils.rhoMath import *
-from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle
-from .utils.rhoUtils import *
-from .transform import *
-from .abw import *
-from .core import *
-from .core import A0E_mp
+import numpy as np
+from mpmath import mpf, mp
+from .core import A0E_mp, Smatrix_mp
+from .transform import h_Et_mp_Eslice, y_combine_sample_Eslice_mp
 from .abw import gAg, gBg
 import matplotlib.pyplot as plt
 
@@ -532,7 +528,6 @@ class HLTWrapper:
         )
 
     def estimate_sys_error(self, estar_):
-        assert self.result_is_filled[self.espace_dictionary[estar_]] == True
 
         _this_y = self.rho_result[self.espace_dictionary[estar_]]  #   rho at lambda*
         _that_y, _that_yerr, _that_x, _ = self.lambdaToRho(
@@ -634,7 +629,7 @@ class HLTWrapper:
             for e_i in range(self.par.Ne):
                 _, _, _= self.scanLambda(self.espace[e_i])
                 _ = self.estimate_sys_error(self.espace[e_i])
-                if saveplots==True:
+                if saveplots is True:
                     self.plotStability(estar=self.espace[e_i], savePlot=saveplots, plot_live=plot_live)
             print(
                 LogMessage(),
@@ -650,7 +645,7 @@ class HLTWrapper:
                 _, _, _, _, _, _ = self.scanLambdaAlpha(self.espace[e_i], how_many_alphas=how_many_alphas)
                 _ = self.estimate_sys_error(self.espace[e_i])
                 self.plotKernel()
-                if saveplots==True:
+                if saveplots is True:
                     self.plotStabilityMultipleAlpha(estar=self.espace[e_i], savePlot=saveplots, nalphas=how_many_alphas, plot_live=plot_live)
             print(
                 LogMessage(),
@@ -668,7 +663,7 @@ class HLTWrapper:
 
 
     def plotParameterScan(self, how_many_alphas=1, save_plots=True, plot_live=False):
-        assert all(self.result_is_filled) == True
+        assert all(self.result_is_filled) is True
         if how_many_alphas == 1:
             for e_i in range(self.par.Ne):
                 self.plotStability(estar=self.espace[e_i], savePlot=save_plots)
@@ -733,7 +728,7 @@ class HLTWrapper:
         plt.legend(prop={"size": 12, "family": "Helvetica"})
         plt.grid()
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -808,7 +803,7 @@ class HLTWrapper:
         ax[1].legend(prop={"size": 12, "family": "Helvetica"})
         ax[1].grid()
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -816,7 +811,7 @@ class HLTWrapper:
                 ),
                 dpi=300,
             )
-        if plot_live == True:
+        if plot_live is True:
             plt.show()
         plt.clf()
         plt.close(fig)
@@ -950,7 +945,7 @@ class HLTWrapper:
         ax[1].legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
 
         plt.tight_layout()
-        if savePlot == True:
+        if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
@@ -958,7 +953,7 @@ class HLTWrapper:
                 ),
                 dpi=420,
             )
-        if plot_live==True:
+        if plot_live is True:
             plt.show()
         plt.clf()
         plt.close(fig)

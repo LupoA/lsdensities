@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import linalg as LA
 import matplotlib.pyplot as plt
 import math
 import random
@@ -17,12 +16,12 @@ def averageVector_fp(vector, get_error=True, get_var=False):
     stdv = math.sqrt(stdv)
     var = stdv
     err = stdv / math.sqrt(len(vector))
-    if get_error == True:
-        if get_var == True:
+    if get_error is True:
+        if get_var is True:
             return sum, var
-        if get_var == False:
+        if get_var is False:
             return sum, err
-    if get_error == False:
+    if get_error is False:
         return sum
 
 
@@ -62,14 +61,14 @@ def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
     import lsdensities.utils.rhoUtils
     random.seed(1994)
     randv = np.zeros(par_.num_samples)
-    if is_folded == False:
+    if is_folded is False:
         for b in range(start, end):
             randv = lsdensities.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
             ).astype(int)
             for i in range(par_.time_extent):
                 out_[b][i] = np.mean(in_[randv[:], i])
-    if is_folded == True:
+    if is_folded is True:
         for b in range(start, end):
             randv = lsdensities.utils.rhoUtils.ranvec(
                 randv, par_.num_samples, 0, par_.num_samples
@@ -101,7 +100,7 @@ def getCovMatrix_fp(sample, central, nbins, vmax, showplot=False):
                     sample[n][vj] - central[vj]
                 )
             cov_[vi][vj] /= nbins - 1
-    if showplot == True:
+    if showplot is True:
         plt.imshow(cov_, cmap="viridis")
         plt.colorbar()
         plt.show()
@@ -114,7 +113,7 @@ def covToCorr_fp(in_, cov_, vmax, showplot=False):
     for vi in range(vmax):
         for vj in range(vmax):
             corrmat_[vi][vj] = cov_[vi][vj] / (in_.sigma[vi] * in_.sigma[vj])
-    if showplot == True:
+    if showplot is True:
         plt.imshow(corrmat_)
         plt.colorbar()
         plt.show()
@@ -122,7 +121,7 @@ def covToCorr_fp(in_, cov_, vmax, showplot=False):
     return corrmat_
 
 
-from mpmath import mp, mpf
+from mpmath import mp
 
 
 def averageVector_mp(in_, bootstrap=True):
@@ -141,7 +140,7 @@ def averageVector_mp(in_, bootstrap=True):
             out_[x, 1] = mp.fadd(out_[x, 1], aux_)
         out_[x, 1] = mp.fdiv(out_[x, 1], samplesize_)
         out_[x, 1] = mp.sqrt(out_[x, 1])
-        if bootstrap == False:
+        if bootstrap is False:
             aux_ = mp.sqrt(samplesize_)
             out_[x, 1] = mp.fdiv(out_[x, 1], aux_)
     return out_
@@ -164,7 +163,7 @@ def averageScalar_mp(in_, bootstrap=True):
         out_[1] = mp.fadd(out_[1], aux_)
     out_[1] = mp.fdiv(out_[1], samplesize_)
     out_[1] = mp.sqrt(out_[1])
-    if bootstrap == False:
+    if bootstrap is False:
         aux_ = mp.sqrt(samplesize_)
         out_[1] = mp.fdiv(out_[1], aux_)
     return out_

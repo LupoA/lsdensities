@@ -1,17 +1,12 @@
+from .core import A0E_mp, Smatrix_mp
+from .transform import h_Et_mp_Eslice, y_combine_sample_Eslice_mp, combine_fMf_Eslice, combine_likelihood
+from .abw import gAg
 from mpmath import mp, mpf
-import sys
+from .plotutils import stabilityPlot, sharedPlot_stabilityPlusLikelihood, plotLikelihood, plotAllKernels, plotSpectralDensity
 import numpy as np
+from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle, Obs, bcolors
+from .utils.rhoMath import invert_matrix_ge
 import os
-from .utils.rhoMath import *
-from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle
-from .utils.rhoUtils import *
-from .transform import *
-from .abw import *
-from .core import *
-from .core import A0E_mp
-from .abw import gAg, gBg
-import matplotlib.pyplot as plt
-from .plotutils import *
 
 _big = 100
 
@@ -77,7 +72,7 @@ class SigmaMatrix:
         self.alpha=alphaMP
         self.matrix = mp.matrix(par.tmax, par.tmax)
     def evaluate(self):
-        print(LogMessage(), " Saving Sigma Matrix ".format(self.alpha))
+        print(LogMessage(), " Saving Sigma Matrix ".format())
         self.matrix = Smatrix_mp(
             tmax_=self.par.tmax,
             alpha_=self.alpha,
@@ -367,12 +362,12 @@ class InverseProblemWrapper:
                         _skip = True
 
             #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
-            if (newLambda_Overlap == False):
+            if (newLambda_Overlap is False):
                 print(LogMessage(), "\t Result at this Lambda does not overlap with previous: REJECTING result")
             if _gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_] > self.par.A0cut:
                 print(LogMessage(), "\t A/A0 is too large: rejecting result  (", float(_gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]),")")
                 _skip = True
-            if (newLambda_Overlap == True) and (_gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_] < self.par.A0cut) and (_skip == False):
+            if (newLambda_Overlap is True) and (_gAgUpdated / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_] < self.par.A0cut) and (_skip is False):
                 #   Flag the first compatible result
                 if _countPositiveResult == 1:   #   At future alphas we compare with rho_s at _countPositiveResult = 1. This can be changed.
                     _lambdaStarHLT, _rhoHLT, _drhoHLT, _gtHLT, gag_flag = self._flagResult(lambda_, _rho, _errBoot, _gtUpdated, _gAgUpdated)
@@ -454,13 +449,13 @@ class InverseProblemWrapper:
 
     def stabilityPlot(self, generateHLTscan = True, generateLikelihoodShared = True, generateLikelihoodPlot = True, generateKernelsPlot = True):
         for e_i in range(self.par.Ne):
-            if generateHLTscan == True:
+            if generateHLTscan is True:
                 stabilityPlot(self, self.espace[e_i], savePlot = True, plot_live = False)
-            if generateLikelihoodShared == True:
+            if generateLikelihoodShared is True:
                 sharedPlot_stabilityPlusLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
-            if generateLikelihoodPlot == True:
+            if generateLikelihoodPlot is True:
                 plotLikelihood(self, self.espace[e_i], savePlot = True, plot_live = False)
-            if generateKernelsPlot == True:
+            if generateKernelsPlot is True:
                 plotAllKernels(self)
 
     def plotResult(self):
