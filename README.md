@@ -1,5 +1,6 @@
 # LSDensities: Lattice Spectral Densities
 
+
 **lsdensities** is a Python library for the calculation of 
 smeared spectral densities from lattice correlators.
 
