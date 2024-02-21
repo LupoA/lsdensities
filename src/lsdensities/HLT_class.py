@@ -45,6 +45,8 @@ class AlgorithmParameters:
         self.lambdaScanPrec = lambdaScanPrec
         self.lambdaScanCap = lambdaScanCap
         self.kfactor = kfactor
+        # Round trip via a string to avoid introducing spurious precision
+        # per recommendations at https://mpmath.org/doc/current/basics.html
         self.alphaAmp = mpf(str(alphaA))
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
@@ -89,6 +91,8 @@ class HLTWrapper:
         self.matrix_bundle = matrix_bundle
         #
         self.espace = np.linspace(par.emin, par.emax, par.Ne)
+        # Round trip via a string to avoid introducing spurious precision
+        # per recommendations at https://mpmath.org/doc/current/basics.html
         self.e0MP = mpf(str(par.e0))
         self.espaceMP = mp.matrix(par.Ne, 1)
         self.sigmaMP = mpf(str(par.sigma))

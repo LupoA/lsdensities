@@ -50,6 +50,8 @@ class AlgorithmParameters:
         self.lambdaScanPrec = lambdaScanPrec
         self.lambdaScanCap = lambdaScanCap
         self.kfactor = kfactor
+        # Round trip via a string to avoid introducing spurious precision
+        # per recommendations at https://mpmath.org/doc/current/basics.html
         self.alphaAmp = mpf(str(alphaA))
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
@@ -85,6 +87,8 @@ class SigmaMatrix:
                     entry = mp.quad(
                         lambda x: integrandSigmaMat(
                             x,
+                            # Round trip via a string to avoid introducing spurious precision
+                            # per recommendations at https://mpmath.org/doc/current/basics.html
                             mpf(str(self.alpha)),
                             mpf(str(self.par.sigma)),
                             mpf(i + 1),
@@ -165,6 +169,8 @@ class GaussianProcessWrapper:
         self.read_SIGMA = read_SIGMA
         #
         self.espace = np.linspace(par.emin, par.emax, par.Ne)
+        # Round trip via a string to avoid introducing spurious precision
+        # per recommendations at https://mpmath.org/doc/current/basics.html
         self.e0MP = mpf(str(par.e0))
         self.espaceMP = mp.matrix(par.Ne, 1)
         self.sigmaMP = mpf(str(par.sigma))
