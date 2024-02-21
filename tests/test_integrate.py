@@ -5,7 +5,7 @@ from mpmath import mp
 import time
 
 
-def main():
+def integration():
     mp.dps = 120
     params = Inputs()
     params.periodicity = "COSH"
@@ -21,9 +21,3 @@ def main():
     )
     end = time.time()
     print(LogMessage(), float(integral[0]), "in ", end - start, "s")
-
-    exit(1)
-
-
-if __name__ == "__main__":
-    main()
