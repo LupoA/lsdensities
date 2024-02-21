@@ -1,5 +1,14 @@
 import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs, create_out_paths, plot_markers, CB_colors, timesfont
+from lsdensities.utils.rhoUtils import (
+    init_precision,
+    LogMessage,
+    end,
+    Inputs,
+    create_out_paths,
+    plot_markers,
+    CB_colors,
+    timesfont,
+)
 from lsdensities.utils.rhoParser import parseArgumentPrintSamples
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
 from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
@@ -11,6 +20,7 @@ import os
 import time
 from lsdensities.utils.rhoMath import invert_matrix_ge
 import matplotlib.pyplot as plt
+
 
 def init_variables(args_):
     in_ = Inputs()
@@ -27,9 +37,7 @@ def init_variables(args_):
         args_.emax * args_.mpi
     )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = (
-            args_.mpi / 20
-        ) * args_.mpi
+        in_.emin = (args_.mpi / 20) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -49,8 +57,9 @@ def main():
 
     #   Take input for Rho
     import numpy as np
+
     rho_file = args.rhopath
-    inputrhofile = np.genfromtxt(rho_file, comments='#')
+    inputrhofile = np.genfromtxt(rho_file, comments="#")
     energy = inputrhofile[:, 0]
     lambda_e = inputrhofile[:, 1]
     in_rho = inputrhofile[:, 2]
@@ -94,7 +103,7 @@ def main():
         )
 
     if par.periodicity == "COSH":
-        #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        # resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
         resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
     if par.periodicity == "EXP":
         resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
@@ -118,9 +127,9 @@ def main():
 
     for _e in range(par.Ne):
         estar_ = espace[_e]
-        fname = 'lsdensitiesamplesE'+str(estar_)+'sig'+str(par.sigma)
+        fname = "lsdensitiesamplesE" + str(estar_) + "sig" + str(par.sigma)
         fpath = os.path.join(par.logpath, fname)
-        _Bnorm = (cNorm / (estar_ * estar_))
+        _Bnorm = cNorm / (estar_ * estar_)
         _factor = (lambda_e[_e] * A0set[_e]) / _Bnorm
         S_ = Smatrix_mp(
             tmax_=par.tmax,
@@ -133,9 +142,17 @@ def main():
         start_time = time.time()
         _Minv = invert_matrix_ge(_M)
         end_time = time.time()
-        print(LogMessage(), "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format(end_time - start_time), "s")
+        print(
+            LogMessage(),
+            "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format(
+                end_time - start_time
+            ),
+            "s",
+        )
         _g_t_estar = h_Et_mp_Eslice(_Minv, par, estar_, alpha_=0)
-        rho[_e], drho[_e] = y_combine_sample_Eslice_mp_ToFile(fpath, _g_t_estar, corr.mpsample, par)
+        rho[_e], drho[_e] = y_combine_sample_Eslice_mp_ToFile(
+            fpath, _g_t_estar, corr.mpsample, par
+        )
 
         gag_estar = gAg(S_, _g_t_estar, estar_, 0, par)
 
@@ -143,7 +160,6 @@ def main():
 
         print(LogMessage(), "\t \t  B / Bnorm = ", float(gBg_estar))
         print(LogMessage(), "\t \t  A / A0 = ", float(gag_estar / A0set[_e]))
-
 
     plt.errorbar(
         x=espace,
@@ -169,9 +185,7 @@ def main():
         label=r"Input",
         color=CB_colors[1],
     )
-    plt.title(
-        r" $\sigma$" + " = {:2.2f} Mpi".format(par.sigma / par.massNorm)
-    )
+    plt.title(r" $\sigma$" + " = {:2.2f} Mpi".format(par.sigma / par.massNorm))
     plt.xlabel(r"$E / M_{\pi}$", fontdict=timesfont)
     # plt.ylabel("Spectral density", fontdict=u.timesfont)
     plt.legend(prop={"size": 12, "family": "Helvetica"})

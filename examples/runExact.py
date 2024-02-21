@@ -1,20 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mpf, mp
-from lsdensities.utils.rhoUtils import LogMessage, init_precision, Inputs, create_out_paths, end
+from lsdensities.utils.rhoUtils import (
+    LogMessage,
+    init_precision,
+    Inputs,
+    create_out_paths,
+    end,
+)
 from lsdensities.utils.rhoParser import parseArgumentSynthData
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
 from lsdensities.core import Smatrix_mp
 from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
 import random
 
-pion_mass = 0.140       # in Gev
-a = 0.4                 # in Gev ^-1 ( 1 fm = 5.068 GeV^-1 )
-a_fm = a / 5.068        # lattice spacing in fm
-aMpi = pion_mass * a    # pion mass in lattice units
+pion_mass = 0.140  # in Gev
+a = 0.4  # in Gev ^-1 ( 1 fm = 5.068 GeV^-1 )
+a_fm = a / 5.068  # lattice spacing in fm
+aMpi = pion_mass * a  # pion mass in lattice units
 STATES = 666
 
 #   We only pass lattice units variables. GeV or mass scales are used in plots only
+
 
 def init_variables(args_):
     in_ = Inputs()
@@ -28,13 +35,9 @@ def init_variables(args_):
     in_.massNorm = args_.mpi
     in_.num_boot = args_.nboot
     in_.sigma = args_.sigma
-    in_.emax = (
-        args_.emax
-    )
+    in_.emax = args_.emax
     if args_.emin == 0:
-        in_.emin = (
-            args_.mpi / 20
-        ) * args_.mpi
+        in_.emin = (args_.mpi / 20) * args_.mpi
     else:
         in_.emin = args_.emin
     in_.e0 = args_.e0
@@ -43,43 +46,56 @@ def init_variables(args_):
     in_.A0cut = args_.A0cut
     return in_
 
-def kernel_correlator(E,t,T, par):
+
+def kernel_correlator(E, t, T, par):
     if par.periodicity == "COSH":
-        return mp.exp(-mpf(E)*mpf(t)) + mp.exp(-mpf(E)*mpf(T-t))
+        return mp.exp(-mpf(E) * mpf(t)) + mp.exp(-mpf(E) * mpf(T - t))
     if par.periodicity == "EXP":
         return mp.exp(-mpf(E) * mpf(t))
 
-def generate(par, seed, espace):
 
+def generate(par, seed, espace):
     this_seed = seed
     random.seed(this_seed)
     np.random.seed(this_seed)
 
-    peaks_location = np.random.uniform(np.random.uniform(0.5*aMpi, 2*aMpi), (2.1*par.emax)*aMpi, STATES)   #   generates STATES numbers between a random value in (0.25*aMpi, 3*aMpi) and 1.5*emax*aMpi
+    peaks_location = np.random.uniform(
+        np.random.uniform(0.5 * aMpi, 2 * aMpi), (2.1 * par.emax) * aMpi, STATES
+    )  #   generates STATES numbers between a random value in (0.25*aMpi, 3*aMpi) and 1.5*emax*aMpi
     weights = np.random.uniform(0, 0.004, len(peaks_location))
 
-
-    exact_correlator = mp.matrix(par.tmax,1)                    #   Exact correlator
+    exact_correlator = mp.matrix(par.tmax, 1)  #   Exact correlator
 
     for _t in range(par.tmax):
         for _n in range(STATES):
-            exact_correlator[_t] += kernel_correlator(mpf(peaks_location[_n]), mpf(_t+1), par.time_extent, par) * mpf(weights[_n])
+            exact_correlator[_t] += kernel_correlator(
+                mpf(peaks_location[_n]), mpf(_t + 1), par.time_extent, par
+            ) * mpf(weights[_n])
 
     rhoStrue = np.zeros(par.Ne)
 
     for e_i in range(par.Ne):
         for _n in range(STATES):
-            if par.kerneltype == 'FULLNORMGAUSS':
-                rhoStrue[e_i] += gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="full") * weights[_n]
-            elif par.kerneltype == 'HALFNORMGAUSS':
-                rhoStrue[e_i] += gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="half") * weights[_n]
-            elif par.kerneltype == 'CAUCHY':
-                rhoStrue[e_i] += cauchy(peaks_location[_n], par.sigma, espace[e_i]) * weights[_n]
+            if par.kerneltype == "FULLNORMGAUSS":
+                rhoStrue[e_i] += (
+                    gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="full")
+                    * weights[_n]
+                )
+            elif par.kerneltype == "HALFNORMGAUSS":
+                rhoStrue[e_i] += (
+                    gauss_fp(peaks_location[_n], espace[e_i], par.sigma, norm="half")
+                    * weights[_n]
+                )
+            elif par.kerneltype == "CAUCHY":
+                rhoStrue[e_i] += (
+                    cauchy(peaks_location[_n], par.sigma, espace[e_i]) * weights[_n]
+                )
 
     if par.periodicity == "EXP":
         return exact_correlator, espace, rhoStrue
     if par.periodicity == "COSH":
         return exact_correlator, espace, rhoStrue
+
 
 def main():
     print(LogMessage(), "Initialising")
@@ -92,7 +108,9 @@ def main():
     par.report()
     print(par.emin * par.massNorm)
     print(par.emax * par.massNorm)
-    espace = np.linspace(par.emin * par.massNorm, par.emax * par.massNorm, par.Ne)  # TODO:   move this outside when you are done
+    espace = np.linspace(
+        par.emin * par.massNorm, par.emax * par.massNorm, par.Ne
+    )  # TODO:   move this outside when you are done
 
     print(LogMessage(), "Energies [lattice units] : ", espace)
     print(LogMessage(), "Energies [Gev] : ", espace / a)
@@ -107,15 +125,17 @@ def main():
     random.seed(nseed)
     np.random.seed(nseed)
     ITERATIONS = 1
-    seeds = [random.randint(1, 1e+6) for _ in range(ITERATIONS)]
+    seeds = [random.randint(1, 1e6) for _ in range(ITERATIONS)]
 
     exact_correlator, espace, rhoStrue = generate(par, seeds[-1], espace)
 
-    S = Smatrix_mp(tmax_ = par.tmax, alpha_=0, e0_ = mpf(0), type = par.periodicity, T = par.time_extent)
+    S = Smatrix_mp(
+        tmax_=par.tmax, alpha_=0, e0_=mpf(0), type=par.periodicity, T=par.time_extent
+    )
 
     Sinv = invert_matrix_ge(S)
 
-    print("S Sinv - 1 = ", float(norm2_mp(S*Sinv) - 1))
+    print("S Sinv - 1 = ", float(norm2_mp(S * Sinv) - 1))
 
     rhos = np.zeros(par.Ne)
 
@@ -123,28 +143,27 @@ def main():
         print(LogMessage(), "Energy [a^-1]", espace[e_i])
         _g_t_estar = h_Et_mp_Eslice(Sinv, par, espace[e_i], alpha_=0)
         rhos[e_i] = y_combine_central_Eslice_mp(_g_t_estar, exact_correlator, par)
-        print('Exact Rho: ', rhoStrue[e_i])
-        print('Reconstructed Rho: ', rhos[e_i])
-
+        print("Exact Rho: ", rhoStrue[e_i])
+        print("Reconstructed Rho: ", rhos[e_i])
 
     plt.plot(
-        espace/a,
+        espace / a,
         np.array(rhoStrue, dtype=float),
         marker="o",
         markersize=3.5,
         ls="-",
         label="Exact",
-        color='k',
+        color="k",
     )
 
     plt.plot(
-        espace/a,
+        espace / a,
         np.array(rhos, dtype=float),
         marker="o",
         markersize=3.5,
         ls="-",
         label="Reconstructed",
-        color='r',
+        color="r",
     )
     plt.xlabel("GeV")
     plt.title("# States : {:2d}".format(STATES))
@@ -152,6 +171,6 @@ def main():
     plt.show()
     end()
 
+
 if __name__ == "__main__":
     main()
-

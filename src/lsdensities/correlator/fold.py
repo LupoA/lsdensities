@@ -25,12 +25,12 @@ def main():
 
     #   Here is the correlator
     rawcorr.evaluate()
-#    rawcorr.plot(label="raw data")
+    #    rawcorr.plot(label="raw data")
 
     #   Here is the folding
     foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled=False)
     foldedCorr.evaluate()
-#    foldedCorr.plot(label="folded")
+    #    foldedCorr.plot(label="folded")
 
     #   Here is the resampling
     corr = Obs(int(par.time_extent / 2) + 1, par.num_boot, is_resampled=True)
@@ -44,10 +44,10 @@ def main():
     corr.corrmat_from_covmat(plot=False)
 
     from correlatorUtils import effective_mass
-    effmass = effective_mass(corr, par, type='COSH')
-    effmass.plot(logscale=False)
-    print(effmass.central, '±', effmass.err)
 
+    effmass = effective_mass(corr, par, type="COSH")
+    effmass.plot(logscale=False)
+    print(effmass.central, "±", effmass.err)
 
     exit(1)
 

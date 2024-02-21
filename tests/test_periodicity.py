@@ -5,9 +5,6 @@ from lsdensities.transform import ft_mp
 import lsdensities.utils.rhoUtils as u
 
 
-
-
-
 def scan_S_Value():
     S_list = []
     T_list = []

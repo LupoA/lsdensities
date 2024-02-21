@@ -6,6 +6,7 @@ from mpmath import mpf
 from lsdensities.HLT_class import AlgorithmParameters, MatrixBundle, HLTWrapper
 from lsdensities.utils.rhoUtils import adjust_precision
 from lsdensities.core import Smatrix_mp
+
 eNorm = False
 
 # TODO at present: float implemented, mp not implemented
@@ -129,4 +130,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

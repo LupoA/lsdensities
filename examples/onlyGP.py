@@ -5,9 +5,14 @@ from lsdensities.utils.rhoUtils import create_out_paths
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
 from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
 from mpmath import mp, mpf
-from lsdensities.GP_class import AlgorithmParameters, MatrixBundle, GaussianProcessWrapper
+from lsdensities.GP_class import (
+    AlgorithmParameters,
+    MatrixBundle,
+    GaussianProcessWrapper,
+)
 
 read_SIGMA_ = True
+
 
 def init_variables(args_):
     in_ = Inputs()
@@ -24,9 +29,7 @@ def init_variables(args_):
         args_.emax * args_.mpi
     )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = (
-            args_.mpi / 20
-        ) * args_.mpi
+        in_.emin = (args_.mpi / 20) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -72,7 +75,7 @@ def main():
         )
 
     if par.periodicity == "COSH":
-        #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        # resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
         resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
     if par.periodicity == "EXP":
         resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
@@ -92,25 +95,29 @@ def main():
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+6
+    lambdaMax = 1e6
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=1/2,
+        alphaB=1 / 2,
         alphaC=1.99,
         lambdaMax=lambdaMax,
-        lambdaStep=lambdaMax/2,
+        lambdaStep=lambdaMax / 2,
         lambdaScanPrec=1,
         lambdaScanCap=24,
         kfactor=0.1,
-        lambdaMin=1e-4
+        lambdaMin=1e-4,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
     #   Wrapper for the Inverse Problem
     GP = GaussianProcessWrapper(
-        par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, read_SIGMA=read_SIGMA_
+        par=par,
+        algorithmPar=hltParams,
+        matrix_bundle=matrix_bundle,
+        correlator=corr,
+        read_SIGMA=read_SIGMA_,
     )
     GP.prepareGP()
 
@@ -124,4 +131,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

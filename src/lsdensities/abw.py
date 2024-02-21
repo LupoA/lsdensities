@@ -19,7 +19,13 @@ def gAg(smat, gt, estar, alpha, params):
         term1 = mp.fadd(term1, aux_)
     #   term 1 = g^T S g
 
-    term2 = A0_mp(e_=estar, sigma_=params.mpsigma, alpha=alpha, e0=params.mpe0, ker_type=params.kerneltype)
+    term2 = A0_mp(
+        e_=estar,
+        sigma_=params.mpsigma,
+        alpha=alpha,
+        e0=params.mpe0,
+        ker_type=params.kerneltype,
+    )
     #   term 2 = A0
 
     term3 = mpf(0)
@@ -33,7 +39,7 @@ def gAg(smat, gt, estar, alpha, params):
                 e0=params.mpe0,
                 type=params.periodicity,
                 T=params.time_extent,
-                ker_type=params.kerneltype
+                ker_type=params.kerneltype,
             ),
             gt[t],
         )
@@ -74,7 +80,7 @@ def gAgA0(smat, gt, estar, alpha, params, a0):
                 params.mpe0,
                 params.periodicity,
                 params.time_extent,
-                ker_type=params.kerneltype
+                ker_type=params.kerneltype,
             ),
             gt[t],
         )

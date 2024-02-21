@@ -42,6 +42,7 @@ def foldPeriodicCorrelator(corr, par, is_resampled=False):
 
     return foldedCorr
 
+
 def symmetrisePeriodicCorrelator(corr, par):
     assert par.periodicity == "COSH"
     symmCorr = Obs(
@@ -49,14 +50,13 @@ def symmetrisePeriodicCorrelator(corr, par):
     )
     for n in range(par.num_samples):
         symmCorr.sample[n, 0] = corr.sample[n, 0]
-        symmCorr.sample[n, int(symmCorr.T/2)] = corr.sample[n, int(symmCorr.T/2)]
-        for t in range(1, int(symmCorr.T/2)):
-            symmCorr.sample[n, t] = (
-                corr.sample[n, t] + corr.sample[n, corr.T - t]
-            ) / 2
+        symmCorr.sample[n, int(symmCorr.T / 2)] = corr.sample[n, int(symmCorr.T / 2)]
+        for t in range(1, int(symmCorr.T / 2)):
+            symmCorr.sample[n, t] = (corr.sample[n, t] + corr.sample[n, corr.T - t]) / 2
             symmCorr.sample[n, symmCorr.T - t] = symmCorr.sample[n, t]
 
     return symmCorr
+
 
 class InputsCorrelatorAnalysis:
     def __init__(

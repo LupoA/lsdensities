@@ -39,6 +39,7 @@ def cauchy(k, sigma_, omega_):
     aux = sigma_ / aux
     return aux
 
+
 def norm2_fp(matrix):  # for square matrices only
     assert matrix.shape[0] == matrix.shape[1]
     return LA.norm(matrix) / np.sqrt(matrix.shape[0])
@@ -50,9 +51,6 @@ def choelesky_invert_scipy(
     _L, _lower = sp_linalg.cho_factor(in_)
     out_ = sp_linalg.cho_solve((_L, _lower), np.eye(in_.shape[0]))
     return out_
-
-
-
 
 
 def norm2_mp(matrix):  # for square matrices only

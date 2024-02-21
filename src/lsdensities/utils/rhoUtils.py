@@ -121,8 +121,9 @@ class Obs:
     def evaluate(self):
         # Given the sample, it evaluates the average and error. Sample can be bootstrap
         for i in range(self.T):
-            self.central[i], self.sigma[i] = np.average(self.sample[:, i]), np.std(
-                self.sample[:, i], ddof=1
+            self.central[i], self.sigma[i] = (
+                np.average(self.sample[:, i]),
+                np.std(self.sample[:, i], ddof=1),
             )
         if self.is_resampled is False:
             self.err = self.sigma / np.sqrt(self.nms)
@@ -159,7 +160,7 @@ class Obs:
         #   Get cov for B matrix
         self.mpcov = mp.matrix(self.tmax)
         for i in range(self.tmax):
-            self.mpcentral[i] = self.central[i+1]
+            self.mpcentral[i] = self.central[i + 1]
             for j in range(self.tmax):
                 self.mpcov[i, j] = mpf(str(self.cov[i + 1][j + 1]))
 
@@ -240,9 +241,6 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     return mcorr_, header_T, header_nms
 
 
-
-
-
 def init_precision(digits_):
     mp.dps = digits_
     print(LogMessage(), "Setting precision ::::", "Binary precision in bit: ", mp.prec)
@@ -281,25 +279,41 @@ class Inputs:
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
-        self.directoryName = '.'
+        self.directoryName = "."
 
     def assign_values(self):
         if self.tmax == 0:
             if self.periodicity == "EXP":
-                self.tmax = self.time_extent - 1    # Can't use c[0]
+                self.tmax = self.time_extent - 1  # Can't use c[0]
             elif self.periodicity == "COSH":
-                self.tmax = int(self.time_extent / 2)   #Can't use C[0] but can use c[T/2]
+                self.tmax = int(
+                    self.time_extent / 2
+                )  # Can't use C[0] but can use c[T/2]
         if self.periodicity == "EXP":
-            assert(self.tmax) < self.time_extent
+            assert (self.tmax) < self.time_extent
         if self.periodicity == "COSH":
-            assert(self.tmax) < self.time_extent / 2 + 1
+            assert (self.tmax) < self.time_extent / 2 + 1
         self.mpsigma = mpf(str(self.sigma))
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
         self.mpe0 = mpf(str(self.e0))
         self.mpMpi = mpf(str(self.massNorm))
-        self.directoryName = 'tmax' + str(self.tmax) + 'sigma' + str(self.sigma) + 'Ne' + str(self.Ne) + 'nboot' + str(
-            self.num_boot) + 'mNorm' + str(self.massNorm) + 'prec' + str(self.prec) + 'Na' + str(self.Na)
+        self.directoryName = (
+            "tmax"
+            + str(self.tmax)
+            + "sigma"
+            + str(self.sigma)
+            + "Ne"
+            + str(self.Ne)
+            + "nboot"
+            + str(self.num_boot)
+            + "mNorm"
+            + str(self.massNorm)
+            + "prec"
+            + str(self.prec)
+            + "Na"
+            + str(self.Na)
+        )
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)

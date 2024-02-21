@@ -24,9 +24,7 @@ def init_variables(args_):
         args_.emax * args_.mpi
     )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = (
-            args_.mpi / 20
-        ) * args_.mpi
+        in_.emin = (args_.mpi / 20) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -72,7 +70,7 @@ def main():
         )
 
     if par.periodicity == "COSH":
-        #resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        # resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
         resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
     if par.periodicity == "EXP":
         resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
@@ -85,10 +83,10 @@ def main():
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
 
-    with open(os.path.join(par.outdir,'corrmatrix.txt'), "w") as output:
+    with open(os.path.join(par.outdir, "corrmatrix.txt"), "w") as output:
         for i in range(par.time_extent):
             for j in range(par.time_extent):
-                print(i, j, corr.corrmat[i,j], file=output)
+                print(i, j, corr.corrmat[i, j], file=output)
 
     #   Make it into a mp sample
     print(LogMessage(), "Converting correlator into mpmath type")
@@ -98,19 +96,19 @@ def main():
 
     cNorm = mpf(str(corr.central[1] ** 2))
 
-    lambdaMax = 1e+8
+    lambdaMax = 1e8
 
     #   Prepare
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=1/2,
+        alphaB=1 / 2,
         alphaC=+1.99,
         lambdaMax=lambdaMax,
-        lambdaStep=lambdaMax/2,
+        lambdaStep=lambdaMax / 2,
         lambdaScanPrec=1,
         lambdaScanCap=16,
         kfactor=0.1,
-        lambdaMin=1e-6
+        lambdaMin=1e-6,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
@@ -130,4 +128,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

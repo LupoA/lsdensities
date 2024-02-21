@@ -2,7 +2,6 @@ from lsdensities.utils.rhoUtils import LogMessage
 from mpmath import mp
 
 
-
 def init_precision():
     print(LogMessage(), " Initialising...")
     mp.dps = 64
@@ -12,4 +11,3 @@ def init_precision():
 
 if __name__ == "__main__":
     init_precision()
-

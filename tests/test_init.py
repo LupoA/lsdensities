@@ -1,9 +1,6 @@
 from lsdensities.utils.rhoUtils import LogMessage
 
 
-
-
-
 def main():
     print(LogMessage(), " Modules imported ")
     print(LogMessage(), " Success! ")
@@ -12,4 +9,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

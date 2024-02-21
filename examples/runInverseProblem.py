@@ -26,9 +26,7 @@ def init_variables(args_):
         args_.emax * args_.mpi
     )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
     if args_.emin == 0:
-        in_.emin = (
-            args_.mpi / 20
-        ) * args_.mpi
+        in_.emin = (args_.mpi / 20) * args_.mpi
     else:
         in_.emin = args_.emin * args_.mpi
     in_.e0 = args_.e0
@@ -40,7 +38,7 @@ def init_variables(args_):
 
 def main():
     print(LogMessage(), "Initialising")
-    #random.seed(1994)
+    # random.seed(1994)
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
@@ -82,10 +80,10 @@ def main():
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
-    with open(os.path.join(par.logpath,'covarianceMatrix.txt'), "w") as output:
+    with open(os.path.join(par.logpath, "covarianceMatrix.txt"), "w") as output:
         for i in range(par.time_extent):
             for j in range(par.time_extent):
-                print(i, j, corr.cov[i,j], file=output)
+                print(i, j, corr.cov[i, j], file=output)
     #   -   -   -   -   -   -   -   -   -   -   -
 
     #   Turn correlator into mpmath variable
@@ -95,15 +93,15 @@ def main():
 
     #   Prepare
     cNorm = mpf(str(corr.central[1] ** 2))
-    lambdaMax = 1e+4
+    lambdaMax = 1e4
     energies = np.linspace(par.emin, par.emax, par.Ne)
 
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=1/2,
+        alphaB=1 / 2,
         alphaC=+1.99,
         lambdaMax=lambdaMax,
-        lambdaStep=lambdaMax/2,
+        lambdaStep=lambdaMax / 2,
         lambdaScanCap=8,
         kfactor=0.1,
         lambdaMin=5e-2,
@@ -111,15 +109,24 @@ def main():
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
 
-    HLT = InverseProblemWrapper(par=par, algorithmPar=hltParams, matrix_bundle=matrix_bundle, correlator=corr, energies=energies)
+    HLT = InverseProblemWrapper(
+        par=par,
+        algorithmPar=hltParams,
+        matrix_bundle=matrix_bundle,
+        correlator=corr,
+        energies=energies,
+    )
     HLT.prepareHLT()
     HLT.run()
-    HLT.stabilityPlot(generateHLTscan=True,
-                      generateLikelihoodShared=True,
-                      generateLikelihoodPlot=True,
-                      generateKernelsPlot=True) # Lots of plots as it is
+    HLT.stabilityPlot(
+        generateHLTscan=True,
+        generateLikelihoodShared=True,
+        generateLikelihoodPlot=True,
+        generateKernelsPlot=True,
+    )  # Lots of plots as it is
     HLT.plotResult()
     end()
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,18 @@
+default_language_version:
+    python: python3.11
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.2.2
+  hooks:
+    - id: ruff
+      # Lint rules suggested by ruff docs, just for starters:
+      args: [--fix]
+    - id: ruff-format
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+    - id: check-toml
+    - id: mixed-line-ending

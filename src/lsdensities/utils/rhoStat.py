@@ -60,6 +60,7 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
 
 def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
     import lsdensities.utils.rhoUtils
+
     random.seed(1994)
     randv = np.zeros(par_.num_samples)
     if is_folded is False:
@@ -120,9 +121,6 @@ def covToCorr_fp(in_, cov_, vmax, showplot=False):
         plt.show()
         plt.clf()
     return corrmat_
-
-
-
 
 
 def averageVector_mp(in_, bootstrap=True):

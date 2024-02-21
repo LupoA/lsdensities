@@ -1,5 +1,6 @@
 import argparse
 
+
 def parseArgumentPeak():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -92,6 +93,7 @@ def parseArgumentPeak():
     )
     args = parser.parse_args()
     return args
+
 
 def parseArgumentRhoFromData():
     parser = argparse.ArgumentParser()
@@ -191,6 +193,7 @@ def parseArgumentRhoFromData():
     )
     args = parser.parse_args()
     return args
+
 
 def parseArgumentSynthData():
     parser = argparse.ArgumentParser()
@@ -298,6 +301,7 @@ def parseArgumentSynthData():
     )
     args = parser.parse_args()
     return args
+
 
 def parseArgumentPrintSamples():
     parser = argparse.ArgumentParser()
