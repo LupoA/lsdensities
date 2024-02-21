@@ -227,14 +227,12 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
             T=header_T, tmax=header_T - 1, nms=header_nms, is_resampled=resampled
         )
         # loop over file: read and store
-        indx = 0
-        for lndex in file:
+        for indx, lndex in enumerate(file):
             # Read and store
             t = int(lndex.split(" ")[0])
             n = int(indx / header_T)
             # print(l.rstrip(), "     ", t, n)
             mcorr_.sample[n, t] = float(lndex.split(" ")[1])
-            indx += 1
     #   Returns np array of correlators
     return mcorr_, header_T, header_nms
 

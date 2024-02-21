@@ -668,14 +668,12 @@ class InverseProblemWrapper:
 
             _skip = False
             #   Checks compatibility between different alphas
-            if self.par.Na > 1:
-                if not _AB_Overlap:
-                    print(LogMessage(), "\t First and Second Alpha not compatible")
-                    _skip = True
-                if self.par.Na > 2:
-                    if not _AC_Overlap:
-                        print(LogMessage(), "\t First and Third Alpha not compatible")
-                        _skip = True
+            if self.par.Na > 1 and not _AB_Overlap:
+                print(LogMessage(), "\t First and Second Alpha not compatible")
+                _skip = True
+            if self.par.Na > 2 and not _AC_Overlap:
+                print(LogMessage(), "\t First and Third Alpha not compatible")
+                _skip = True
 
             #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
             if newLambda_Overlap is False:
