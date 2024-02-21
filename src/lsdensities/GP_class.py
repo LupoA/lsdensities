@@ -1221,7 +1221,6 @@ class GaussianProcessWrapper:
             )
         if plot_live is True:
             plt.show()
-        plt.clf()
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(
@@ -1322,5 +1321,4 @@ class GaussianProcessWrapper:
             )
         if plot_live is True:
             plt.show()
-        plt.clf()
         plt.close(fig)

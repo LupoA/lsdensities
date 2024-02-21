@@ -121,7 +121,6 @@ def stabilityPlot(invLapW, estar, savePlot=True, plot_live=False):
         )
     if plot_live is True:
         plt.show()
-    plt.clf()
     plt.close(fig)
     return
 

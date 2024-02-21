@@ -1111,7 +1111,6 @@ class HLTWrapper:
             )
         if plot_live is True:
             plt.show()
-        plt.clf()
         plt.close(fig)
 
     def plotStabilityMultipleAlpha(
@@ -1285,5 +1284,4 @@ class HLTWrapper:
             )
         if plot_live is True:
             plt.show()
-        plt.clf()
         plt.close(fig)
