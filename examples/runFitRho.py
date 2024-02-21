@@ -182,12 +182,10 @@ def main():
     if plot_cov_mat:
         plt.imshow(cov_matrix, cmap="viridis")
         plt.colorbar()
-        plt.show()
         plt.clf()
     if plot_corr_mat:
         plt.imshow(corrmat, cmap="viridis")
         plt.colorbar()
-        plt.show()
         plt.clf()
 
     np.linalg.inv(cov_matrix)

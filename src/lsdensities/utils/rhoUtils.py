@@ -137,7 +137,6 @@ class Obs:
         if plot:
             plt.imshow(self.cov, cmap="viridis")
             plt.colorbar()
-            plt.show()
             plt.clf()
         return self.cov
 
@@ -150,7 +149,6 @@ class Obs:
         if plot is True:
             plt.imshow(self.corrmat)
             plt.colorbar()
-            plt.show()
             plt.clf()
 
     def fill_mp_sample(self):
