@@ -182,11 +182,11 @@ def main():
     if plot_cov_mat:
         plt.imshow(cov_matrix, cmap="viridis")
         plt.colorbar()
-        plt.clf()
+        plt.show()
     if plot_corr_mat:
         plt.imshow(corrmat, cmap="viridis")
         plt.colorbar()
-        plt.clf()
+        plt.show()
 
     np.linalg.inv(cov_matrix)
     # Activating text rendering by LaTeX

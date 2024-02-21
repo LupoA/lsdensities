@@ -105,7 +105,7 @@ def getCovMatrix_fp(sample, central, nbins, vmax, showplot=False):
     if showplot is True:
         plt.imshow(cov_, cmap="viridis")
         plt.colorbar()
-        plt.clf()
+        plt.show()
     return cov_
 
 
@@ -117,7 +117,7 @@ def covToCorr_fp(in_, cov_, vmax, showplot=False):
     if showplot is True:
         plt.imshow(corrmat_)
         plt.colorbar()
-        plt.clf()
+        plt.show()
     return corrmat_
 
 
