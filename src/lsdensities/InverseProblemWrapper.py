@@ -355,10 +355,7 @@ class InverseProblemWrapper:
         x1 = x - deltax
         y1 = y - deltay
         y2 = y + deltay
-        if x1 <= y2 and y1 <= x2:
-            return True
-        else:
-            return False
+        return x1 <= y2 and y1 <= x2
 
     def _flagResult(self, *args):
         return args
