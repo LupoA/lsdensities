@@ -4,25 +4,22 @@ from lsdensities.utils.rhoUtils import LogMessage
 from mpmath import mp
 
 
-def init_precision():
+def test_mp_invert():
     print(LogMessage(), " Initialising...")
     mp.dps = 64
     print(LogMessage(), " Binary precision in bit: ", mp.prec)
     print(LogMessage(), " Approximate decimal precision: ", mp.dps)
+    tmax = 15
 
+    S = Smatrix_mp(tmax, alpha_=0)
 
-init_precision()
-tmax = 15
+    invS = S ** (-1)
 
-S = Smatrix_mp(tmax, alpha_=0)
+    identity = S * invS
 
-invS = S ** (-1)
+    shouldbeone = norm2_mp(identity)
 
-identity = S * invS
+    print(LogMessage(), "norm( S Sinv ) - 1 = ", shouldbeone - 1)
+    print(LogMessage(), "Target decimal precision was", mp.dps)
 
-shouldbeone = norm2_mp(identity)
-
-print(LogMessage(), "norm( S Sinv ) - 1 = ", shouldbeone - 1)
-print(LogMessage(), "Target decimal precision was", mp.dps)
-
-assert shouldbeone - 1 < mp.dps / 2
+    assert shouldbeone - 1 < mp.dps / 2

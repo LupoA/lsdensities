@@ -5,7 +5,7 @@ from mpmath import mp
 import time
 
 
-def integration():
+def time_integration():
     mp.dps = 120
     params = Inputs()
     params.periodicity = "COSH"
