@@ -46,32 +46,61 @@ the bias both in the HLT and in the Bayesian framework.
 Function call example:
 
 ```python
-import mpmath as mp
-import lsdensities
+from lsdensities.utils.rhoUtils import (init_precision, Inputs)
+from mpmath import mp, mpf
+from lsdensities.core import Smatrix_mp
+from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
+from lsdensities.utils.rhoMath import gauss_fp
 
 # compute the smeared spectral density at some energy,
 # from a lattice correlator
 
+init_precision(128)
 parameters = Inputs()
-parameters.tmax = 16  # number of data points
+parameters.time_extent = 32
 parameters.kerneltype = 'FULLNORMGAUSS'  # Kernel smearing spectral density
-parameters.sigma = 0.1  # smearing radius in given energy units
-energy = 0.5  # energy at which the smeared spectral density is evaluated in given energy units
-parameters.assign_values()  # assign internal variables based on given inputs
+parameters.periodicity = 'EXP'  # EXP / COSH for open / periodic boundary conditions
+parameters.sigma = 0.25  # smearing radius in given energy units
+peak = 1    #   energy level in the correlator
+energy = 0.5     # energy at which the smeared spectral density
+                 # is evaluated in given energy units
+parameters.assign_values()  # assigns internal variables
+                            # based on given inputs
+                            # such as tmax = number of data points,
+                            # which is inferred from time_extent and periodicity,
+                            # if not specified
 
-lattice_correlator = mp.matrix(parameters.tmax, 1)  #  to be filled with lattice data
-lattice_covariance = mp.matrix(parameters.tmax)     #  to be filled with data covariance
+lattice_correlator = mp.matrix(parameters.tmax, 1)  #  vector; fill with lattice data
+lattice_covariance = mp.matrix(parameters.tmax)     #  matrix; fill with data covariance
 
-regularising_parameter = 0.1   # regularising parameters
-input_matrix = lsdensities.core.Smatrix_mp(parameters.tmax) + (regularising_parameter * lattice_covariance)
+for t in range(parameters.tmax):    # mock data
+    lattice_correlator[t] = mp.exp(-mpf(t + 1) * mpf(str(peak)))
+    lattice_covariance[t,t] = lattice_correlator[t] * 0.02
 
-coeff = lsdensities.transform.h_Et_mp_Eslice(input_matrix**(-1),  #   linear coefficients
-                                             parameters,
-                                             energy)
 
-result = lsdensities.transform.y_combine_central_Eslice_mp(coeff,   #   linear combination of data and coefficients
-                                                        lattice_correlator,
-                                                        parameters)
+regularising_parameter = mpf(str(1e-6))   # regularising parameters; must be tuned.
+                                          # Automatic tuning is provided in InverseProblemWrapper.py
+                                          # this example has exact data, so the parameters
+                                          # can be made as small as zero,
+                                          # in which case the result will be exact in
+                                          # the limit of infinite tmax
+
+regularised_matrix = Smatrix_mp(parameters.tmax, alpha_=0) + (regularising_parameter * lattice_covariance)
+matrix_inverse = regularised_matrix**(-1)
+
+coeff = h_Et_mp_Eslice(matrix_inverse,   # linear coefficients
+                       parameters,
+                       energy,
+                       alpha_=0)
+
+result = y_combine_central_Eslice_mp(coeff,     # linear combination of data
+                                     lattice_correlator,
+                                     parameters)
+
+true_value = gauss_fp(peak, energy, parameters.sigma, norm="full")
+
+print("Result: ", float(result))   # reconstructed smeared spectral density at E = energy
+print("Exact results :", true_value)  # exact smeared spectral density at E = energy
 ```
 
 ## Contributing

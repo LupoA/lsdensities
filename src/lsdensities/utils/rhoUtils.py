@@ -251,7 +251,7 @@ def init_precision(digits_):
 class Inputs:
     def __init__(self):
         self.time_extent = -1
-        self.tmax = -1
+        self.tmax = 0
         self.datapath = "None"
         self.outdir = "None"
         self.logpath = "None"
@@ -261,7 +261,7 @@ class Inputs:
         self.sigma = -1
         self.emax = -1
         self.Ne = 1
-        self.Na = 0
+        self.Na = 1
         self.emin = 0
         self.e0 = 0
         self.massNorm = 1.0
