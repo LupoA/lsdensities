@@ -256,9 +256,9 @@ class Inputs:
         self.outdir = "None"
         self.logpath = "None"
         self.plotpath = "None"
-        self.num_boot = -1
-        self.num_samples = -1
-        self.sigma = -1
+        self.num_boot = 1
+        self.num_samples = 1
+        self.sigma = 0
         self.emax = -1
         self.Ne = 1
         self.Na = 1
@@ -276,8 +276,13 @@ class Inputs:
         self.mplambda = mpf("0")
         self.mpMpi = mpf("0")
         self.directoryName = "."
+        self.kerneltype = "FULLNORMGAUSS"
 
     def assign_values(self):
+        """
+        Assigns tmax based on time_extent and periodicity if tmax was not specified
+        Creates mpf(var) from float type var
+        """
         if self.tmax == 0:
             if self.periodicity == "EXP":
                 self.tmax = self.time_extent - 1  # Can't use c[0]
@@ -309,6 +314,8 @@ class Inputs:
             + str(self.prec)
             + "Na"
             + str(self.Na)
+            + "KerType"
+            + str(self.kerneltype)
         )
 
     def report(self):
@@ -318,6 +325,7 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Plot directory:", self.plotpath)
         print(LogMessage(), "Init ::: ", "Periodicity:", self.periodicity)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
+        print(LogMessage(), "Init ::: ", "Smearing Kernel", self.kerneltype)
         print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)
         print(
