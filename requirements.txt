@@ -1,4 +1,2 @@
 pytest
 pre-commit
-mpmath
-progressbar
