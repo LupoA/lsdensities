@@ -49,8 +49,3 @@ def test_ft_convergence():
         ), f"Failed at T={T_list[i]}"
 
     assert abs(ft_list[-1] - ftinf) < 1e-6
-
-
-# Run tests
-test_Smat_convergence()
-test_ft_convergence()

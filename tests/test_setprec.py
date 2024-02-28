@@ -7,6 +7,3 @@ def test_init_precision():
     mp.dps = 64
     print(LogMessage(), " Binary precision in bit: ", mp.prec)
     print(LogMessage(), " Approximate decimal precision: ", mp.dps)
-
-
-test_init_precision()
