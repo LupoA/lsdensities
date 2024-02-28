@@ -18,6 +18,10 @@ for the solution of the inverse problem.
 
 Niccolò Forzano, Alessandro Lupo.
 
+## Requirements
+
+Prerequirements can be installed by using ``pip install -r requirements.txt``, and requirements are listed in ``requirements.txt``.
+
 ## Installation
 
 One can download, build and install the package
