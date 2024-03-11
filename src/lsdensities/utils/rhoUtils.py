@@ -81,12 +81,15 @@ def end():
     print(LogMessage(), "Exit")
     exit()
 
+
 def generate_seed(par):
     # Concatenate the input parameters into a string
-    input_string = f"{par.massNorm}{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
+    input_string = (
+        f"{par.massNorm}{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
+    )
 
     # Encode the string to bytes
-    encoded_string = input_string.encode('utf-8')
+    encoded_string = input_string.encode("utf-8")
 
     # Calculate the SHA-256 hash
     sha256_hash = hashlib.sha256(encoded_string).hexdigest()

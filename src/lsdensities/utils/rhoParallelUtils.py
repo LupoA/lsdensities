@@ -5,6 +5,7 @@ import multiprocessing as multiprocessing
 from typing import List
 import random
 
+
 class ParallelBootstrapLoop:
     def __init__(self, par: Inputs, in_: np.ndarray, is_folded=False):
         self.par = par
@@ -29,7 +30,14 @@ class ParallelBootstrapLoop:
             if self.is_folded is False:
                 process = multiprocessing.Process(
                     target=parallel_bootstrap_compact_fp,
-                    args=(self.par, self.inputsample, self.out_, start, end, random.randint(0, 2**(32)-1)),
+                    args=(
+                        self.par,
+                        self.inputsample,
+                        self.out_,
+                        start,
+                        end,
+                        random.randint(0, 2 ** (32) - 1),
+                    ),
                 )
             if self.is_folded is True:
                 process = multiprocessing.Process(
@@ -40,7 +48,7 @@ class ParallelBootstrapLoop:
                         self.out_,
                         start,
                         end,
-                        random.randint(0, 2**(32)-1),
+                        random.randint(0, 2 ** (32) - 1),
                         self.is_folded,
                     ),
                 )

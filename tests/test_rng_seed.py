@@ -1,5 +1,6 @@
 from lsdensities.utils.rhoUtils import generate_seed, Inputs, init_precision
 
+
 def rng_seeding():
     init_precision(128)
     par = Inputs()
@@ -22,5 +23,4 @@ def rng_seeding():
     par.Ne = 10
     seed3 = generate_seed(par)
 
-    assert(seed1 != seed2 and seed1 == seed3)
-
+    assert seed1 != seed2 and seed1 == seed3

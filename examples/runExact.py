@@ -7,7 +7,7 @@ from lsdensities.utils.rhoUtils import (
     Inputs,
     create_out_paths,
     end,
-    generate_seed
+    generate_seed,
 )
 from lsdensities.utils.rhoParser import parseArgumentSynthData
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
@@ -56,8 +56,6 @@ def kernel_correlator(E, t, T, par):
 
 
 def generate(par, espace):
-
-
     peaks_location = np.random.uniform(
         np.random.uniform(0.5 * aMpi, 2 * aMpi), (2.1 * par.emax) * aMpi, STATES
     )  #   generates STATES numbers between a random value in (0.25*aMpi, 3*aMpi) and 1.5*emax*aMpi
@@ -96,7 +94,6 @@ def generate(par, espace):
         return exact_correlator, espace, rhoStrue
 
 
-
 def main():
     print(LogMessage(), "Initialising")
     args = parseArgumentSynthData()
@@ -126,8 +123,7 @@ def main():
     print(LogMessage(), " Random Seed : ", seed)
 
     random.seed(seed)
-    np.random.seed(random.randint(0, 2**(32)-1))
-    ITERATIONS = 1
+    np.random.seed(random.randint(0, 2 ** (32) - 1))
 
     exact_correlator, espace, rhoStrue = generate(par, espace)
 

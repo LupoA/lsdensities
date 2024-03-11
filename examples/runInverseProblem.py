@@ -1,5 +1,11 @@
 import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs, generate_seed
+from lsdensities.utils.rhoUtils import (
+    init_precision,
+    LogMessage,
+    end,
+    Inputs,
+    generate_seed,
+)
 from lsdensities.utils.rhoParser import parseArgumentRhoFromData
 from lsdensities.utils.rhoUtils import create_out_paths
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
@@ -10,6 +16,7 @@ import numpy as np
 from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
 from lsdensities.utils.rhoUtils import MatrixBundle
 import random
+
 
 def init_variables(args_):
     in_ = Inputs()

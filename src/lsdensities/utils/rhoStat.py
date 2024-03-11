@@ -4,6 +4,7 @@ import math
 import random
 from mpmath import mp
 
+
 def averageVector_fp(vector, get_error=True, get_var=False):
     sum = 0
     stdv = 0

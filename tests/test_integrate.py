@@ -24,8 +24,12 @@ def test_time_integration():
     end = time.time()
     print(LogMessage(), float(integral), "in ", end - start, "s")
 
-    integral2, _ = quad(lambda x: integrandSigmaMat(x, alpha=0, s=0.1, t1=3, t2=3, E0=0, par=params), 0.0, np.inf)
+    integral2, _ = quad(
+        lambda x: integrandSigmaMat(x, alpha=0, s=0.1, t1=3, t2=3, E0=0, par=params),
+        0.0,
+        np.inf,
+    )
 
     print(integral)
     print(integral2)
-    assert(np.abs(integral2 - integral) < 1e-15)
+    assert np.abs(integral2 - integral) < 1e-15
