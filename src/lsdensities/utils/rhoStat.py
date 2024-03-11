@@ -4,7 +4,6 @@ import math
 import random
 from mpmath import mp
 
-
 def averageVector_fp(vector, get_error=True, get_var=False):
     sum = 0
     stdv = 0
@@ -58,10 +57,10 @@ def parallel_bootstrap_compact_fp_DEPRECATED(
             out_[b][i] /= par_.num_samples
 
 
-def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, is_folded=False):
+def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, seed, is_folded=False):
     import lsdensities.utils.rhoUtils
 
-    random.seed(1994)
+    random.seed(seed)
     randv = np.zeros(par_.num_samples)
     if is_folded is False:
         for b in range(start, end):

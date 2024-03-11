@@ -3,7 +3,7 @@ from .rhoUtils import LogMessage, Inputs
 from .rhoStat import parallel_bootstrap_compact_fp
 import multiprocessing as multiprocessing
 from typing import List
-
+import random
 
 class ParallelBootstrapLoop:
     def __init__(self, par: Inputs, in_: np.ndarray, is_folded=False):
@@ -40,6 +40,7 @@ class ParallelBootstrapLoop:
                         self.out_,
                         start,
                         end,
+                        random.randint(0, 2**(32)-1),
                         self.is_folded,
                     ),
                 )
