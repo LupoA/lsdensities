@@ -1,5 +1,5 @@
 import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs
+from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, Inputs, generate_seed
 from lsdensities.utils.rhoParser import parseArgumentRhoFromData
 from lsdensities.utils.rhoUtils import create_out_paths
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
@@ -9,7 +9,7 @@ from mpmath import mp, mpf
 import numpy as np
 from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
 from lsdensities.utils.rhoUtils import MatrixBundle
-
+import random
 
 def init_variables(args_):
     in_ = Inputs()
@@ -38,10 +38,13 @@ def init_variables(args_):
 
 def main():
     print(LogMessage(), "Initialising")
-    # random.seed(1994)
     args = parseArgumentRhoFromData()
     init_precision(args.prec)
     par = init_variables(args)
+
+    seed = generate_seed(par)
+    random.seed(seed)
+    np.random.seed(random.randint(0, 2 ** (32) - 1))
 
     #   Reading datafile, storing correlator
     rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)

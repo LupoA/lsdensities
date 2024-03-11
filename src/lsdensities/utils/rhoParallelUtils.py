@@ -29,7 +29,7 @@ class ParallelBootstrapLoop:
             if self.is_folded is False:
                 process = multiprocessing.Process(
                     target=parallel_bootstrap_compact_fp,
-                    args=(self.par, self.inputsample, self.out_, start, end),
+                    args=(self.par, self.inputsample, self.out_, start, end, random.randint(0, 2**(32)-1)),
                 )
             if self.is_folded is True:
                 process = multiprocessing.Process(
