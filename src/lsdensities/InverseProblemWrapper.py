@@ -21,7 +21,7 @@ import os
 
 
 class AlgorithmParameters:
-    '''
+    """
     lambdaMax : Starting value for the scan over lambda.
     lambdaMin : Ending value, unless stopping condition is met.
     lambdaStep : Step in lambda.
@@ -29,7 +29,8 @@ class AlgorithmParameters:
     kfactor : Systematics on value at lambda(reference) are estimated by repeating the calculation at lambda = kfactor lambda(reference).
     resize : if lambda hits zero before hitting lambdaMin, the step is resized. Allows sampling values of lambda at different scales.
     comparisonRatio : Measurements at different lambda are considered compatible if they agree within comparisonRatio * uncertainty (1sigma if comparisonRatio = 1).
-    '''
+    """
+
     def __init__(
         self,
         alphaA=0,
@@ -38,7 +39,7 @@ class AlgorithmParameters:
         lambdaMax=50,
         lambdaStep=0.5,
         lambdaScanCap=6,
-        plateau_id = 1,
+        plateau_id=1,
         kfactor=0.1,
         lambdaMin=1e-6,
         comparisonRatio=1,
@@ -212,25 +213,23 @@ class InverseProblemWrapper:
         # - - - - - - - - - - - - - - - End of INIT - - - - - - - - - - - - - - - #
 
     def fillEspaceMP(self):
-        '''
+        """
         Fill array of energies : array[int] = energy
         and provides a dictionary such that dictionary[array[int]] = int
-        '''
+        """
         for e_id in range(self.par.Ne):
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
-            self.espace_dictionary[
-                self.espace[e_id]
-            ] = e_id
+            self.espace_dictionary[self.espace[e_id]] = e_id
         self.espace_is_filled = True
         return
 
     def prepareHLT(self):
-        '''
+        """
         Creates directory for output
         Fills array of energies and corresponding dictionary
         Evaluates A0 at each energy
         Evaluates the matrix Sigma
-        '''
+        """
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
         self.SigmaMatA.evaluate()
@@ -293,10 +292,10 @@ class InverseProblemWrapper:
         lambda_,
         whichAlpha="A",
     ):
-        '''
+        """
         Each call appends a line to a file named InverseProblemLog_{alpha} containing
         estar, rho, errBayes, errBoot, likelihood, g(A/A0)g, lambda
-        '''
+        """
         if whichAlpha == "A":
             self.rho_list[self.espace_dictionary[estar]].append(rho)
             self.errBayes_list[self.espace_dictionary[estar]].append(errBayes)
@@ -370,9 +369,9 @@ class InverseProblemWrapper:
         return
 
     def _areRangesCompatible(self, x, deltax, y, deltay):
-        '''
+        """
         Checks whether ranges are compatible.
-        '''
+        """
         x2 = x + deltax
         x1 = x - deltax
         y1 = y - deltay
@@ -385,7 +384,7 @@ class InverseProblemWrapper:
         # - - - - - - - - - - - - - - - Main function: given lambda computes rho_s - - - - - - - - - - - - - - - #
 
     def lambdaToRho(self, lambda_, estar_, alpha_):
-        '''
+        """
         For a given lambda, at each energy and value of alpha
         computes and returns the following
             rho_estar : the result for the smeared spectral density
@@ -399,7 +398,7 @@ class InverseProblemWrapper:
         S + factor B
         where factor = lambda A0 / Bnorm.
         Bnorm makes B dimensionless.
-        '''
+        """
         import time
 
         _Bnorm = self.matrix_bundle.bnorm / (estar_ * estar_)
@@ -501,7 +500,7 @@ class InverseProblemWrapper:
     # - - - - - - - - - - - - - - - Scan over parameters: Lambda, Alpha (optional) - - - - - - - - - - - - - - - #
 
     def scanParameters(self, estar_):
-        '''
+        """
         This function will scan over lambda and, if specified, alpha, until conditions are met
         The stopping conditions are one of the following:
             - compatibility is achieved for a subsequent number of values of lambda specified by self.algorithmPar.lambdaScanCap : this is the intended way.
@@ -517,8 +516,8 @@ class InverseProblemWrapper:
             AND
             - rho(lambda , alpha) = rho(lambda, alpha') = rho(lambda, alpha'') within 1 sigma, if more values of alpha are used.
         The scan is done between lambdaMax and lambdaMin. The initial step is very large, but it is resized whenever lambda becomes negative
-        to allow a fast but meaningful scan than a fixed step could achieve. 
-        '''
+        to allow a fast but meaningful scan than a fixed step could achieve.
+        """
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
         _cap = self.algorithmPar.lambdaScanCap
@@ -704,9 +703,11 @@ class InverseProblemWrapper:
 
             flagLambda_Overlap = self._areRangesCompatible(
                 _rhoUpdated, _compRatio * _errBootUpdated, rhoHLT, _compRatio * drhoHLT
-            )   # comparison with flagged lambda
+            )  # comparison with flagged lambda
 
-            if _likelihoodUpdated < minNLL:  # NLL, if less than before; flag the results
+            if (
+                _likelihoodUpdated < minNLL
+            ):  # NLL, if less than before; flag the results
                 (
                     minNLL,
                     lambdaStarBayes,
@@ -748,7 +749,7 @@ class InverseProblemWrapper:
                 _gAgUpdated
                 / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
                 > self.par.A0cut
-            ):  
+            ):
                 print(
                     LogMessage(),
                     "\t A/A0 is too large: rejecting result  (",
@@ -761,9 +762,9 @@ class InverseProblemWrapper:
                     ")",
                 )
                 _skip = True
-                
+
             #   Having analysed all possible stopping conditions, proceed
-            
+
             if _skip is False:
                 #   Flag the first compatible result, because it is the one with the smaller error
                 if (

@@ -14,7 +14,7 @@ from .utils.rhoUtils import (
     tnr,
 )
 from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
-from .core import A0E_mp, integrandSigmaMatv
+from .core import A0E_mp, integrandSigmaMat
 from .transform import (
     h_Et_mp_Eslice,
     combine_fMf_Eslice,

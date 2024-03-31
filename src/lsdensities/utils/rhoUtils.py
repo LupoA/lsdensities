@@ -84,9 +84,7 @@ def end():
 
 def generate_seed(par):
     # Concatenate the input parameters into a string
-    input_string = (
-        f"{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
-    )
+    input_string = f"{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
 
     # Encode the string to bytes
     encoded_string = input_string.encode("utf-8")

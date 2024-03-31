@@ -312,9 +312,7 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type="FULLNORMGAU
         marker="o",
         markersize=3.8,
         ls="--",
-        label=label
-        + " Kernel at $\omega$ = "
-        + "{:2.1e}".format(omega),
+        label=label + " Kernel at $\omega$ = " + "{:2.1e}".format(omega),
         color="black",
         markerfacecolor=CB_colors[0],
     )
@@ -375,10 +373,7 @@ def plotSpectralDensity(invLapW):
     print(LogMessage(), "Plotting spectral density")
     setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 10))
-    plt.title(
-        r" $\;\;\; \sigma$"
-        + r" = {:2.2f}".format(invLapW.par.sigma)
-    )
+    plt.title(r" $\;\;\; \sigma$" + r" = {:2.2f}".format(invLapW.par.sigma))
 
     plotwErr(
         ax,

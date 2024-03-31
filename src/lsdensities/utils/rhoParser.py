@@ -1,7 +1,6 @@
 import argparse
-from lsdensities.utils.rhoUtils import (init_precision,
-    Inputs,
-    create_out_paths)
+from lsdensities.utils.rhoUtils import Inputs
+
 
 def parse_inputs():
     parser = argparse.ArgumentParser()
@@ -112,9 +111,9 @@ def parse_inputs():
 
 
 def parse_synthetic_inputs():
-    '''
+    """
     Parse command line for arguments which are turned into attributes of the Inputs class
-    '''
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

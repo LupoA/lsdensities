@@ -1,14 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mpf, mp
-from lsdensities.utils.rhoUtils import (
-    LogMessage,
-    init_precision,
-    Inputs,
-    create_out_paths,
-    end,
-    generate_seed
-)
+from lsdensities.utils.rhoUtils import LogMessage, end, generate_seed
 from lsdensities.utils.rhoParser import parse_synthetic_inputs
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
 from lsdensities.core import Smatrix_mp
@@ -21,6 +14,7 @@ a_fm = a / 5.068  # lattice spacing in fm
 aMpi = pion_mass * a  # pion mass in lattice units
 STATES = 666
 
+
 def kernel_correlator(E, t, T, par):
     if par.periodicity == "COSH":
         return mp.exp(-mpf(E) * mpf(t)) + mp.exp(-mpf(E) * mpf(T - t))
@@ -29,17 +23,17 @@ def kernel_correlator(E, t, T, par):
 
 
 def generate(par, espace):
-    '''
+    """
     generates a correlator of dimension [1/a] with n=STATES states
-    '''
+    """
     peaks_location = np.random.uniform(
-        np.random.uniform(2*pion_mass, 3 * pion_mass), (3 * par.emax), STATES
+        np.random.uniform(2 * pion_mass, 3 * pion_mass), (3 * par.emax), STATES
     )
     first_peak = np.random.uniform(0.8 * pion_mass, 1.2 * pion_mass, 1)
     peaks_location = np.concatenate([first_peak, peaks_location])
     peaks_location *= a
     weights = np.random.uniform(0, 0.004, len(peaks_location))
-    weights /= a #  gives dimension
+    weights /= a  #  gives dimension
 
     exact_correlator = mp.matrix(par.tmax, 1)  #   Exact correlator
 
@@ -79,9 +73,7 @@ def main():
     par = parse_synthetic_inputs()
     par.init()
     par.report()
-    espace = np.linspace(
-        par.emin, par.emax, par.Ne
-    )
+    espace = np.linspace(par.emin, par.emax, par.Ne)
 
     print(LogMessage(), "Energies [Gev] : ", espace)
     print(LogMessage(), " Sigma [GeV] : ", par.sigma)
