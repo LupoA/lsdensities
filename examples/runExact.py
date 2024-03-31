@@ -4,8 +4,8 @@ from mpmath import mpf, mp
 from lsdensities.utils.rhoUtils import LogMessage, end, generate_seed
 from lsdensities.utils.rhoParser import parse_synthetic_inputs
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
-from lsdensities.core import Smatrix_mp
-from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
+from lsdensities.core import hlt_matrix
+from lsdensities.transform import coefficients_ssd, get_ssd_scalar
 import random
 
 pion_mass = 0.140  # Gev
@@ -84,8 +84,8 @@ def main():
 
     exact_correlator, espace, rhoStrue = generate(par, espace)
 
-    S = Smatrix_mp(
-        tmax_=par.tmax, alpha_=0, e0_=mpf(0), type=par.periodicity, T=par.time_extent
+    S = hlt_matrix(
+        tmax=par.tmax, alpha=0, e0=mpf(0), type=par.periodicity, T=par.time_extent
     )
 
     Sinv = invert_matrix_ge(S)
@@ -96,8 +96,8 @@ def main():
 
     for e_i in range(len(espace)):
         print(LogMessage(), "Energy [a^-1]", espace[e_i])
-        _g_t_estar = h_Et_mp_Eslice(Sinv, par, espace[e_i], alpha_=0)
-        rhos[e_i] = y_combine_central_Eslice_mp(_g_t_estar, exact_correlator, par)
+        gt = coefficients_ssd(Sinv, par, espace[e_i], alpha=0)
+        rhos[e_i] = get_ssd_scalar(gt, exact_correlator, par)
 
     plt.plot(
         espace,

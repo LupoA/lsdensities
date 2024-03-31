@@ -1,7 +1,7 @@
 from mpmath import mp, mpf
 from .utils.rhoUtils import LogMessage
 from .transform import ft_mp
-from .core import A0_mp
+from .core import a0_scalar
 
 #   Functionals A, B and W
 
@@ -19,9 +19,9 @@ def gAg(smat, gt, estar, alpha, params):
         term1 = mp.fadd(term1, aux_)
     #   term 1 = g^T S g
 
-    term2 = A0_mp(
-        e_=estar,
-        sigma_=params.mpsigma,
+    term2 = a0_scalar(
+        e=estar,
+        sigma=params.mpsigma,
         alpha=alpha,
         e0=params.mpe0,
         ker_type=params.kerneltype,

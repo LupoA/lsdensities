@@ -2,7 +2,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from .utils.rhoUtils import CB_colors, plot_markers, LogMessage, tnr
-from .transform import combine_base_Eslice
+from .transform import combine_base_scalar
 from .utils.rhoMath import gauss_fp
 
 
@@ -305,7 +305,7 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type="FULLNORMGAU
     energies = np.linspace(1e-4, invLapW.par.emax * 1.5, ne_)
     kernel = np.zeros(ne_)
     for _e in range(len(energies)):
-        kernel[_e] = combine_base_Eslice(gt_, invLapW.par, energies[_e])
+        kernel[_e] = combine_base_scalar(gt_, invLapW.par, energies[_e])
     plt.plot(
         energies,
         kernel,

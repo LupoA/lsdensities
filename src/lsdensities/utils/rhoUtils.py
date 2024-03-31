@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import random as rd
 import os
 import math
-from ..core import Smatrix_mp
+from ..core import hlt_matrix
 from .rhoMath import norm2_mp
 import time
 from mpmath import mp, mpf
@@ -378,13 +378,16 @@ class MatrixBundle:
 
 
 def adjust_precision(tmax: int):
-    #   This function should *reduce* the numerical precision
-    #   from the large input value
-    #   to a value suggested by the condition
-    #   number of S
-    #   If the starting prec is too small the function might
-    #   too small of a value which results in a warning
-    S_ = Smatrix_mp(tmax, alpha_=0)
+    """
+    currently not used;
+    This function should *reduce* the numerical precision
+    from the large input value
+    to a value suggested by the condition
+    number of S
+    If the starting prec is too small the function might
+    too small of a value which results in a warning
+    """
+    S_ = hlt_matrix(tmax, alpha=0)
     condS = mp.cond(S_)
     n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
     print(
@@ -394,7 +397,7 @@ def adjust_precision(tmax: int):
     )
     print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
     init_precision(n_prec)
-    S_ = Smatrix_mp(tmax, alpha_=0)
+    S_ = hlt_matrix(tmax, alpha=0)
     condS = mp.cond(S_)
     n_prec_post = math.ceil(math.log10(condS)) + 3
     if n_prec_post != n_prec:

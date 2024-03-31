@@ -1,8 +1,8 @@
-from .core import A0E_mp, Smatrix_mp
+from .core import a0_array, hlt_matrix
 from .transform import (
-    h_Et_mp_Eslice,
-    y_combine_sample_Eslice_mp,
-    combine_fMf_Eslice,
+    coefficients_ssd,
+    get_ssd_averaged_scalar,
+    combine_fMf_scalar,
     combine_likelihood,
 )
 from .abw import gAg
@@ -74,18 +74,16 @@ class A0_t:
         self.eminMP = emin
         self.par = par
 
-    def evaluate(self, espaceMP_):
+    def evaluate(self, espace_mp):
         print(
             LogMessage(),
             "Computing A0 at all energies with Alpha = {:2.2e}".format(
                 float(self.alphaMP)
             ),
         )
-        self.valute_at_E = A0E_mp(
-            espaceMP_, self.par, alpha_=self.alphaMP, e0_=self.par.mpe0
-        )
+        self.valute_at_E = a0_array(espace_mp, self.par, alpha=self.alphaMP)
         for e_id in range(self.par.Ne):
-            self.valute_at_E_dictionary[float(espaceMP_[e_id])] = self.valute_at_E[e_id]
+            self.valute_at_E_dictionary[float(espace_mp[e_id])] = self.valute_at_E[e_id]
         self.is_filled = True
 
 
@@ -98,10 +96,10 @@ class SigmaMatrix:
 
     def evaluate(self):
         print(LogMessage(), " Saving Sigma Matrix ".format())
-        self.matrix = Smatrix_mp(
-            tmax_=self.par.tmax,
-            alpha_=self.alpha,
-            e0_=self.par.mpe0,
+        self.matrix = hlt_matrix(
+            tmax=self.par.tmax,
+            alpha=self.alpha,
+            e0=self.par.mpe0,
             type=self.par.periodicity,
             T=self.par.time_extent,
         )
@@ -418,14 +416,14 @@ class InverseProblemWrapper:
             "s",
         )
         start_time = time.time()
-        _g_t_estar = h_Et_mp_Eslice(_MatrixInv, self.par, estar_, alpha_=alpha_)
+        _g_t_estar = coefficients_ssd(_MatrixInv, self.par, estar_, alpha=alpha_)
         end_time = time.time()
         print(
             LogMessage(),
             "Time ::: Coefficients computed in {:4.4f}".format(end_time - start_time),
             "s",
         )
-        rho_estar, drho_estar_Bootstrap = y_combine_sample_Eslice_mp(
+        rho_estar, drho_estar_Bootstrap = get_ssd_averaged_scalar(
             _g_t_estar, self.correlator.mpsample, self.par
         )
         start_time = time.time()
@@ -436,8 +434,8 @@ class InverseProblemWrapper:
         )
         gAg_estar = gAg(S, _g_t_estar, estar_, alpha_, self.par)
 
-        varianceRho = combine_fMf_Eslice(
-            ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_
+        varianceRho = combine_fMf_scalar(
+            gt=_g_t_estar, params=self.par, estar=estar_, alpha=alpha_
         )
         print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
         print(

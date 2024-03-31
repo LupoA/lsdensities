@@ -7,15 +7,14 @@ from lsdensities.utils.rhoUtils import (
     create_out_paths,
     plot_markers,
     CB_colors,
-    timesfont,
 )
 from lsdensities.utils.rhoParser import parseArgumentPrintSamples
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
 from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
 from mpmath import mp, mpf
-from lsdensities.core import A0E_mp, Smatrix_mp
+from lsdensities.core import a0_array, hlt_matrix
 from lsdensities.abw import gAg, gBg
-from lsdensities.transform import h_Et_mp_Eslice, y_combine_sample_Eslice_mp_ToFile
+from lsdensities.transform import get_ssd_scalar, y_combine_sample_Eslice_mp_ToFile
 import os
 import time
 from lsdensities.utils.rhoMath import invert_matrix_ge
@@ -123,7 +122,7 @@ def main():
     cNorm = mpf(str(corr.central[1] ** 2))
 
     # from HLT class
-    A0set = A0E_mp(espace, par, alpha_=0, e0_=par.mpe0)
+    A0set = a0_array(espace, par, alpha=0)
 
     for _e in range(par.Ne):
         estar_ = espace[_e]
@@ -131,10 +130,10 @@ def main():
         fpath = os.path.join(par.logpath, fname)
         _Bnorm = cNorm / (estar_ * estar_)
         _factor = (lambda_e[_e] * A0set[_e]) / _Bnorm
-        S_ = Smatrix_mp(
-            tmax_=par.tmax,
-            alpha_=0,
-            e0_=par.mpe0,
+        S_ = hlt_matrix(
+            tmax=par.tmax,
+            alpha=0,
+            e0=par.mpe0,
             type=par.periodicity,
             T=par.time_extent,
         )
@@ -149,7 +148,7 @@ def main():
             ),
             "s",
         )
-        _g_t_estar = h_Et_mp_Eslice(_Minv, par, estar_, alpha_=0)
+        _g_t_estar = get_ssd_scalar(_Minv, par, estar_, alpha=0)
         rho[_e], drho[_e] = y_combine_sample_Eslice_mp_ToFile(
             fpath, _g_t_estar, corr.mpsample, par
         )
@@ -185,10 +184,9 @@ def main():
         label=r"Input",
         color=CB_colors[1],
     )
-    plt.title(r" $\sigma$" + " = {:2.2f} Mpi".format(par.sigma / par.massNorm))
-    plt.xlabel(r"$E / M_{\pi}$", fontdict=timesfont)
-    # plt.ylabel("Spectral density", fontdict=u.timesfont)
-    plt.legend(prop={"size": 12, "family": "Helvetica"})
+    plt.title(r" $\sigma$" + " = {:2.2f} Mpi".format(par.sigma))
+    plt.xlabel(r"$E / M_{\pi}$")
+    plt.legend()
     plt.grid()
     plt.tight_layout()
     plt.show()

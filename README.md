@@ -46,10 +46,13 @@ the bias both in the HLT and in the Bayesian framework.
 Function call example:
 
 ```python
-from lsdensities.utils.rhoUtils import (init_precision, Inputs)
+from lsdensities.utils.rhoUtils import (
+    init_precision,
+    Inputs,
+)
 from mpmath import mp, mpf
-from lsdensities.core import Smatrix_mp
-from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
+from lsdensities.core import hlt_matrix
+from lsdensities.transform import coefficients_ssd, get_ssd_scalar
 from lsdensities.utils.rhoMath import gauss_fp
 
 # compute the smeared spectral density at some energy,
@@ -85,15 +88,15 @@ regularising_parameter = mpf(str(1e-6))   # regularising parameters; must be tun
                                           # in which case the result will be exact in
                                           # the limit of infinite tmax
 
-regularised_matrix = Smatrix_mp(parameters.tmax, alpha_=0) + (regularising_parameter * lattice_covariance)
+regularised_matrix = hlt_matrix(parameters.tmax, alpha=0) + (regularising_parameter * lattice_covariance)
 matrix_inverse = regularised_matrix**(-1)
 
-coeff = h_Et_mp_Eslice(matrix_inverse,   # linear coefficients
+coeff = coefficients_ssd(matrix_inverse,   # linear coefficients
                        parameters,
                        energy,
-                       alpha_=0)
+                       alpha=0)
 
-result = y_combine_central_Eslice_mp(coeff,     # linear combination of data
+result = get_ssd_scalar(coeff,     # linear combination of data
                                      lattice_correlator,
                                      parameters)
 

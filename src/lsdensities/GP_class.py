@@ -14,12 +14,12 @@ from .utils.rhoUtils import (
     tnr,
 )
 from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
-from .core import A0E_mp, integrandSigmaMat
+from .core import a0_array, integrandSigmaMat
 from .transform import (
-    h_Et_mp_Eslice,
-    combine_fMf_Eslice,
-    combine_base_Eslice,
-    y_combine_central_Eslice_mp,
+    coefficients_ssd,
+    combine_fMf_scalar,
+    combine_base_scalar,
+    get_ssd_scalar,
 )
 from .abw import gAg, gBg
 import matplotlib.pyplot as plt
@@ -138,18 +138,16 @@ class A0_t:
         self.eminMP = eminMP_
         self.par = par_
 
-    def evaluate(self, espaceMP_):
+    def evaluate(self, espace_mp):
         print(
             LogMessage(),
             "Computing A0 at all energies with Alpha = {:2.2e}".format(
                 float(self.alphaMP)
             ),
         )
-        self.valute_at_E = A0E_mp(
-            espaceMP_, self.par, alpha_=self.alphaMP, e0_=self.par.mpe0
-        )
+        self.valute_at_E = a0_array(espace_mp, self.par, alpha=self.alphaMP)
         for e_id in range(self.par.Ne):
-            self.valute_at_E_dictionary[float(espaceMP_[e_id])] = self.valute_at_E[e_id]
+            self.valute_at_E_dictionary[float(espace_mp[e_id])] = self.valute_at_E[e_id]
         self.is_filled = True
 
 
@@ -269,12 +267,10 @@ class GaussianProcessWrapper:
             "s",
         )
 
-        _g_t_estar = h_Et_mp_Eslice(_Minv, self.par, estar_, alpha_=alpha_)
-        rho_estar = y_combine_central_Eslice_mp(
-            _g_t_estar, self.correlator.mpcentral, self.par
-        )
-        varianceRho = combine_fMf_Eslice(
-            ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_
+        _g_t_estar = coefficients_ssd(_Minv, self.par, estar_, alpha=alpha_)
+        rho_estar = get_ssd_scalar(_g_t_estar, self.correlator.mpcentral, self.par)
+        varianceRho = combine_fMf_scalar(
+            gt=_g_t_estar, params=self.par, estar=estar_, alpha=alpha_
         )
         print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
 
@@ -950,7 +946,7 @@ class GaussianProcessWrapper:
 
         with open(os.path.join(self.par.logpath, _file), "w") as output:
             for _e in range(len(energies)):
-                kernel[_e] = combine_base_Eslice(gt_, self.par, energies[_e])
+                kernel[_e] = combine_base_scalar(gt_, self.par, energies[_e])
                 print(energies[_e], kernel[_e], file=output)
         plt.plot(
             energies / self.par.massNorm,

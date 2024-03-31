@@ -2,15 +2,15 @@ from mpmath import mp, mpf
 from .utils.rhoMath import cauchy
 
 
-def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
-    S_ = mp.matrix(tmax_, tmax_)
-    for i in range(tmax_):
-        for j in range(tmax_):
+def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
+    S_ = mp.matrix(tmax, tmax)
+    for i in range(tmax):
+        for j in range(tmax):
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
-            entry = mp.fsub(arg, alpha_)  # i+j+2-a
+            entry = mp.fsub(arg, alpha)  # i+j+2-a
             arg = mp.fneg(arg)
-            arg = mp.fmul(arg, e0_)
+            arg = mp.fmul(arg, e0)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
             S_[i, j] = entry
@@ -24,15 +24,15 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
                 arg3 = mp.fadd(entry3, mpf(T))  # T+j-i
                 arg4 = mp.fadd(entry4, mpf(2 * T))  # 2T-j-i
                 arg4 = mp.fsub(arg4, mpf(2))  # 2T-j-i-2
-                entry2 = mp.fsub(arg2, alpha_)  # T+i-j-a
-                entry3 = mp.fsub(arg3, alpha_)  # T+j-i-a
-                entry4 = mp.fsub(arg4, alpha_)  # 2T-j-i-2-a
+                entry2 = mp.fsub(arg2, alpha)  # T+i-j-a
+                entry3 = mp.fsub(arg3, alpha)  # T+j-i-a
+                entry4 = mp.fsub(arg4, alpha)  # 2T-j-i-2-a
                 arg2 = mp.fneg(arg2)
                 arg3 = mp.fneg(arg3)
                 arg4 = mp.fneg(arg4)
-                arg2 = mp.fmul(arg2, e0_)
-                arg3 = mp.fmul(arg3, e0_)
-                arg4 = mp.fmul(arg4, e0_)
+                arg2 = mp.fmul(arg2, e0)
+                arg3 = mp.fmul(arg3, e0)
+                arg4 = mp.fmul(arg4, e0)
                 arg2 = mp.exp(arg2)
                 arg3 = mp.exp(arg3)
                 arg4 = mp.exp(arg4)
@@ -41,19 +41,6 @@ def Smatrix_mp(tmax_: int, alpha_, e0_=mpf(0), type="EXP", T=0):
                 entry4 = mp.fdiv(arg4, entry4)
                 S_[i, j] += entry2 + entry3 + entry4
     return S_
-
-
-def Zfact_mp_deprecated(estar_, sigma_):  # this can go to hell
-    fact_ = mp.sqrt(2)
-    res_ = mp.fdiv(estar_, fact_)
-    res_ = mp.fdiv(res_, sigma_)  #   e/(sqrt2 sigma)
-    res_ = mp.erf(res_)  #   erf [e/(sqrt2 sigma)]
-    res_ = mp.fadd(res_, 1)  #   1 + erf [e/(sqrt2 sigma)]
-    res_ = mp.fmul(res_, sigma_)  #   sigma (1 + erf [e/(sqrt2 sigma)])
-    fact_ = mp.fdiv(mp.pi, 2)
-    fact_ = mp.sqrt(fact_)  # sqrt(pi/2)
-    res_ = mp.fmul(res_, fact_)  # sqrt(pi/2) sigma (1 + erf [e/(sqrt2 sigma)])
-    return res_
 
 
 def generalised_ft(t, alpha, sigma, e, e0):
@@ -139,51 +126,54 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
     return res
 
 
-def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
+def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
+    """
+    Functional A[g=0], for a given energy.
+    """
     if ker_type == "FULLNORMGAUSS":
-        aux = mp.fmul(sigma_, sigma_)  # start by the argument of erf
+        aux = mp.fmul(sigma, sigma)  # start by the argument of erf
         aux = mp.fdiv(aux, mpf(2))  # s^2 / 2
         aux = mp.fmul(aux, alpha)  # a s^2 / 2
-        aux = mp.fadd(e_, aux)  # omega + a s^2 / 2
+        aux = mp.fadd(e, aux)  # omega + a s^2 / 2
         aux = mp.fsub(aux, e0)  # omega - E0 + a s^2 / 2
-        res = mp.fdiv(aux, sigma_)  # omega - E0 + a s^2 / 2sigma
+        res = mp.fdiv(aux, sigma)  # omega - E0 + a s^2 / 2sigma
         res = mp.erf(res)  #   Erf
         res = mp.fadd(1, res)  # 1+erf, the numerator
         aux_ = mp.sqrt(mp.pi)
         res = mp.fdiv(res, aux_)  # 1+erf / sqrt{pi}
-        res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
+        res = mp.fdiv(res, sigma)  # 1+erf / (sqrt{pi} s)
         res = mp.fdiv(res, 4)  # 1+erf / (4 sqrt{pi} s)
         # exp term due to alpha
         if alpha != 0:
-            aux = mp.fmul(alpha, e_)  # alpha*e
-            aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+            aux = mp.fmul(alpha, e)  # alpha*e
+            aux2 = mp.fmul(alpha, sigma)  # alpha*sigma
             aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
             aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
             aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alphaomega
             aux = mp.exp(aux)
             res = mp.fmul(res, aux)
     elif ker_type == "HALFNORMGAUSS":
-        aux = mp.fmul(sigma_, sigma_)
+        aux = mp.fmul(sigma, sigma)
         aux = mp.fdiv(aux, mpf(2))
         aux = mp.fmul(aux, alpha)
-        aux = mp.fadd(e_, aux)
+        aux = mp.fadd(e, aux)
         aux = mp.fsub(aux, e0)
-        res = mp.fdiv(aux, sigma_)
+        res = mp.fdiv(aux, sigma)
         res = mp.erf(res)  #   Erf
         res = mp.fadd(1, res)  # 1+erf, the numerator
         aux_ = mp.sqrt(mp.pi)
         res = mp.fdiv(res, aux_)  # 1+erf /pi
-        res = mp.fdiv(res, sigma_)  # 1+erf / (sqrt{pi} s)
+        res = mp.fdiv(res, sigma)  # 1+erf / (sqrt{pi} s)
         aux_ = mp.sqrt(2)
-        aux_ = mp.fdiv(e_, aux_)
-        aux_ = mp.fdiv(aux_, sigma_)
+        aux_ = mp.fdiv(e, aux_)
+        aux_ = mp.fdiv(aux_, sigma)
         aux_ = mp.erf(aux_)
         aux_ = mp.fadd(aux_, 1)
         aux_ = mp.fmul(aux_, aux_)
         res = mp.fdiv(res, aux_)
         # alpha implementation
-        aux = mp.fmul(alpha, e_)  # alpha*e
-        aux2 = mp.fmul(alpha, sigma_)  # alpha*sigma
+        aux = mp.fmul(alpha, e)  # alpha*e
+        aux2 = mp.fmul(alpha, sigma)  # alpha*sigma
         aux2 = mp.fmul(aux2, aux2)  # (alpha*sigma)^2
         aux2 = mp.fdiv(aux2, mpf(4))  # (alpha*sigma)^2 / 4
         aux = mp.fadd(aux, aux2)  # (alpha*sigma)^2 / 4 + alpha*e
@@ -194,7 +184,7 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
         def integrand2(k):
             aux = alpha * k
             aux = mp.exp(aux)
-            aux2 = cauchy(k, sigma_, e_) ** 2
+            aux2 = cauchy(k, sigma, e) ** 2
             aux = aux * aux2
             return aux
     else:
@@ -204,15 +194,17 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
     return res
 
 
-def A0E_mp(espacemp_, par, alpha_, e0_=0):  #   vector of A0s for each energy
-    if e0_ == 0:  # this is so bad
-        e0_ = par.e0
+def a0_array(espace_mp, par, alpha):
+    """
+    Functional A[g=0], as an array of dimension len(espace_mp).
+    """
+    e0_ = par.e0
     a0_e = mp.matrix(par.Ne, 1)
     for ei in range(par.Ne):
-        a0_e[ei] = A0_mp(
-            e_=espacemp_[ei],
-            sigma_=par.mpsigma,
-            alpha=mpf(alpha_),
+        a0_e[ei] = a0_scalar(
+            e=espace_mp[ei],
+            sigma=par.mpsigma,
+            alpha=mpf(alpha),
             e0=e0_,
             ker_type=par.kerneltype,
         )
@@ -252,6 +244,9 @@ def SigmaMat(alpha, s, e0, par):
 
 
 def gte(T, t, e, periodicity):
+    """
+    Laplace kernel exp(-t E) and its periodic generalisation.
+    """
     if periodicity == "COSH":
         return mp.fadd(mp.exp((-T + t) * e), mp.exp(-t * e))
     if periodicity == "EXP":

@@ -1,5 +1,5 @@
 from lsdensities.utils.rhoMath import norm2_mp
-from lsdensities.core import Smatrix_mp
+from lsdensities.core import hlt_matrix
 from lsdensities.utils.rhoUtils import LogMessage
 from mpmath import mp
 
@@ -11,7 +11,7 @@ def test_mp_invert():
     print(LogMessage(), " Approximate decimal precision: ", mp.dps)
     tmax = 15
 
-    S = Smatrix_mp(tmax, alpha_=0)
+    S = hlt_matrix(tmax, alpha=0)
 
     invS = S ** (-1)
 
