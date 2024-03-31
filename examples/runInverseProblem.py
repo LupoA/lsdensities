@@ -17,37 +17,12 @@ from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProble
 from lsdensities.utils.rhoUtils import MatrixBundle
 import random
 
-
-def init_variables(args_):
-    in_ = Inputs()
-    in_.tmax = args_.tmax
-    in_.periodicity = args_.periodicity
-    in_.kerneltype = args_.kerneltype
-    in_.prec = args_.prec
-    in_.datapath = args_.datapath
-    in_.outdir = args_.outdir
-    in_.massNorm = args_.mpi
-    in_.num_boot = args_.nboot
-    in_.sigma = args_.sigma
-    in_.emax = (
-        args_.emax * args_.mpi
-    )  #   we pass it in unit of Mpi, here to turn it into lattice (working) units
-    if args_.emin == 0:
-        in_.emin = (args_.mpi / 20) * args_.mpi
-    else:
-        in_.emin = args_.emin * args_.mpi
-    in_.e0 = args_.e0
-    in_.Ne = args_.ne
-    in_.Na = args_.Na
-    in_.A0cut = args_.A0cut
-    return in_
-
-
 def main():
     print(LogMessage(), "Initialising")
-    args = parseArgumentRhoFromData()
-    init_precision(args.prec)
-    par = init_variables(args)
+    par = parse_inputs()
+    par.init()
+    init_precision(par.prec)
+    par.report()
 
     seed = generate_seed(par)
     random.seed(seed)

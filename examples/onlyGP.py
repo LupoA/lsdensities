@@ -40,6 +40,8 @@ def init_variables(args_):
 
 
 def main():
+    print("Under construction.")
+    exit()
     print(LogMessage(), "Initialising")
     args = parseArgumentRhoFromData()
     init_precision(args.prec)

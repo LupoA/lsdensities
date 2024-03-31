@@ -14,7 +14,7 @@ from .utils.rhoUtils import (
     tnr,
 )
 from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
-from .core import A0E_mp, integrandSigmaMat
+from .core import A0E_mp, integrandSigmaMatv
 from .transform import (
     h_Et_mp_Eslice,
     combine_fMf_Eslice,
@@ -248,59 +248,6 @@ class GaussianProcessWrapper:
                 self.SigmaMatC.evaluate()
             if self.read_SIGMA is True:
                 self.SigmaMatC.read()
-
-    def report(self):
-        print(LogMessage(), "Inverse problem ::: Time extent:", self.par.time_extent)
-        print(LogMessage(), "Inverse problem ::: tmax:", self.par.tmax)
-        print(LogMessage(), "Inverse problem ::: Mpi:", self.par.massNorm)
-        print(
-            LogMessage(),
-            "Inverse problem ::: sigma (mp):",
-            self.par.sigma,
-            "(",
-            self.sigmaMP,
-            ")",
-        )
-        print(LogMessage(), "Inverse problem ::: Bootstrap samples:", self.par.num_boot)
-        print(LogMessage(), "Inverse problem ::: Number of energies:", self.par.Ne)
-        print(
-            LogMessage(),
-            "Inverse problem ::: Emax (mp) [lattice unit]:",
-            self.par.emax,
-            self.emaxMP,
-        )
-        print(
-            LogMessage(),
-            "Inverse problem ::: Emax [mass units]:",
-            self.par.emax / self.par.massNorm,
-        )
-        print(
-            LogMessage(),
-            "Inverse problem ::: Emin (mp) [lattice unit]:",
-            self.par.emin,
-            self.eminMP,
-        )
-        print(
-            LogMessage(),
-            "Inverse problem ::: Emin [mass units]:",
-            self.par.emin / self.par.massNorm,
-        )
-        print(
-            LogMessage(),
-            "Inverse problem ::: alpha (mp):",
-            self.par.alpha,
-            "(",
-            self.alphaMP,
-            ")",
-        )
-        print(
-            LogMessage(),
-            "Inverse problem ::: E0 (mp):",
-            self.par.e0,
-            "(",
-            self.e0MP,
-            ")",
-        )
 
     def lambdaToRho(self, lambda_, estar_, alpha_):
         import time
@@ -991,7 +938,7 @@ class GaussianProcessWrapper:
         )
 
     def _plotKernel(self, gt_, omega, alpha_, ne_=40, plot_gaussian=False):
-        energies = np.linspace(self.par.massNorm * 0.05, self.par.massNorm * 8, ne_)
+        energies = np.linspace(1e-2, self.par.massNorm * 8, ne_)
         kernel = np.zeros(ne_)
         _file = (
             "SmearingKernelSigma{:2.2e}".format(self.par.sigma)
@@ -1050,6 +997,8 @@ class GaussianProcessWrapper:
         return
 
     def run(self, how_many_alphas=1, saveplots=True, plot_live=False):
+        print("Not Implemented")
+        exit()
         with open(os.path.join(self.par.logpath, "Result.txt"), "w") as output:
             print(
                 "# Energy \t Lambda \t Rho \t Stat \t Sys \t Quadrature ", file=output

@@ -19,22 +19,30 @@ from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle, Obs, bcolors
 from .utils.rhoMath import invert_matrix_ge
 import os
 
-_big = 100
-
 
 class AlgorithmParameters:
+    '''
+    lambdaMax : Starting value for the scan over lambda.
+    lambdaMin : Ending value, unless stopping condition is met.
+    lambdaStep : Step in lambda.
+    lambdaScanCap : Search for the plateau stops after lambdaScanCap subsequent compatible measurements.
+    kfactor : Systematics on value at lambda(reference) are estimated by repeating the calculation at lambda = kfactor lambda(reference).
+    resize : if lambda hits zero before hitting lambdaMin, the step is resized. Allows sampling values of lambda at different scales.
+    comparisonRatio : Measurements at different lambda are considered compatible if they agree within comparisonRatio * uncertainty (1sigma if comparisonRatio = 1).
+    '''
     def __init__(
         self,
         alphaA=0,
         alphaB=1 / 2,
         alphaC=1.99,
-        lambdaMax=50,  #   Starting lambda
-        lambdaStep=0.5,  #   Step in lambda for the scan
-        lambdaScanCap=6,  #   Search for plateau in lambda stops after lambdaScanCap subsequent compatible measurements. Affected by comparisonRatio.
-        kfactor=0.1,  #   Systematic error estimated comparing result at lambda with result at kfactor*lambda
-        lambdaMin=1e-6,  #   Stop scan at lambdaMin
-        comparisonRatio=1,  #   Measurements at different lambdas will be considered compatible within comparisonRatio*sigma
-        resize=4,  #   When lambda <=0 but lambda> lambdaMin: lambdaStep = lambdaStep /= resize and lambda += lambdaStep * (resize - 1 / resize). Allows probing lambda over different scales.
+        lambdaMax=50,
+        lambdaStep=0.5,
+        lambdaScanCap=6,
+        plateau_id = 1,
+        kfactor=0.1,
+        lambdaMin=1e-6,
+        comparisonRatio=1,
+        resize=4,
     ):
         assert alphaA != alphaB
         assert alphaA != alphaC
@@ -44,6 +52,7 @@ class AlgorithmParameters:
         self.lambdaMax = lambdaMax
         self.lambdaStep = lambdaStep
         self.lambdaScanCap = lambdaScanCap
+        self.plateau_id = plateau_id
         self.kfactor = kfactor
         # Round trip via a string to avoid introducing spurious precision
         # per recommendations at https://mpmath.org/doc/current/basics.html
@@ -56,13 +65,13 @@ class AlgorithmParameters:
 
 
 class A0_t:
-    def __init__(self, par_: Inputs, alphaMP_=0, eminMP_=0):
-        self.valute_at_E = mp.matrix(par_.Ne, 1)
+    def __init__(self, par: Inputs, alpha=0, emin=0):
+        self.valute_at_E = mp.matrix(par.Ne, 1)
         self.valute_at_E_dictionary = {}  # Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
         self.is_filled = False
-        self.alphaMP = alphaMP_
-        self.eminMP = eminMP_
-        self.par = par_
+        self.alphaMP = alpha
+        self.eminMP = emin
+        self.par = par
 
     def evaluate(self, espaceMP_):
         print(
@@ -110,7 +119,6 @@ class InverseProblemWrapper:
         self.correlator = correlator
         self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
-        print(LogMessage(), "InverseProblemWrapper ::: Reading input energies")
         par.Ne = len(energies)
         self.espace = energies
         # Round trip via a string to avoid introducing spurious precision
@@ -125,19 +133,19 @@ class InverseProblemWrapper:
         #   Containers for the factor A0
         self.selectA0 = {}
         self.A0_A = A0_t(
-            alphaMP_=self.algorithmPar.alphaAmp, eminMP_=self.eminMP, par_=self.par
+            alpha=self.algorithmPar.alphaAmp, emin=self.eminMP, par=self.par
         )
         self.selectA0[algorithmPar.alphaA] = self.A0_A
         if self.par.Na > 1:
             self.A0_B = A0_t(
-                alphaMP_=self.algorithmPar.alphaBmp, eminMP_=self.eminMP, par_=self.par
+                alpha=self.algorithmPar.alphaBmp, emin=self.eminMP, par=self.par
             )
             self.selectA0[algorithmPar.alphaB] = self.A0_B
             if self.par.Na > 2:
                 self.A0_C = A0_t(
-                    alphaMP_=self.algorithmPar.alphaCmp,
-                    eminMP_=self.eminMP,
-                    par_=self.par,
+                    alpha=self.algorithmPar.alphaCmp,
+                    emin=self.eminMP,
+                    par=self.par,
                 )
                 self.selectA0[algorithmPar.alphaC] = self.A0_C
         self.lambda_list = [[] for _ in range(self.par.Ne)]
@@ -204,16 +212,25 @@ class InverseProblemWrapper:
         # - - - - - - - - - - - - - - - End of INIT - - - - - - - - - - - - - - - #
 
     def fillEspaceMP(self):
-        print(LogMessage(), "Chosen energies: ", self.espace)
+        '''
+        Fill array of energies : array[int] = energy
+        and provides a dictionary such that dictionary[array[int]] = int
+        '''
         for e_id in range(self.par.Ne):
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
             self.espace_dictionary[
                 self.espace[e_id]
-            ] = e_id  #   pass the FLOAT, get the INTEGER
+            ] = e_id
         self.espace_is_filled = True
         return
 
     def prepareHLT(self):
+        '''
+        Creates directory for output
+        Fills array of energies and corresponding dictionary
+        Evaluates A0 at each energy
+        Evaluates the matrix Sigma
+        '''
         self.fillEspaceMP()
         self.A0_A.evaluate(self.espaceMP)
         self.SigmaMatA.evaluate()
@@ -265,7 +282,6 @@ class InverseProblemWrapper:
         self.A0_is_filled = True
         return
 
-    # TODO: do we also want to print gt?
     def _store(
         self,
         estar,
@@ -274,10 +290,13 @@ class InverseProblemWrapper:
         errBoot,
         likelihood,
         gag,
-        gt,
         lambda_,
         whichAlpha="A",
     ):
+        '''
+        Each call appends a line to a file named InverseProblemLog_{alpha} containing
+        estar, rho, errBayes, errBoot, likelihood, g(A/A0)g, lambda
+        '''
         if whichAlpha == "A":
             self.rho_list[self.espace_dictionary[estar]].append(rho)
             self.errBayes_list[self.espace_dictionary[estar]].append(errBayes)
@@ -351,6 +370,9 @@ class InverseProblemWrapper:
         return
 
     def _areRangesCompatible(self, x, deltax, y, deltay):
+        '''
+        Checks whether ranges are compatible.
+        '''
         x2 = x + deltax
         x1 = x - deltax
         y1 = y - deltay
@@ -363,6 +385,21 @@ class InverseProblemWrapper:
         # - - - - - - - - - - - - - - - Main function: given lambda computes rho_s - - - - - - - - - - - - - - - #
 
     def lambdaToRho(self, lambda_, estar_, alpha_):
+        '''
+        For a given lambda, at each energy and value of alpha
+        computes and returns the following
+            rho_estar : the result for the smeared spectral density
+            drho_estar_Bayes : Bayesian error
+            drho_estar_Bootstrap : frequentist error
+            likelihood_estar : likelihood of the result
+            gAg_estar : the scalar product gAg
+            _g_t_estar : the vector of coefficients giving the result
+
+        The coefficients are obtained by inverting the matrix
+        S + factor B
+        where factor = lambda A0 / Bnorm.
+        Bnorm makes B dimensionless.
+        '''
         import time
 
         _Bnorm = self.matrix_bundle.bnorm / (estar_ * estar_)
@@ -371,8 +408,8 @@ class InverseProblemWrapper:
         ) / _Bnorm
         print(LogMessage(), "Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
 
-        S_ = self.selectSigmaMat[float(alpha_)].matrix
-        _Matrix = S_ + (_factor * self.matrix_bundle.B)
+        S = self.selectSigmaMat[float(alpha_)].matrix
+        _Matrix = S + (_factor * self.matrix_bundle.B)
         start_time = time.time()
         _MatrixInv = invert_matrix_ge(_Matrix)
         end_time = time.time()
@@ -398,7 +435,7 @@ class InverseProblemWrapper:
             "Time ::: Bootstrapped result in {:4.4f}".format(start_time - end_time),
             "s",
         )
-        gAg_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
+        gAg_estar = gAg(S, _g_t_estar, estar_, alpha_, self.par)
 
         varianceRho = combine_fMf_Eslice(
             ht_sliced=_g_t_estar, params=self.par, estar_=estar_, alpha_=alpha_
@@ -464,12 +501,31 @@ class InverseProblemWrapper:
     # - - - - - - - - - - - - - - - Scan over parameters: Lambda, Alpha (optional) - - - - - - - - - - - - - - - #
 
     def scanParameters(self, estar_):
+        '''
+        This function will scan over lambda and, if specified, alpha, until conditions are met
+        The stopping conditions are one of the following:
+            - compatibility is achieved for a subsequent number of values of lambda specified by self.algorithmPar.lambdaScanCap : this is the intended way.
+            OR
+            - Reaching self.algorithmPar.lambdaMin : if compatibility conditions were never met. Raises a Warning.
+        The compatibility between results at different lambda (or alpha) is achieved when the following conditions are simultaneously met:
+            - A/A0 < self.par.A0cut
+            AND
+            - rho(lambda) = rho(lambda') within N sigma, where N is given by self.par.comparisonRatio.
+              Setting comparisonRatio=1 means results are considered compatible when their errorbands overlap.
+              Using values smaller than 1 can be useful since rho at different values of lambda can be very correlated. The default value
+              is 0.3 which has been set empirically.
+            AND
+            - rho(lambda , alpha) = rho(lambda, alpha') = rho(lambda, alpha'') within 1 sigma, if more values of alpha are used.
+        The scan is done between lambdaMax and lambdaMin. The initial step is very large, but it is resized whenever lambda becomes negative
+        to allow a fast but meaningful scan than a fixed step could achieve. 
+        '''
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
         _cap = self.algorithmPar.lambdaScanCap
         _resize = self.algorithmPar.resize
         _countPositiveResult = 0
         _compRatio = self.algorithmPar.comparisonRatio
+        _plateau_id = self.algorithmPar.plateau_id
 
         print(LogMessage(), " --- ")
         print(LogMessage(), "At Energy {:2.2e}".format(estar_))
@@ -498,7 +554,6 @@ class InverseProblemWrapper:
             _errBoot,
             _likelihood,
             _gAg,
-            _gt,
             lambda_,
             whichAlpha="A",
         )
@@ -513,7 +568,6 @@ class InverseProblemWrapper:
                 _errBootB,
                 _likelihoodB,
                 _gAgB,
-                _gtB,
                 lambda_,
                 whichAlpha="B",
             )
@@ -533,17 +587,16 @@ class InverseProblemWrapper:
                     _errBootC,
                     _likelihoodC,
                     _gAgC,
-                    _gtC,
                     lambda_,
                     whichAlpha="C",
                 )
 
-        #   Flag these until better results
-        _minNLL, _lambdaStarBayes, _rhoBayes, _drhoBayes, _gtBAYES = self._flagResult(
+        #   Flag these until better results (Bayesian)
+        minNLL, lambdaStarBayes, rhoBayes, drhoBayes, gtBAYES = self._flagResult(
             _likelihood, lambda_, _rho, _errBayes, _gt
         )
 
-        #   Loops over values of lambda
+        #   #   #   #   #   #   #   #   Loops over values of lambda #   #   #   #   #   #   #   #
         lambda_ -= lambda_step
         while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
             #   -   -   -   -   -   -
@@ -559,9 +612,10 @@ class InverseProblemWrapper:
             )
             self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
 
-            #   Flag these until better results
+            #   Flag these until better results (HLT). Inside the loop contrary to the Bayesian equivalent
+            #   because _countPositiveResult can be set to zero inside the loop
             if _countPositiveResult == 0:
-                _lambdaStarHLT, _rhoHLT, _drhoHLT, _gtHLT, gag_flag = self._flagResult(
+                lambdaStarHLT, rhoHLT, drhoHLT, gtHLT, gag_flag = self._flagResult(
                     lambda_, _rho, _errBoot, _gt, _gAg
                 )
             #   -   -   -   -   -   -
@@ -586,7 +640,6 @@ class InverseProblemWrapper:
                 _errBootUpdated,
                 _likelihoodUpdated,
                 _gAgUpdated,
-                _gtUpdated,
                 lambda_,
                 whichAlpha="A",
             )
@@ -611,7 +664,6 @@ class InverseProblemWrapper:
                     _errBootUpdatedB,
                     _likelihoodUpdatedB,
                     _gAgUpdatedB,
-                    _gtUpdatedB,
                     lambda_,
                     whichAlpha="B",
                 )
@@ -639,7 +691,6 @@ class InverseProblemWrapper:
                         _errBootUpdatedC,
                         _likelihoodUpdatedC,
                         _gAgUpdatedC,
-                        _gtUpdatedC,
                         lambda_,
                         whichAlpha="C",
                     )
@@ -651,13 +702,17 @@ class InverseProblemWrapper:
                 _rhoUpdated, _compRatio * _errBootUpdated, _rho, _compRatio * _errBoot
             )  # comparison with previous lambda
 
-            if _likelihoodUpdated < _minNLL:  # NLL
+            flagLambda_Overlap = self._areRangesCompatible(
+                _rhoUpdated, _compRatio * _errBootUpdated, rhoHLT, _compRatio * drhoHLT
+            )   # comparison with flagged lambda
+
+            if _likelihoodUpdated < minNLL:  # NLL, if less than before; flag the results
                 (
-                    _minNLL,
-                    _lambdaStarBayes,
-                    _rhoBayes,
-                    _drhoBayes,
-                    _gtBAYES,
+                    minNLL,
+                    lambdaStarBayes,
+                    rhoBayes,
+                    drhoBayes,
+                    gtBAYES,
                 ) = self._flagResult(
                     _likelihoodUpdated,
                     lambda_,
@@ -681,11 +736,19 @@ class InverseProblemWrapper:
                     LogMessage(),
                     "\t Result at this Lambda does not overlap with previous: REJECTING result",
                 )
+                _skip = True
+            if flagLambda_Overlap is False:
+                print(
+                    LogMessage(),
+                    "\t Result at this Lambda does not overlap with flagged: REJECTING result",
+                )
+                _skip = True
+            #   Checks A/A0 is acceptable
             if (
                 _gAgUpdated
                 / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
                 > self.par.A0cut
-            ):
+            ):  
                 print(
                     LogMessage(),
                     "\t A/A0 is too large: rejecting result  (",
@@ -698,26 +761,19 @@ class InverseProblemWrapper:
                     ")",
                 )
                 _skip = True
-            if (
-                (newLambda_Overlap is True)
-                and (
-                    _gAgUpdated
-                    / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[
-                        estar_
-                    ]
-                    < self.par.A0cut
-                )
-                and (_skip is False)
-            ):
-                #   Flag the first compatible result
+                
+            #   Having analysed all possible stopping conditions, proceed
+            
+            if _skip is False:
+                #   Flag the first compatible result, because it is the one with the smaller error
                 if (
-                    _countPositiveResult == 1
+                    _countPositiveResult == self.algorithmPar.plateau_id
                 ):  #   At future alphas we compare with rho_s at _countPositiveResult = 1. This can be changed.
                     (
-                        _lambdaStarHLT,
-                        _rhoHLT,
-                        _drhoHLT,
-                        _gtHLT,
+                        lambdaStarHLT,
+                        rhoHLT,
+                        drhoHLT,
+                        gtHLT,
                         gag_flag,
                     ) = self._flagResult(
                         lambda_, _rho, _errBoot, _gtUpdated, _gAgUpdated
@@ -737,6 +793,7 @@ class InverseProblemWrapper:
             _rho = _rhoUpdated
             _errBoot = _errBootUpdated
             lambda_ -= lambda_step
+            #   Resize lambda_step
             if lambda_ <= 0:
                 lambda_step /= _resize
                 lambda_ += lambda_step * (_resize - 1 / _resize)
@@ -762,28 +819,28 @@ class InverseProblemWrapper:
             )
 
         #   hlt
-        self.lambdaResultHLT[self.espace_dictionary[estar_]] = _lambdaStarHLT
-        self.rhoResultHLT[self.espace_dictionary[estar_]] = _rhoHLT
-        self.drho_result[self.espace_dictionary[estar_]] = _drhoHLT
-        self.gt_HLT[self.espace_dictionary[estar_]] = _gtHLT
+        self.lambdaResultHLT[self.espace_dictionary[estar_]] = lambdaStarHLT
+        self.rhoResultHLT[self.espace_dictionary[estar_]] = rhoHLT
+        self.drho_result[self.espace_dictionary[estar_]] = drhoHLT
+        self.gt_HLT[self.espace_dictionary[estar_]] = gtHLT
         self.aa0[self.espace_dictionary[estar_]] = gag_flag
         #   bayesian
-        self.minNLL[self.espace_dictionary[estar_]] = _minNLL
-        self.lambdaResultBayes[self.espace_dictionary[estar_]] = _lambdaStarBayes
-        self.rhoResultBayes[self.espace_dictionary[estar_]] = _rhoBayes
-        self.drho_bayes[self.espace_dictionary[estar_]] = _drhoBayes
-        self.gt_Bayes[self.espace_dictionary[estar_]] = _gtBAYES
+        self.minNLL[self.espace_dictionary[estar_]] = minNLL
+        self.lambdaResultBayes[self.espace_dictionary[estar_]] = lambdaStarBayes
+        self.rhoResultBayes[self.espace_dictionary[estar_]] = rhoBayes
+        self.drho_bayes[self.espace_dictionary[estar_]] = drhoBayes
+        self.gt_Bayes[self.espace_dictionary[estar_]] = gtBAYES
 
         return (
-            _lambdaStarHLT,
-            _rhoHLT,
-            _drhoHLT,
-            _minNLL,
-            _lambdaStarBayes,
-            _rhoBayes,
-            _drhoBayes,
-            _gtHLT,
-            _gtBAYES,
+            lambdaStarHLT,
+            rhoHLT,
+            drhoHLT,
+            minNLL,
+            lambdaStarBayes,
+            rhoBayes,
+            drhoBayes,
+            gtHLT,
+            gtBAYES,
             gag_flag,
         )
 
@@ -814,7 +871,6 @@ class InverseProblemWrapper:
 
         return self.rho_sys_err_HLT[e_i], self.rho_sys_err_Bayes[e_i]
 
-    # TODO: find a good place for printing g_t
     def run(self, savePlots=True, livePlots=False):
         with open(os.path.join(self.par.logpath, "ResultHLT.txt"), "w") as output:
             print(
@@ -828,19 +884,8 @@ class InverseProblemWrapper:
             )
 
         for e_i in range(self.par.Ne):
-            (
-                lambdaHLT,
-                rhoHLT,
-                errHLT,
-                minNLL,
-                lambdaBayes,
-                rhoBayes,
-                errBayes,
-                gtHLT,
-                gtBayes,
-                gaa0g,
-            ) = self.scanParameters(self.espace[e_i])
-            _ = self.estimate_sys_error(e_i)
+            self.scanParameters(self.espace[e_i])
+            self.estimate_sys_error(e_i)
             with open(os.path.join(self.par.logpath, "ResultHLT.txt"), "a") as output:
                 print(
                     self.espace[e_i],

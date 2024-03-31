@@ -85,7 +85,7 @@ def end():
 def generate_seed(par):
     # Concatenate the input parameters into a string
     input_string = (
-        f"{par.massNorm}{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
+        f"{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
     )
 
     # Encode the string to bytes
@@ -147,7 +147,6 @@ class Obs:
             self.err = self.sigma
 
     def evaluate_covmatrix(self, plot=False):
-        assert self.is_resampled
         sample_matrix = np.array(self.sample).T
         self.cov = np.cov(sample_matrix, bias=False)
         if plot:
@@ -203,9 +202,10 @@ class Obs:
             elinewidth=1,
             ls="",
             label=label,
-            color="#377eb8",
+            color="b",
         )
-        plt.legend(prop={"size": 12, "family": "Helvetica"})
+        if label is not None:
+            plt.legend()
         if show is True:
             plt.show()
 
@@ -280,7 +280,6 @@ class Inputs:
         self.Na = 1
         self.emin = 0
         self.e0 = 0
-        self.massNorm = 1.0
         self.periodicity = "EXP"
         self.A0cut = 0
         # self.l = -1
@@ -290,7 +289,6 @@ class Inputs:
         self.mpemin = mpf("0")
         self.mpe0 = mpf("0")
         self.mplambda = mpf("0")
-        self.mpMpi = mpf("0")
         self.directoryName = "."
         self.kerneltype = "FULLNORMGAUSS"
 
@@ -314,7 +312,6 @@ class Inputs:
         self.mpemax = mpf(str(self.emax))
         self.mpemin = mpf(str(self.emin))
         self.mpe0 = mpf(str(self.e0))
-        self.mpMpi = mpf(str(self.massNorm))
         self.directoryName = (
             "tmax"
             + str(self.tmax)
@@ -324,8 +321,6 @@ class Inputs:
             + str(self.Ne)
             + "nboot"
             + str(self.num_boot)
-            + "mNorm"
-            + str(self.massNorm)
             + "prec"
             + str(self.prec)
             + "Na"
@@ -333,6 +328,11 @@ class Inputs:
             + "KerType"
             + str(self.kerneltype)
         )
+
+    def init(self):
+        self.assign_values()
+        init_precision(self.prec)
+        self.plotpath, self.logpath = create_out_paths(self)
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
@@ -342,7 +342,6 @@ class Inputs:
         print(LogMessage(), "Init ::: ", "Periodicity:", self.periodicity)
         print(LogMessage(), "Init ::: ", "Time extent:", self.time_extent)
         print(LogMessage(), "Init ::: ", "Smearing Kernel", self.kerneltype)
-        print(LogMessage(), "Init ::: ", "Mpi:", self.massNorm)
         print(LogMessage(), "Init ::: ", "tmax:", self.tmax)
         print(
             LogMessage(), "Init ::: ", "sigma (mp):", self.sigma, "(", self.mpsigma, ")"
@@ -353,21 +352,19 @@ class Inputs:
         print(
             LogMessage(),
             "Init ::: ",
-            "Emax (mp) [lattice unit]",
+            "Emax (mp)",
             self.emax,
             self.mpemax,
         )
-        print(LogMessage(), "Init ::: ", "Emax [mass units]", self.emax / self.massNorm)
         print(
             LogMessage(),
             "Init ::: ",
-            "Emin (mp) [lattice unit]",
+            "Emin (mp)",
             self.emin,
             "(",
             self.mpemin,
             ")",
         )
-        print(LogMessage(), "Init ::: ", "Emin [mass units]", self.emin / self.massNorm)
         print(LogMessage(), "Init ::: ", "Number of alphas", self.Na)
         print(LogMessage(), "Init ::: ", "Minimum value of A/A0 accepted ", self.A0cut)
         print(LogMessage(), "Init :::", "A integral from E0 = ", float(self.mpe0))

@@ -7,46 +7,19 @@ from lsdensities.utils.rhoUtils import (
     Inputs,
     create_out_paths,
     end,
-    generate_seed,
+    generate_seed
 )
-from lsdensities.utils.rhoParser import parseArgumentSynthData
+from lsdensities.utils.rhoParser import parse_synthetic_inputs
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
 from lsdensities.core import Smatrix_mp
 from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
 import random
 
-pion_mass = 0.140  # in Gev
+pion_mass = 0.140  # Gev
 a = 0.4  # in Gev ^-1 ( 1 fm = 5.068 GeV^-1 )
 a_fm = a / 5.068  # lattice spacing in fm
 aMpi = pion_mass * a  # pion mass in lattice units
 STATES = 666
-
-#   We only pass lattice units variables. GeV or mass scales are used in plots only
-
-
-def init_variables(args_):
-    in_ = Inputs()
-    in_.time_extent = args_.T
-    in_.num_samples = args_.nms
-    in_.tmax = args_.tmax
-    in_.periodicity = args_.periodicity
-    in_.prec = args_.prec
-    in_.outdir = args_.outdir
-    in_.kerneltype = args_.kerneltype
-    in_.massNorm = args_.mpi
-    in_.num_boot = args_.nboot
-    in_.sigma = args_.sigma
-    in_.emax = args_.emax
-    if args_.emin == 0:
-        in_.emin = (args_.mpi / 20) * args_.mpi
-    else:
-        in_.emin = args_.emin
-    in_.e0 = args_.e0
-    in_.Ne = args_.ne
-    in_.Na = args_.Na
-    in_.A0cut = args_.A0cut
-    return in_
-
 
 def kernel_correlator(E, t, T, par):
     if par.periodicity == "COSH":
@@ -56,10 +29,17 @@ def kernel_correlator(E, t, T, par):
 
 
 def generate(par, espace):
+    '''
+    generates a correlator of dimension [1/a] with n=STATES states
+    '''
     peaks_location = np.random.uniform(
-        np.random.uniform(0.5 * aMpi, 2 * aMpi), (2.1 * par.emax) * aMpi, STATES
-    )  #   generates STATES numbers between a random value in (0.25*aMpi, 3*aMpi) and 1.5*emax*aMpi
+        np.random.uniform(2*pion_mass, 3 * pion_mass), (3 * par.emax), STATES
+    )
+    first_peak = np.random.uniform(0.8 * pion_mass, 1.2 * pion_mass, 1)
+    peaks_location = np.concatenate([first_peak, peaks_location])
+    peaks_location *= a
     weights = np.random.uniform(0, 0.004, len(peaks_location))
+    weights /= a #  gives dimension
 
     exact_correlator = mp.matrix(par.tmax, 1)  #   Exact correlator
 
@@ -96,32 +76,17 @@ def generate(par, espace):
 
 def main():
     print(LogMessage(), "Initialising")
-    args = parseArgumentSynthData()
-    init_precision(args.prec)
-    par = init_variables(args)
-    par.massNorm = pion_mass
-    par.assign_values()
-    par.plotpath, par.logpath = create_out_paths(par)
+    par = parse_synthetic_inputs()
+    par.init()
     par.report()
-    print(par.emin * par.massNorm)
-    print(par.emax * par.massNorm)
     espace = np.linspace(
-        par.emin * par.massNorm, par.emax * par.massNorm, par.Ne
-    )  # TODO:   move this outside when you are done
+        par.emin, par.emax, par.Ne
+    )
 
-    print(LogMessage(), "Energies [lattice units] : ", espace)
-    print(LogMessage(), "Energies [Gev] : ", espace / a)
-    print(LogMessage(), "Energies [1/M_pi] : ", espace / par.massNorm)
-    print(LogMessage(), " Sigma [lattice units] : ", par.sigma)
-    print(LogMessage(), " Sigma [GeV] : ", par.sigma / a)
-    print(LogMessage(), " Sigma [1/M_pi] : ", par.sigma / par.massNorm)
-
-    #   Init done
+    print(LogMessage(), "Energies [Gev] : ", espace)
+    print(LogMessage(), " Sigma [GeV] : ", par.sigma)
 
     seed = generate_seed(par)
-
-    print(LogMessage(), " Random Seed : ", seed)
-
     random.seed(seed)
     np.random.seed(random.randint(0, 2 ** (32) - 1))
 
@@ -141,11 +106,9 @@ def main():
         print(LogMessage(), "Energy [a^-1]", espace[e_i])
         _g_t_estar = h_Et_mp_Eslice(Sinv, par, espace[e_i], alpha_=0)
         rhos[e_i] = y_combine_central_Eslice_mp(_g_t_estar, exact_correlator, par)
-        print("Exact Rho: ", rhoStrue[e_i])
-        print("Reconstructed Rho: ", rhos[e_i])
 
     plt.plot(
-        espace / a,
+        espace,
         np.array(rhoStrue, dtype=float),
         marker="o",
         markersize=3.5,
@@ -155,7 +118,7 @@ def main():
     )
 
     plt.plot(
-        espace / a,
+        espace,
         np.array(rhos, dtype=float),
         marker="o",
         markersize=3.5,
@@ -165,7 +128,7 @@ def main():
     )
     plt.xlabel("GeV")
     plt.title("# States : {:2d}".format(STATES))
-    plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+    plt.legend()
     plt.show()
     end()
 
