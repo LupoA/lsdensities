@@ -12,45 +12,7 @@ import logging
 
 target_result_precision = 1e-8
 
-
-class bcolors:
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-
-CB_color_cycle = [
-    "#377eb8",
-    "#ff7f00",
-    "#4daf4a",
-    "#f781bf",
-    "#a65628",
-    "#984ea3",
-    "#999999",
-    "#e41a1c",
-    "#dede00",
-]
-
-CB_colors = [
-    "#1f77b4",  # Dark Blue
-    "#ff7f0e",  # Orange
-    "#2ca02c",  # Light Green
-    "#d62728",  # Reddish Purple
-    "#9467bd",  # Light Blue
-    "#8c564b",  # Dark Yellow
-    "#e377c2",  # Cyan
-    "#7f7f7f",  # Olive Green
-]
-
-plot_markers = ["o", "s", "D", "v", "^", "p", "*", "h"]
-
-####### logger
+#   #   #   #   #   #  ----- logger -----   #   #   #   #   #   #
 
 logger = logging.getLogger("log")
 stream_handler = logging.StreamHandler()
@@ -90,10 +52,14 @@ def end():
     exit()
 
 
-#################
+#   #   #   #   #   #   #   #   #
 
 
 def generate_seed(par):
+    """
+    :param par: Input class instance
+    Generates seed from a hash of the inputs
+    """
     # Concatenate the input parameters into a string
     input_string = f"{par.emin}{par.emax}{par.Ne}{par.time_extent}{par.sigma}"
 
@@ -128,6 +94,26 @@ def ranvec(vec, dim, a, b):
 
 
 class Obs:
+    """
+    Class for an array of observables
+    T: lenght of the array.
+    tmax: highest element of the array that is used for analysis.
+    is_resampled: True if the samples are already an average (e.g. jackknife, bootstrap), False otherwise.
+
+    Attributes:
+    central: values of the array.
+    err: error on central.
+    sigma: std, which corresponds to err if is_resampled = True. When if_resampled = False, the
+           two are related by sqrt(measurements).
+    nms: number of measurements,
+    sample: an array of measurements (len = nms) for each array in the observable.
+    cov: covariance matrix
+    corrmat: correlation matrix
+    mpsample: sample, converted into mp variables, and of leght reduced from T to tmax
+    mpcov: cov from mpsample
+    mpcentral: central from mpsample
+    """
+
     def __init__(self, T: int, tmax: int, nms: int = 1, is_resampled=False):
         self.central = np.zeros(T)  # Central value of the sample
         self.err = np.zeros(T)  # Error on the central value
@@ -144,7 +130,10 @@ class Obs:
         self.mpcentral = mp.matrix(self.tmax, 1)
 
     def evaluate(self):
-        # Given the sample, it evaluates the average and error. Sample can be bootstrap
+        """
+        From sample, computes central and err and store them into
+        self.central, self.err
+        """
         for i in range(self.T):
             self.central[i], self.sigma[i] = (
                 np.average(self.sample[:, i]),
@@ -156,6 +145,9 @@ class Obs:
             self.err = self.sigma
 
     def evaluate_covmatrix(self, plot=False):
+        """
+        From sample, computes covariance matrix in self.cov
+        """
         sample_matrix = np.array(self.sample).T
         self.cov = np.cov(sample_matrix, bias=False)
         if plot:
@@ -165,6 +157,10 @@ class Obs:
         return self.cov
 
     def corrmat_from_covmat(self, plot=False):
+        """
+        Computes the correlation matrix from the covariance matrix
+        and saves it into self.corrmat
+        """
         for vi in range(self.T):
             for vj in range(self.T):
                 self.corrmat[vi][vj] = self.cov[vi][vj] / (
@@ -176,6 +172,10 @@ class Obs:
             plt.show()
 
     def fill_mp_sample(self):
+        """
+        This operation also includes the shifting of the correlator index
+        so that corr(0) is never used
+        """
         for n in range(self.nms):
             for i in range(self.tmax):  # tmax = T/2 if folded otherwise T-1
                 self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
@@ -198,7 +198,6 @@ class Obs:
                 self.mpcov[i, j] = mpf(str(self.cov[i][j]))
 
     def plot(self, show=True, logscale=True, label=None, yscale=1):
-        plt.tight_layout()
         plt.grid(alpha=0.1)
         if logscale is True:
             plt.yscale("log")
@@ -213,6 +212,7 @@ class Obs:
             label=label,
             color="b",
         )
+        plt.tight_layout()
         if label is not None:
             plt.legend()
         if show is True:
@@ -229,8 +229,9 @@ def print_hlt_format(mtobs, T, nms, filename, directory):
 
 
 def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
-    #   The input file has a header with time_extent and number of measurements.
-    #   then data config by config. Example:
+    """
+    The input file has a header with time_extent and number of measurements.
+    then data config by config. Example:
     #   32  100
     #   0   corr[0]
     #   1   corr[1]
@@ -238,10 +239,8 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     #   31  corr[31]
     #   0   corr[0]
     #   ... so on
-
-    #   cin = os.path.join(directory_, filename_)
+    """
     with open(datapath_, "r") as file:
-        # Read header
         header = next(file).strip()
         print(LogMessage(), "Reading file :::", "Header: ", header)
         header_nms = int(header.split(" ")[0])
@@ -391,9 +390,6 @@ class MatrixBundle:
         self.B = Bmatrix
         self.bnorm = bnorm
 
-    def compute_W(self, lmda, a0):
-        return self.S + (lmda * a0) / ((1 - lmda) * self.bnorm) * self.B
-
 
 def adjust_precision(tmax: int):
     """
@@ -431,5 +427,42 @@ def adjust_precision(tmax: int):
     diff = S_ * invS
     diff = norm2_mp(diff) - 1
     assert float(diff) < target_result_precision
-    # print(LogMessage(), "Adjust precision ::: ", "Suggested precision stable with target result precision ", target_result_precision)
     return 0
+
+
+class bcolors:
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+
+CB_color_cycle = [
+    "#377eb8",
+    "#ff7f00",
+    "#4daf4a",
+    "#f781bf",
+    "#a65628",
+    "#984ea3",
+    "#999999",
+    "#e41a1c",
+    "#dede00",
+]
+
+CB_colors = [
+    "#1f77b4",  # Dark Blue
+    "#ff7f0e",  # Orange
+    "#2ca02c",  # Light Green
+    "#d62728",  # Reddish Purple
+    "#9467bd",  # Light Blue
+    "#8c564b",  # Dark Yellow
+    "#e377c2",  # Cyan
+    "#7f7f7f",  # Olive Green
+]
+
+plot_markers = ["o", "s", "D", "v", "^", "p", "*", "h"]
