@@ -91,6 +91,12 @@ def parse_inputs():
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
         default="FULLNORMGAUSS",
     )
+    parser.add_argument(
+        "--loglevel",
+        type=str,
+        help="Accepted stirngs are 'WARNING', 'INFO' or 'DEBUG'. Default='WARNING'. Setting 'INFO' leads to an extensive output tracking the details of the scan over lambda and alpha.",
+        default="WARNING",
+    )
     args = parser.parse_args()
     inputs = Inputs()
     inputs.datapath = args.datapath
@@ -107,6 +113,7 @@ def parse_inputs():
     inputs.Ne = args.ne
     inputs.Na = args.Na
     inputs.A0cut = args.A0cut
+    inputs.loglevel = args.loglevel
     return args
 
 
@@ -210,6 +217,12 @@ def parse_synthetic_inputs():
         help="Accepted stirngs are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
         default="FULLNORMGAUSS",
     )
+    parser.add_argument(
+        "--loglevel",
+        type=str,
+        help="Accepted stirngs are 'WARNING', 'INFO' or 'DEBUG'. Default='WARNING'. Setting 'INFO' leads to an extensive output tracking the details of the scan over lambda and alpha.",
+        default="WARNING",
+    )
     args = parser.parse_args()
     inputs = Inputs()
     inputs.time_extent = args.T
@@ -227,4 +240,5 @@ def parse_synthetic_inputs():
     inputs.Ne = args.ne
     inputs.Na = args.Na
     inputs.A0cut = args.A0cut
+    inputs.loglevel = args.loglevel
     return inputs

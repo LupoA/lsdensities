@@ -8,6 +8,7 @@ from .rhoMath import norm2_mp
 import time
 from mpmath import mp, mpf
 import hashlib
+import logging
 
 target_result_precision = 1e-8
 
@@ -49,26 +50,33 @@ CB_colors = [
 
 plot_markers = ["o", "s", "D", "v", "^", "p", "*", "h"]
 
-timesfont = {
-    "family": "Times",
-    "color": "black",
-    "weight": "normal",
-    "size": 18,
-}
+####### logger
 
-helveticafont = {
-    "family": "Helvetica",
-    "color": "black",
-    "weight": "normal",
-    "size": 18,
-}
+logger = logging.getLogger("log")
+stream_handler = logging.StreamHandler()
 
-tnr = {
-    "family": "Times New Roman",
-    "color": "black",
-    "weight": "normal",
-    "size": 22,
-}
+
+class CustomFormatter(logging.Formatter):
+    def __init__(self, *args, **kwargs):
+        self.start_time = time.time()
+        super().__init__(*args, **kwargs)
+
+    def format(self, record):
+        elapsed_time_ms = time.time() - self.start_time
+        record.elapsed_time = "{:.3f} s".format(elapsed_time_ms)
+        return super().format(record)
+
+
+# formatter = CustomFormatter("Message ::: " + '%(elapsed_time)s - %(levelname)s - %(message)s')
+formatter = CustomFormatter("Message ::: " + "%(elapsed_time)s - %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
+
+def log(*args, **kwargs):
+    msg = " ".join(map(str, args))
+    logger.info(msg, **kwargs)
+
 
 start_time = time.time()
 
@@ -80,6 +88,9 @@ def LogMessage():
 def end():
     print(LogMessage(), "Exit")
     exit()
+
+
+#################
 
 
 def generate_seed(par):
@@ -289,6 +300,7 @@ class Inputs:
         self.mplambda = mpf("0")
         self.directoryName = "."
         self.kerneltype = "FULLNORMGAUSS"
+        self.loglevel = "WARNING"
 
     def assign_values(self):
         """
@@ -331,6 +343,12 @@ class Inputs:
         self.assign_values()
         init_precision(self.prec)
         self.plotpath, self.logpath = create_out_paths(self)
+        if self.loglevel == "INFO":
+            logger.setLevel(logging.INFO)
+        elif self.loglevel == "DEBUG":
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.WARNING)
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)

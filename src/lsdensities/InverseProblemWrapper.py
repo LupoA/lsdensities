@@ -15,9 +15,10 @@ from .plotutils import (
     plotSpectralDensity,
 )
 import numpy as np
-from .utils.rhoUtils import LogMessage, Inputs, MatrixBundle, Obs, bcolors
+from .utils.rhoUtils import Inputs, MatrixBundle, Obs, bcolors, log
 from .utils.rhoMath import invert_matrix_ge
 import os
+import logging
 
 
 class AlgorithmParameters:
@@ -75,8 +76,7 @@ class A0_t:
         self.par = par
 
     def evaluate(self, espace_mp):
-        print(
-            LogMessage(),
+        log(
             "Computing A0 at all energies with Alpha = {:2.2e}".format(
                 float(self.alphaMP)
             ),
@@ -95,7 +95,7 @@ class SigmaMatrix:
         self.matrix = mp.matrix(par.tmax, par.tmax)
 
     def evaluate(self):
-        print(LogMessage(), " Saving Sigma Matrix ".format())
+        log(" Saving Sigma Matrix ")
         self.matrix = hlt_matrix(
             tmax=self.par.tmax,
             alpha=self.alpha,
@@ -403,23 +403,21 @@ class InverseProblemWrapper:
         _factor = (
             lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]
         ) / _Bnorm
-        print(LogMessage(), "Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
+        log("Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
 
         S = self.selectSigmaMat[float(alpha_)].matrix
         _Matrix = S + (_factor * self.matrix_bundle.B)
         start_time = time.time()
         _MatrixInv = invert_matrix_ge(_Matrix)
         end_time = time.time()
-        print(
-            LogMessage(),
+        log(
             "Time ::: Matrix inverted in {:4.4f}".format(end_time - start_time),
             "s",
         )
         start_time = time.time()
         _g_t_estar = coefficients_ssd(_MatrixInv, self.par, estar_, alpha=alpha_)
         end_time = time.time()
-        print(
-            LogMessage(),
+        log(
             "Time ::: Coefficients computed in {:4.4f}".format(end_time - start_time),
             "s",
         )
@@ -427,8 +425,7 @@ class InverseProblemWrapper:
             _g_t_estar, self.correlator.mpsample, self.par
         )
         start_time = time.time()
-        print(
-            LogMessage(),
+        log(
             "Time ::: Bootstrapped result in {:4.4f}".format(start_time - end_time),
             "s",
         )
@@ -437,9 +434,8 @@ class InverseProblemWrapper:
         varianceRho = combine_fMf_scalar(
             gt=_g_t_estar, params=self.par, estar=estar_, alpha=alpha_
         )
-        print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
-        print(
-            LogMessage(),
+        log("\t\t gt ft = ", float(varianceRho))
+        log(
             "\t\t A0 is ",
             float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
         )
@@ -447,23 +443,20 @@ class InverseProblemWrapper:
             float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
             varianceRho,
         )
-        print(LogMessage(), "\t\t A0 - gt ft = {:2.2e}".format(float(varianceRho)))
+        log("\t\t A0 - gt ft = {:2.2e}".format(float(varianceRho)))
         varianceRho = mp.fdiv(varianceRho, _factor)
         varianceRho = mp.fdiv(varianceRho, mpf(2))
         drho_estar_Bayes = mp.sqrt(abs(varianceRho))
 
-        print(
-            LogMessage(),
+        log(
             "\t \t lambdaToRho ::: Central Value = {:2.4e}".format(float(rho_estar)),
         )
-        print(
-            LogMessage(),
+        log(
             "\t \t lambdaToRho ::: Bayesian Error = {:2.4e}".format(
                 float(drho_estar_Bayes)
             ),
         )
-        print(
-            LogMessage(),
+        log(
             "\t \t lambdaToRho ::: Bootstrap Error   = {:2.4e}".format(
                 float(drho_estar_Bootstrap)
             ),
@@ -481,8 +474,7 @@ class InverseProblemWrapper:
         likelihood_estar = mp.fadd(
             likelihood_estar, (self.par.tmax * mp.log(2 * mp.pi)) * 0.5
         )
-        print(
-            LogMessage(),
+        log(
             "\t \t lambdaToRho ::: NLL = {:2.4e}".format(float(likelihood_estar)),
         )
 
@@ -524,14 +516,12 @@ class InverseProblemWrapper:
         _compRatio = self.algorithmPar.comparisonRatio
         _plateau_id = self.algorithmPar.plateau_id
 
-        print(LogMessage(), " --- ")
-        print(LogMessage(), "At Energy {:2.2e}".format(estar_))
-        print(
-            LogMessage(),
+        log(" --- ")
+        log("At Energy {:2.2e}".format(estar_))
+        log(
             "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
         )
-        print(
-            LogMessage(),
+        log(
             "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
                 float(lambda_ / (1 + lambda_))
             ),
@@ -597,12 +587,10 @@ class InverseProblemWrapper:
         lambda_ -= lambda_step
         while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
             #   -   -   -   -   -   -
-            print(
-                LogMessage(),
+            log(
                 "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
             )
-            print(
-                LogMessage(),
+            log(
                 "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
                     float(lambda_ / (1 + lambda_))
                 ),
@@ -617,8 +605,7 @@ class InverseProblemWrapper:
                 )
             #   -   -   -   -   -   -
 
-            print(
-                LogMessage(),
+            log(
                 "\t Setting Alpha ::: First Alpha = ",
                 self.algorithmPar.alphaA,
             )
@@ -641,8 +628,7 @@ class InverseProblemWrapper:
                 whichAlpha="A",
             )
             if self.par.Na > 1:
-                print(
-                    LogMessage(),
+                log(
                     "\t Setting Alpha ::: Second Alpha = ",
                     self.algorithmPar.alphaB,
                 )
@@ -668,8 +654,7 @@ class InverseProblemWrapper:
                     _rhoUpdated, _errBootUpdated, _rhoUpdatedB, _errBootUpdatedB
                 )
                 if self.par.Na > 2:
-                    print(
-                        LogMessage(),
+                    log(
                         "\t Setting Alpha ::: Third Alpha = ",
                         self.algorithmPar.alphaC,
                     )
@@ -723,22 +708,20 @@ class InverseProblemWrapper:
             _skip = False
             #   Checks compatibility between different alphas
             if self.par.Na > 1 and not _AB_Overlap:
-                print(LogMessage(), "\t First and Second Alpha not compatible")
+                log("\t First and Second Alpha not compatible")
                 _skip = True
             if self.par.Na > 2 and not _AC_Overlap:
-                print(LogMessage(), "\t First and Third Alpha not compatible")
+                log("\t First and Third Alpha not compatible")
                 _skip = True
 
             #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
             if newLambda_Overlap is False:
-                print(
-                    LogMessage(),
+                log(
                     "\t Result at this Lambda does not overlap with previous: REJECTING result",
                 )
                 _skip = True
             if flagLambda_Overlap is False:
-                print(
-                    LogMessage(),
+                log(
                     "\t Result at this Lambda does not overlap with flagged: REJECTING result",
                 )
                 _skip = True
@@ -748,8 +731,7 @@ class InverseProblemWrapper:
                 / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
                 > self.par.A0cut
             ):
-                print(
-                    LogMessage(),
+                log(
                     "\t A/A0 is too large: rejecting result  (",
                     float(
                         _gAgUpdated
@@ -778,8 +760,7 @@ class InverseProblemWrapper:
                         lambda_, _rho, _errBoot, _gtUpdated, _gAgUpdated
                     )
                 _countPositiveResult += 1
-                print(
-                    LogMessage(),
+                log(
                     f"{bcolors.OKGREEN}Stopping Condition{bcolors.ENDC}",
                     _countPositiveResult,
                     "/",
@@ -796,8 +777,7 @@ class InverseProblemWrapper:
             if lambda_ <= 0:
                 lambda_step /= _resize
                 lambda_ += lambda_step * (_resize - 1 / _resize)
-                print(
-                    LogMessage(),
+                log(
                     "Resize LambdaStep to ",
                     lambda_step,
                     "Setting Lambda = ",
@@ -805,15 +785,13 @@ class InverseProblemWrapper:
                 )
 
             if lambda_ < self.algorithmPar.lambdaMin:
-                print(
-                    LogMessage(),
+                logging.warning(
                     f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Stopping ::: Reached lower limit for lambda. Try decreasing 'algorithmPar.lambdaMin' or increase the smearing radius.",
                 )
 
         #   End of WHILE
         if _countPositiveResult == 0:
-            print(
-                LogMessage(),
+            logging.warning(
                 f"{bcolors.WARNING}WARNING{bcolors.ENDC} ::: Could NOT find a plateau in lambda",
             )
 

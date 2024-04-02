@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mpf, mp
-from lsdensities.utils.rhoUtils import LogMessage, end, generate_seed
+from lsdensities.utils.rhoUtils import log, end, generate_seed
 from lsdensities.utils.rhoParser import parse_synthetic_inputs
 from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
 from lsdensities.core import hlt_matrix
@@ -69,14 +69,11 @@ def generate(par, espace):
 
 
 def main():
-    print(LogMessage(), "Initialising")
+    log("Initialising")
     par = parse_synthetic_inputs()
     par.init()
     par.report()
     espace = np.linspace(par.emin, par.emax, par.Ne)
-
-    print(LogMessage(), "Energies [Gev] : ", espace)
-    print(LogMessage(), " Sigma [GeV] : ", par.sigma)
 
     seed = generate_seed(par)
     random.seed(seed)
@@ -90,12 +87,12 @@ def main():
 
     Sinv = invert_matrix_ge(S)
 
-    print("S Sinv - 1 = ", float(norm2_mp(S * Sinv) - 1))
+    log("S Sinv - 1 = ", float(norm2_mp(S * Sinv) - 1))
 
     rhos = np.zeros(par.Ne)
 
     for e_i in range(len(espace)):
-        print(LogMessage(), "Energy [a^-1]", espace[e_i])
+        log("Energy : ", espace[e_i])
         gt = coefficients_ssd(Sinv, par, espace[e_i], alpha=0)
         rhos[e_i] = get_ssd_scalar(gt, exact_correlator, par)
 

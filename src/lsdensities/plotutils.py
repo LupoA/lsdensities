@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from .utils.rhoUtils import CB_colors, plot_markers, LogMessage, tnr
+from .utils.rhoUtils import CB_colors, plot_markers, LogMessage
 from .transform import combine_base_scalar
 from .utils.rhoMath import gauss_fp
 
@@ -352,7 +352,7 @@ def plotKernel(invLapW, gt_, omega, alpha_, label, ne_=70, ker_type="FULLNORMGAU
         + " $\;$ "
         + r"$\alpha$ = {:2.2f}".format(alpha_)
     )
-    plt.xlabel(r"$E$", fontdict=tnr)
+    plt.xlabel(r"$E$")
     plt.legend()
     plt.savefig(
         os.path.join(
@@ -395,7 +395,7 @@ def plotSpectralDensity(invLapW):
         colorID=1,
     )
 
-    plt.xlabel(r"$E $", fontdict=tnr)
+    plt.xlabel(r"$E $")
     plt.legend()
     plt.savefig(
         os.path.join(

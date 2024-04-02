@@ -6,12 +6,10 @@ from .utils.rhoUtils import (
     bcolors,
     plot_markers,
     CB_colors,
-    timesfont,
     LogMessage,
     Inputs,
     MatrixBundle,
     CB_color_cycle,
-    tnr,
 )
 from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
 from .core import a0_array, integrandSigmaMat
@@ -975,8 +973,8 @@ class GaussianProcessWrapper:
             + " $\;$ "
             + r"$\alpha$ = {:2.2f}".format(alpha_)
         )
-        plt.xlabel(r"$E / M_{\pi}$", fontdict=tnr)
-        plt.legend(prop={"size": 12, "family": "Helvetica"}, frameon=False)
+        plt.xlabel(r"$E$")
+        plt.legend()
         # plt.tight_layout()
         plt.savefig(
             os.path.join(
@@ -1102,21 +1100,16 @@ class GaussianProcessWrapper:
             color=CB_color_cycle[2],
         )
 
-        plt.title(
-            r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
-        )
-        plt.xlabel(r"$E / M_{\pi}$", fontdict=timesfont)
-        # plt.ylabel("Spectral density", fontdict=u.timesfont)
-        plt.legend(prop={"size": 12, "family": "Helvetica"})
+        plt.title(r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma))
+        plt.xlabel(r"$E$")
+        plt.legend()
         plt.grid()
         plt.tight_layout()
         if savePlot is True:
             plt.savefig(
                 os.path.join(
                     self.par.plotpath,
-                    "hltrhoigma{:2.2e}".format(self.par.sigma)
-                    + "Enorm{:2.2e}".format(self.par.massNorm)
-                    + ".png",
+                    "hltrhoigma{:2.2e}".format(self.par.sigma) + ".png",
                 ),
                 dpi=300,
             )
@@ -1155,8 +1148,8 @@ class GaussianProcessWrapper:
             alpha=0.3,
             color=CB_colors[4],
         )
-        ax.set_xlabel(r"$\lambda$", fontdict=timesfont)
-        ax.set_ylabel(r"$\rho_\sigma$", fontdict=timesfont)
+        ax.set_xlabel(r"$\lambda$")
+        ax.set_ylabel(r"$\rho_\sigma$")
         ax.legend(prop={"size": 12, "family": "Helvetica"})
         ax.set_xscale("log")
         ax.grid()
