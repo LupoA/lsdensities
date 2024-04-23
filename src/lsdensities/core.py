@@ -197,10 +197,12 @@ def A0_mp(e_, sigma_, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
             aux2 = cauchy(k, sigma_, e_) ** 2
             aux = aux * aux2
             return aux
+
+        res = mp.quad(integrand2, [e0, mp.inf], method="gauss-legendre")
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
 
-        res = mp.quad(integrand2, [e0, mp.inf], method="gauss-legendre")
+
     return res
 
 
