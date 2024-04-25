@@ -34,7 +34,7 @@ def main():
     par.report()
     par.plotpath, par.logpath = create_out_paths(par)
 
-    #   Correlator
+    #   Folding the correlator (if applicable)
     rawcorr.evaluate()
     rawcorr.tmax = par.tmax
     if par.periodicity == "COSH":
@@ -42,7 +42,7 @@ def main():
         symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
         symCorr.evaluate()
 
-    #   Resampling
+    #   #   #   Resampling
     if par.periodicity == "EXP":
         corr = u.Obs(
             T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
@@ -83,8 +83,8 @@ def main():
 
     hltParams = AlgorithmParameters(
         alphaA=0,
-        alphaB=1 / 2,
-        alphaC=+1.99,
+        alphaB=1.99,
+        alphaC=0.5,
         lambdaMax=lambdaMax,
         lambdaStep=lambdaMax / 2,
         lambdaScanCap=8,
