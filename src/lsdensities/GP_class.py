@@ -1,28 +1,24 @@
-from mpmath import mp, mpf
-import numpy as np
-import os
-from .utils.rhoUtils import (
-    Obs,
-    bcolors,
-    plot_markers,
-    CB_colors,
-    LogMessage,
-    Inputs,
-    MatrixBundle,
-    CB_color_cycle,
-)
-from .utils.rhoMath import invert_matrix_ge, gauss_fp, Zfact_mp
 from .core import a0_array, integrandSigmaMat
 from .transform import (
     coefficients_ssd,
+    get_ssd_averaged_scalar,
     combine_fMf_scalar,
-    combine_base_scalar,
-    get_ssd_scalar,
+    combine_likelihood,
 )
-from .abw import gAg, gBg
-import matplotlib.pyplot as plt
-
-_big = 100
+from .abw import gAg
+from mpmath import mp, mpf
+from .plotutils import (
+    stabilityPlot,
+    sharedPlot_stabilityPlusLikelihood,
+    plotLikelihood,
+    plotAllKernels,
+    plotSpectralDensity,
+)
+import numpy as np
+from .utils.rhoUtils import Inputs, MatrixBundle, Obs, bcolors, log
+from .utils.rhoMath import invert_matrix_ge
+import os
+import logging
 
 
 class AlgorithmParameters:
@@ -36,7 +32,10 @@ class AlgorithmParameters:
         lambdaScanPrec=0.1,
         lambdaScanCap=6,
         kfactor=0.1,
+        plateau_id=1,
         lambdaMin=0.0,
+        comparisonRatio=1,
+        resize=4,
     ):
         assert alphaA != alphaB
         assert alphaA != alphaC
@@ -48,12 +47,15 @@ class AlgorithmParameters:
         self.lambdaScanPrec = lambdaScanPrec
         self.lambdaScanCap = lambdaScanCap
         self.kfactor = kfactor
+        self.plateau_id = plateau_id
         # Round trip via a string to avoid introducing spurious precision
         # per recommendations at https://mpmath.org/doc/current/basics.html
         self.alphaAmp = mpf(str(alphaA))
         self.alphaBmp = mpf(str(alphaB))
         self.alphaCmp = mpf(str(alphaC))
         self.lambdaMin = lambdaMin
+        self.resize = resize
+        self.comparisonRatio = comparisonRatio
 
 
 class SigmaMatrix:
@@ -64,8 +66,7 @@ class SigmaMatrix:
         self.matrix = mp.matrix(par.tmax, par.tmax)
 
     def evaluate(self):
-        print(
-            LogMessage(),
+        log(
             "Computing b_t(E) K(E,E') b_r(E') for Alpha = {:2.2f}".format(self.alpha),
         )
         _title = (
@@ -98,7 +99,7 @@ class SigmaMatrix:
                         error=True,
                         method="tanh-sinh",
                     )
-                    print(LogMessage(), "\t (t,r) = (", i, j, ") = ", entry[0])
+                    log("\t (t,r) = (", i, j, ") = ", entry[0])
 
                     print(i, j, entry[0], file=output)
                 self.matrix[i, j] = entry[0]
@@ -116,7 +117,7 @@ class SigmaMatrix:
             + ".txt"
         )
         path_to_matrix = os.path.join(self.par.logpath, _title)
-        print(LogMessage(), "Reading Sigma Matrix from file: ", _title)
+        log("Reading Sigma Matrix from file: ", _title)
         with open(path_to_matrix, "r") as file:
             for line in file:
                 # Split the line into three values
@@ -128,17 +129,16 @@ class SigmaMatrix:
 
 
 class A0_t:
-    def __init__(self, par_: Inputs, alphaMP_=0, eminMP_=0):
-        self.valute_at_E = mp.matrix(par_.Ne, 1)
+    def __init__(self, par: Inputs, alpha=0, emin=0):
+        self.valute_at_E = mp.matrix(par.Ne, 1)
         self.valute_at_E_dictionary = {}  # Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
         self.is_filled = False
-        self.alphaMP = alphaMP_
-        self.eminMP = eminMP_
-        self.par = par_
+        self.alphaMP = alpha
+        self.eminMP = emin
+        self.par = par
 
     def evaluate(self, espace_mp):
-        print(
-            LogMessage(),
+        log(
             "Computing A0 at all energies with Alpha = {:2.2e}".format(
                 float(self.alphaMP)
             ),
@@ -156,15 +156,15 @@ class GaussianProcessWrapper:
         algorithmPar: AlgorithmParameters,
         matrix_bundle: MatrixBundle,
         correlator: Obs,
+        energies,
         read_SIGMA=False,
     ):
         self.par = par
         self.correlator = correlator
         self.algorithmPar = algorithmPar
         self.matrix_bundle = matrix_bundle
-        self.read_SIGMA = read_SIGMA
-        #
-        self.espace = np.linspace(par.emin, par.emax, par.Ne)
+        par.Ne = len(energies)
+        self.espace = energies
         # Round trip via a string to avoid introducing spurious precision
         # per recommendations at https://mpmath.org/doc/current/basics.html
         self.e0MP = mpf(str(par.e0))
@@ -172,50 +172,89 @@ class GaussianProcessWrapper:
         self.sigmaMP = mpf(str(par.sigma))
         self.emaxMP = mpf(str(par.emax))
         self.eminMP = mpf(str(par.emin))
-        self.espace_dictionary = {}  #   Auxiliary dictionary: espace_dictionary[espace[n]] = n
-        #
-        self.A0_A = A0_t(
-            alphaMP_=self.algorithmPar.alphaAmp, eminMP_=self.eminMP, par_=self.par
-        )
-        self.A0_B = A0_t(
-            alphaMP_=self.algorithmPar.alphaBmp, eminMP_=self.eminMP, par_=self.par
-        )
-        self.A0_C = A0_t(
-            alphaMP_=self.algorithmPar.alphaCmp, eminMP_=self.eminMP, par_=self.par
-        )
+        self.espace_dictionary = {}  #   Usage: espace_dictionary[espace[n]] = n
+        self.selectSigmaMat = {}  #   Usage: selectSigmaMat[alpha] = Sigma
+        self.read_SIGMA = read_SIGMA
+        #   Containers for the factor A0
         self.selectA0 = {}
+        self.A0_A = A0_t(
+            alpha=self.algorithmPar.alphaAmp, emin=self.eminMP, par=self.par
+        )
         self.selectA0[algorithmPar.alphaA] = self.A0_A
-        self.selectA0[algorithmPar.alphaB] = self.A0_B
-        self.selectA0[algorithmPar.alphaC] = self.A0_C
-        # Sigma Mat
-        self.SigmaMatA = SigmaMatrix(self.par, algorithmPar.alphaA)
-        self.SigmaMatB = SigmaMatrix(self.par, algorithmPar.alphaB)
-        self.SigmaMatC = SigmaMatrix(self.par, algorithmPar.alphaC)
-        self.selectSigmaMat = {}
-        self.selectSigmaMat[algorithmPar.alphaA] = self.SigmaMatA
-        self.selectSigmaMat[algorithmPar.alphaB] = self.SigmaMatB
-        self.selectSigmaMat[algorithmPar.alphaC] = self.SigmaMatC
-        #
-        self.espace_is_filled = False
-        #   Lists of result as functions of lambda
-        self.rho_list = [[] for _ in range(self.par.Ne)]
-        self.drho_list = [[] for _ in range(self.par.Ne)]
-        self.gAA0g_list = [[] for _ in range(self.par.Ne)]
+        if self.par.Na > 1:
+            self.A0_B = A0_t(
+                alpha=self.algorithmPar.alphaBmp, emin=self.eminMP, par=self.par
+            )
+            self.selectA0[algorithmPar.alphaB] = self.A0_B
+            if self.par.Na > 2:
+                self.A0_C = A0_t(
+                    alpha=self.algorithmPar.alphaCmp,
+                    emin=self.eminMP,
+                    par=self.par,
+                )
+                self.selectA0[algorithmPar.alphaC] = self.A0_C
+
         self.lambda_list = [[] for _ in range(self.par.Ne)]
-        self.rho_list_alpha2 = [[] for _ in range(self.par.Ne)]
-        self.drho_list_alpha2 = [[] for _ in range(self.par.Ne)]
-        self.gAA0g_list_alpha2 = [[] for _ in range(self.par.Ne)]
-        self.rho_list_alpha3 = [[] for _ in range(self.par.Ne)]
-        self.drho_list_alpha3 = [[] for _ in range(self.par.Ne)]
-        self.gAA0g_list_alpha3 = [[] for _ in range(self.par.Ne)]
+        #   First alpha
+        self.rho_list = [[] for _ in range(self.par.Ne)]
+        self.errBoot_list = [[] for _ in range(self.par.Ne)]
+        self.errBayes_list = [[] for _ in range(self.par.Ne)]
+        self.gAA0g_list = [[] for _ in range(self.par.Ne)]
+        self.likelihood_list = [[] for _ in range(self.par.Ne)]
+        self.SigmaMatA = SigmaMatrix(self.par, algorithmPar.alphaA)
+        self.selectSigmaMat[algorithmPar.alphaA] = self.SigmaMatA
+        #   Second alpha
+        if self.par.Na > 1:
+            self.rho_list_alphaB = [[] for _ in range(self.par.Ne)]
+            self.errBoot_list_alphaB = [[] for _ in range(self.par.Ne)]
+            self.errBayes_list_alphaB = [[] for _ in range(self.par.Ne)]
+            self.gAA0g_list_alphaB = [[] for _ in range(self.par.Ne)]
+            self.likelihood_list_alphaB = [[] for _ in range(self.par.Ne)]
+            self.SigmaMatB = SigmaMatrix(self.par, algorithmPar.alphaB)
+            self.selectSigmaMat[algorithmPar.alphaB] = self.SigmaMatB
+            #   Third alpha
+            if self.par.Na > 2:
+                self.rho_list_alphaC = [[] for _ in range(self.par.Ne)]
+                self.errBoot_list_alphaC = [[] for _ in range(self.par.Ne)]
+                self.errBayes_list_alphaC = [[] for _ in range(self.par.Ne)]
+                self.gAA0g_list_alphaC = [[] for _ in range(self.par.Ne)]
+                self.likelihood_list_alphaC = [[] for _ in range(self.par.Ne)]
+                self.SigmaMatC = SigmaMatrix(self.par, algorithmPar.alphaC)
+                self.selectSigmaMat[algorithmPar.alphaC] = self.SigmaMatC
         #   Results
-        self.lambda_result = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.rho_result = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.gt_result = mp.matrix(self.par.Ne, 1)
-        self.drho_result = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.minNLL = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  # minimum of Negative Log Likelihood
+        self.lambdaResultHLT = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  #   from plateau in lambda
+        self.lambdaResultBayes = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  #   from min of NLL
+        self.rhoResultHLT = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  #   from plateau in lambda
+        self.drho_result = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  #   from plateau in lambda
+        self.rhoResultBayes = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  #   from min of NLL
+        self.drho_bayes = np.ndarray(self.par.Ne, dtype=np.float64)  #   frin min of NLL
+        self.rho_sys_err_HLT = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_quadrature_err_HLT = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_sys_err_Bayes = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.rho_quadrature_err_Bayes = np.ndarray(self.par.Ne, dtype=np.float64)
+        self.gt_HLT = [[] for _ in range(self.par.Ne)]  #   from plateau in lambda
+        self.gt_Bayes = [[] for _ in range(self.par.Ne)]  #   from min of NLL
+        self.aa0 = np.ndarray(
+            self.par.Ne, dtype=np.float64
+        )  # A / A0 for the result (HLT only)
+        #   Control variables
+        self.espace_is_filled = False
+        self.A0_is_filled = False
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
-        self.rho_sys_err = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.rho_quadrature_err = np.ndarray(self.par.Ne, dtype=np.float64)
+        return
 
     def fillEspaceMP(self):
         for e_id in range(self.par.Ne):
@@ -245,547 +284,554 @@ class GaussianProcessWrapper:
             if self.read_SIGMA is True:
                 self.SigmaMatC.read()
 
+    def _store(
+        self,
+        estar,
+        rho,
+        errBayes,
+        errBoot,
+        likelihood,
+        gag,
+        lambda_,
+        whichAlpha="A",
+    ):
+        """
+        Each call appends a line to a file named InverseProblemLog_{alpha} containing
+        estar, rho, errBayes, errBoot, likelihood, g(A/A0)g, lambda
+        """
+        if whichAlpha == "A":
+            self.rho_list[self.espace_dictionary[estar]].append(rho)
+            self.errBayes_list[self.espace_dictionary[estar]].append(errBayes)
+            self.errBoot_list[self.espace_dictionary[estar]].append(errBoot)
+            self.gAA0g_list[self.espace_dictionary[estar]].append(
+                gag
+                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar]
+            )
+            self.likelihood_list[self.espace_dictionary[estar]].append(likelihood)
+            with open(
+                os.path.join(self.par.logpath, "InverseProblemLOG_AlphaA.log"), "a"
+            ) as output:
+                print(
+                    float(estar),
+                    float(lambda_),
+                    float(rho),
+                    float(errBayes),
+                    float(errBoot),
+                    float(gag),
+                    float(likelihood),
+                    file=output,
+                )
+        if whichAlpha == "B":
+            self.rho_list_alphaB[self.espace_dictionary[estar]].append(rho)
+            self.errBayes_list_alphaB[self.espace_dictionary[estar]].append(errBayes)
+            self.errBoot_list_alphaB[self.espace_dictionary[estar]].append(errBoot)
+            self.gAA0g_list_alphaB[self.espace_dictionary[estar]].append(
+                gag
+                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar]
+            )
+            self.likelihood_list_alphaB[self.espace_dictionary[estar]].append(
+                likelihood
+            )
+            with open(
+                os.path.join(self.par.logpath, "InverseProblemLOG_AlphaB.log"), "a"
+            ) as output:
+                print(
+                    float(estar),
+                    float(lambda_),
+                    float(rho),
+                    float(errBayes),
+                    float(errBoot),
+                    float(gag),
+                    float(likelihood),
+                    file=output,
+                )
+        if whichAlpha == "C":
+            self.rho_list_alphaC[self.espace_dictionary[estar]].append(rho)
+            self.errBayes_list_alphaC[self.espace_dictionary[estar]].append(errBayes)
+            self.errBoot_list_alphaC[self.espace_dictionary[estar]].append(errBoot)
+            self.gAA0g_list_alphaC[self.espace_dictionary[estar]].append(
+                gag
+                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar]
+            )
+            self.likelihood_list_alphaC[self.espace_dictionary[estar]].append(
+                likelihood
+            )
+            with open(
+                os.path.join(self.par.logpath, "InverseProblemLOG_AlphaC.log"), "a"
+            ) as output:
+                print(
+                    float(estar),
+                    float(lambda_),
+                    float(rho),
+                    float(errBayes),
+                    float(errBoot),
+                    float(gag),
+                    float(likelihood),
+                    file=output,
+                )
+        return
+
+    def _areRangesCompatible(self, x, deltax, y, deltay):
+        """
+        Checks whether ranges are compatible.
+        """
+        x2 = x + deltax
+        x1 = x - deltax
+        y1 = y - deltay
+        y2 = y + deltay
+        return x1 <= y2 and y1 <= x2
+
+    def _flagResult(self, *args):
+        return args
+
     def lambdaToRho(self, lambda_, estar_, alpha_):
+        """
+        For a given lambda, at each energy and value of alpha
+        computes and returns the following
+            rho_estar : the result for the smeared spectral density
+            drho_estar_Bayes : Bayesian error
+            drho_estar_Bootstrap : frequentist error
+            likelihood_estar : likelihood of the result
+            gAg_estar : the scalar product gAg
+            _g_t_estar : the vector of coefficients giving the result
+
+        The coefficients are obtained by inverting the matrix
+        S + factor B
+        where factor = lambda A0 / Bnorm.
+        Bnorm makes B dimensionless.
+        """
         import time
 
         _Bnorm = self.matrix_bundle.bnorm / (estar_ * estar_)
         _factor = (
             lambda_ * self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]
         ) / _Bnorm
-        S_ = self.selectSigmaMat[float(alpha_)].matrix
-        _M = S_ + (_factor * self.matrix_bundle.B)
+        log("Normalising factor A*l/B = {:2.2e}".format(float(_factor)))
+
+        S = self.selectSigmaMat[float(alpha_)].matrix
+        _Matrix = S + (_factor * self.matrix_bundle.B)
         start_time = time.time()
-        _Minv = invert_matrix_ge(_M)
+        _MatrixInv = invert_matrix_ge(_Matrix)
         end_time = time.time()
-        print(
-            LogMessage(),
-            "\t \t lambdaToRho ::: Matrix inverted in {:4.4f}".format(
-                end_time - start_time
-            ),
+        log(
+            "Time ::: Matrix inverted in {:4.4f}".format(end_time - start_time),
             "s",
         )
+        start_time = time.time()
+        _g_t_estar = coefficients_ssd(_MatrixInv, self.par, estar_, alpha=alpha_)
+        end_time = time.time()
+        log(
+            "Time ::: Coefficients computed in {:4.4f}".format(end_time - start_time),
+            "s",
+        )
+        rho_estar, drho_estar_Bootstrap = get_ssd_averaged_scalar(
+            _g_t_estar, self.correlator.mpsample, self.par
+        )
+        start_time = time.time()
+        log(
+            "Time ::: Bootstrapped result in {:4.4f}".format(start_time - end_time),
+            "s",
+        )
+        gAg_estar = gAg(S, _g_t_estar, estar_, alpha_, self.par)
 
-        _g_t_estar = coefficients_ssd(_Minv, self.par, estar_, alpha=alpha_)
-        rho_estar = get_ssd_scalar(_g_t_estar, self.correlator.mpcentral, self.par)
         varianceRho = combine_fMf_scalar(
             gt=_g_t_estar, params=self.par, estar=estar_, alpha=alpha_
         )
-        print(LogMessage(), "\t\t gt ft = ", float(varianceRho))
-
-        zeta_term = Zfact_mp(estar_, self.par.sigma)
-        zeta_term = mp.fdiv(mp.exp(estar_ * alpha_), zeta_term)
-
-        if varianceRho < 0:
-            print(LogMessage(), varianceRho)
-        varianceRho = abs(zeta_term - varianceRho)
-
+        log("\t\t gt ft = ", float(varianceRho))
+        log(
+            "\t\t A0 is ",
+            float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
+        )
+        varianceRho = mp.fsub(
+            float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
+            varianceRho,
+        )
+        log("\t\t A0 - gt ft = {:2.2e}".format(float(varianceRho)))
         varianceRho = mp.fdiv(varianceRho, _factor)
         varianceRho = mp.fdiv(varianceRho, mpf(2))
+        drho_estar_Bayes = mp.sqrt(abs(varianceRho))
 
-        drho_estar = mp.sqrt(varianceRho)
-
-        print(
-            LogMessage(),
-            "\t \t lambdaToRho ::: Bayesian central = {:2.4e}".format(float(rho_estar)),
+        log(
+            "\t \t lambdaToRho ::: Central Value = {:2.4e}".format(float(rho_estar)),
         )
-        print(
-            LogMessage(),
-            "\t \t lambdaToRho ::: Bayesian variance = {:2.4e}".format(
-                float(drho_estar)
+        log(
+            "\t \t lambdaToRho ::: Bayesian Error = {:2.4e}".format(
+                float(drho_estar_Bayes)
+            ),
+        )
+        log(
+            "\t \t lambdaToRho ::: Bootstrap Error   = {:2.4e}".format(
+                float(drho_estar_Bootstrap)
             ),
         )
 
-        gag_estar = gAg(S_, _g_t_estar, estar_, alpha_, self.par)
-        gBg_estar = gBg(_g_t_estar, self.matrix_bundle.B, _Bnorm)
+        fullCov_inv = _MatrixInv * _factor
 
-        print(
-            LogMessage(),
-            "\t \t  B / Bnorm = ",
-            float(gBg_estar),
-            " (alpha = ",
-            float(alpha_),
-            ")",
+        #   Compute the likelihood
+        likelihood_estar = combine_likelihood(
+            fullCov_inv, self.par, self.correlator.mpcentral
         )
-        print(
-            LogMessage(),
-            "\t \t  A / A0 = ",
-            float(
-                gag_estar / self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]
-            ),
-            " (alpha = ",
-            float(alpha_),
-            ")",
+        likelihood_estar *= 0.5
+        det = mp.det(_Matrix / _factor)
+        likelihood_estar = mp.fadd(likelihood_estar, 0.5 * mp.log(det))
+        likelihood_estar = mp.fadd(
+            likelihood_estar, (self.par.tmax * mp.log(2 * mp.pi)) * 0.5
         )
-
-        return rho_estar, drho_estar, gag_estar, _g_t_estar
-
-    def scanLambda(self, estar_):
-        lambda_ = self.algorithmPar.lambdaMax
-        lambda_step = self.algorithmPar.lambdaStep
-        prec_ = self.algorithmPar.lambdaScanPrec
-        cap_ = self.algorithmPar.lambdaScanCap
-        _count = 0
-        resize = 4
-        lambda_flag = 0
-        rho_flag = 0
-        drho_flag = 0
-
-        print(LogMessage(), " --- ")
-        print(LogMessage(), "At Energy {:2.2e}".format(estar_))
-        print(
-            LogMessage(),
-            "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
-        )
-        print(
-            LogMessage(),
-            "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
-                float(lambda_ / (1 + lambda_))
-            ),
-        )
-
-        # Setting alpha to the first value
-        print(
-            LogMessage(),
-            "\t Setting Alpha ::: Alpha = ",
-            float(self.algorithmPar.alphaA),
-        )
-        _this_rho, _this_drho, _this_gAg, _ = self.lambdaToRho(
-            lambda_, estar_, self.algorithmPar.alphaAmp
-        )
-        self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)  # store
-        self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)  # store
-        self.gAA0g_list[self.espace_dictionary[estar_]].append(
-            _this_gAg
-            / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-        )  # store
-        self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)  # store
-        print(
-            LogMessage(),
-            "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaA),
-            " = {:1.3e}".format(float(_this_rho)),
-            " Stat = {:1.3e}".format(float(_this_drho)),
-        )
-
-        lambda_ -= lambda_step
-
-        while _count < cap_ and lambda_ > self.algorithmPar.lambdaMin:
-            print(
-                LogMessage(),
-                "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
-            )
-            print(
-                LogMessage(),
-                "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
-                    float(lambda_ / (1 + lambda_))
-                ),
-            )
-
-            print(
-                LogMessage(),
-                "\t Setting Alpha ::: Alpha = ",
-                self.algorithmPar.alphaA,
-            )
-            _this_updated_rho, _this_updated_drho, _this_gAg, _ = self.lambdaToRho(
-                lambda_, estar_, self.algorithmPar.alphaAmp
-            )
-            self.rho_list[self.espace_dictionary[estar_]].append(
-                _this_updated_rho
-            )  # store
-            print(
-                LogMessage(),
-                "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaA),
-                " = {:1.3e}".format(float(_this_updated_rho)),
-                " Stat = {:1.3e}".format(float(_this_updated_drho)),
-            )
-            self.drho_list[self.espace_dictionary[estar_]].append(
-                _this_updated_drho
-            )  # store
-            self.gAA0g_list[self.espace_dictionary[estar_]].append(
-                _this_gAg
-                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-            )  # store
-            self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
-            _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
-            print(
-                LogMessage(),
-                "\t \t ",
-                f"{bcolors.OKBLUE}Residual{bcolors.ENDC}" + " = ",
-                float(_residual1),
-                "(alpha = {:2.2f}".format(self.algorithmPar.alphaA),
-                ")",
-            )
-
-            if (
-                _this_gAg
-                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-                < self.par.A0cut
-                and _residual1 < prec_
-            ):
-                if _count == 1:
-                    lambda_flag = lambda_
-                    rho_flag = _this_updated_rho
-                    drho_flag = _this_updated_drho
-                _count += 1
-                print(LogMessage(), f"{bcolors.OKGREEN}Counting{bcolors.ENDC}", _count)
-            else:
-                _count = 0
-
-            _this_rho = _this_updated_rho
-            lambda_ -= lambda_step
-
-            print(
-                LogMessage(),
-                "\t Ending while loop with lambda = ",
-                lambda_,
-                "lambdaMin = ",
-                self.algorithmPar.lambdaMin,
-            )
-
-            if lambda_ <= 0:
-                lambda_step /= resize
-                lambda_ += lambda_step * (resize - 1 / resize)
-                print(
-                    LogMessage(),
-                    "Resize LambdaStep to ",
-                    lambda_step,
-                    "Setting Lambda = ",
-                    lambda_,
-                )
-
-            if lambda_ < self.algorithmPar.lambdaMin:
-                print(
-                    LogMessage(),
-                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
-                )
-
-        #   while loop ends here
-
-        if rho_flag != 0:  # if count was at filled at least once
-            self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
-            self.rho_result[self.espace_dictionary[estar_]] = rho_flag
-            self.drho_result[self.espace_dictionary[estar_]] = drho_flag
-        else:
-            print(
-                LogMessage(),
-                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda through plateau",
-            )
-            self.lambda_result[self.espace_dictionary[estar_]] = lambda_
-            self.rho_result[self.espace_dictionary[estar_]] = self.rho_list[
-                self.espace_dictionary[estar_]
-            ][-1]  # _this_rho
-            self.drho_result[self.espace_dictionary[estar_]] = self.drho_list[
-                self.espace_dictionary[estar_]
-            ][-1]  # _this_drho
-
-        print(
-            LogMessage(),
-            "Result ::: E = ",
-            estar_,
-            "Rho = ",
-            float(self.rho_result[self.espace_dictionary[estar_]]),
-            "Stat = ",
-            float(self.drho_result[self.espace_dictionary[estar_]]),
-            "Lambda = ",
-            float(self.lambda_result[self.espace_dictionary[estar_]]),
-        )
-
-        self.result_is_filled[self.espace_dictionary[estar_]] = True
-
-        print(
-            LogMessage(),
-            "Scan Lambda ::: Lambda * = ",
-            lambda_,
-            "at E = ",
-            estar_,
+        log(
+            "\t \t lambdaToRho ::: NLL = {:2.4e}".format(float(likelihood_estar)),
         )
 
         return (
-            self.rho_list[self.espace_dictionary[estar_]],
-            self.drho_list[self.espace_dictionary[estar_]],
-            self.gAA0g_list[self.espace_dictionary[estar_]],
+            rho_estar,
+            drho_estar_Bayes,
+            drho_estar_Bootstrap,
+            likelihood_estar,
+            gAg_estar,
+            _g_t_estar,
         )
 
-    def scanLambdaAlpha(self, estar_, how_many_alphas=2):
+    # - - - - - - - - - - - - - - - Scan over parameters: Lambda, Alpha (optional) - - - - - - - - - - - - - - - #
+
+    def scanParameters(self, estar_):
+        """
+        This function will scan over lambda and, if specified, alpha, until conditions are met
+        The stopping conditions are one of the following:
+            - compatibility is achieved for a subsequent number of values of lambda specified by self.algorithmPar.lambdaScanCap : this is the intended way.
+            OR
+            - Reaching self.algorithmPar.lambdaMin : if compatibility conditions were never met. Raises a Warning.
+        The compatibility between results at different lambda (or alpha) is achieved when the following conditions are simultaneously met:
+            - A/A0 < self.par.A0cut
+            AND
+            - rho(lambda) = rho(lambda') within N sigma, where N is given by self.par.comparisonRatio.
+              Setting comparisonRatio=1 means results are considered compatible when their errorbands overlap.
+              Using values smaller than 1 can be useful since rho at different values of lambda can be very correlated. The default value
+              is 0.3 which has been set empirically.
+            AND
+            - rho(lambda , alpha) = rho(lambda, alpha') = rho(lambda, alpha'') within 1 sigma, if more values of alpha are used.
+        The scan is done between lambdaMax and lambdaMin. The initial step is very large, but it is resized whenever lambda becomes negative
+        to allow a fast but meaningful scan than a fixed step could achieve.
+        """
         lambda_ = self.algorithmPar.lambdaMax
         lambda_step = self.algorithmPar.lambdaStep
-        prec_ = self.algorithmPar.lambdaScanPrec
-        cap_ = self.algorithmPar.lambdaScanCap
-        _count = 0
-        resize = 4
-        lambda_flag = 0
-        rho_flag = 0
-        drho_flag = 0
-        comp_diff_AC = _big
-        comp_diff_AB = _big
+        _cap = self.algorithmPar.lambdaScanCap
+        _resize = self.algorithmPar.resize
+        _countPositiveResult = 0
+        _compRatio = self.algorithmPar.comparisonRatio
+        _plateau_id = self.algorithmPar.plateau_id
 
-        print(LogMessage(), " --- ")
-        print(LogMessage(), "At Energy {:2.2e}".format(estar_))
-        print(
-            LogMessage(),
+        log(" --- ")
+        log("At Energy {:2.2e}".format(estar_))
+        log(
             "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
         )
-        print(
-            LogMessage(),
+        log(
             "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
                 float(lambda_ / (1 + lambda_))
             ),
         )
 
-        # Setting alpha to the first value
-        print(
-            LogMessage(),
-            "\t Setting Alpha ::: First Alpha = ",
-            float(self.algorithmPar.alphaA),
-        )
-        _this_rho, _this_drho, _this_gAg, _ = self.lambdaToRho(
+        #   First runs on initial values, then loops
+
+        self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
+
+        _rho, _errBayes, _errBoot, _likelihood, _gAg, _gt = self.lambdaToRho(
             lambda_, estar_, self.algorithmPar.alphaAmp
         )
-        self.rho_list[self.espace_dictionary[estar_]].append(_this_rho)  #   store
-        self.drho_list[self.espace_dictionary[estar_]].append(_this_drho)  #   store
-        self.gAA0g_list[self.espace_dictionary[estar_]].append(
-            _this_gAg
-            / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-        )  #   store
-        self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)  #   store
-        print(
-            LogMessage(),
-            "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaA),
-            " = {:1.3e}".format(float(_this_rho)),
-            " Stat = {:1.3e}".format(float(_this_drho)),
+        self._store(
+            estar_,
+            _rho,
+            _errBayes,
+            _errBoot,
+            _likelihood,
+            _gAg,
+            lambda_,
+            whichAlpha="A",
         )
-        # Setting alpha to the second value
-        print(
-            LogMessage(),
-            "\t Setting Alpha ::: Second Alpha = ",
-            float(self.algorithmPar.alphaB),
-        )
-        _this_rho2, _this_drho2, _this_gAg2, _ = self.lambdaToRho(
-            lambda_, estar_, self.algorithmPar.alphaBmp
-        )  #   _this_drho will remain the first one
-        self.rho_list_alpha2[self.espace_dictionary[estar_]].append(
-            _this_rho2
-        )  #   store
-        self.drho_list_alpha2[self.espace_dictionary[estar_]].append(
-            _this_drho2
-        )  #   store
-        self.gAA0g_list_alpha2[self.espace_dictionary[estar_]].append(
-            _this_gAg2
-            / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_]
-        )  #   store
-        print(
-            LogMessage(),
-            "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaB),
-            " = {:1.3e}".format(float(_this_rho2)),
-            " Stat = {:1.3e}".format(float(_this_drho2)),
-        )
-        # Setting alpha for the third value
-        if how_many_alphas == 3:
-            print(
-                LogMessage(),
-                "\t Setting Alpha ::: Third Alpha = ",
-                float(self.algorithmPar.alphaC),
+        if self.par.Na > 1:
+            _rhoB, _errBayesB, _errBootB, _likelihoodB, _gAgB, _gtB = self.lambdaToRho(
+                lambda_, estar_, self.algorithmPar.alphaBmp
             )
-            _this_rho3, _this_drho3, _this_gAg3, _ = self.lambdaToRho(
-                lambda_, estar_, self.algorithmPar.alphaCmp
-            )  # _this_drho will remain the first one
-            self.rho_list_alpha3[self.espace_dictionary[estar_]].append(
-                _this_rho3
-            )  # store
-            self.drho_list_alpha3[self.espace_dictionary[estar_]].append(
-                _this_drho3
-            )  # store
-            self.gAA0g_list_alpha3[self.espace_dictionary[estar_]].append(
-                _this_gAg3
-                / self.selectA0[self.algorithmPar.alphaC].valute_at_E_dictionary[estar_]
-            )  # store
-            print(
-                LogMessage(),
-                "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaC),
-                " = {:1.3e}".format(float(_this_rho3)),
-                " Stat = {:1.3e}".format(float(_this_drho3)),
+            self._store(
+                estar_,
+                _rhoB,
+                _errBayesB,
+                _errBootB,
+                _likelihoodB,
+                _gAgB,
+                lambda_,
+                whichAlpha="B",
             )
-        lambda_ -= lambda_step
+            if self.par.Na > 2:
+                (
+                    _rhoC,
+                    _errBayesC,
+                    _errBootC,
+                    _likelihoodC,
+                    _gAgC,
+                    _gtC,
+                ) = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
+                self._store(
+                    estar_,
+                    _rhoC,
+                    _errBayesC,
+                    _errBootC,
+                    _likelihoodC,
+                    _gAgC,
+                    lambda_,
+                    whichAlpha="C",
+                )
 
-        while _count < cap_ and lambda_ > self.algorithmPar.lambdaMin:
-            print(
-                LogMessage(),
+        #   Flag these until better results (Bayesian)
+        minNLL, lambdaStarBayes, rhoBayes, drhoBayes, gtBAYES = self._flagResult(
+            _likelihood, lambda_, _rho, _errBayes, _gt
+        )
+
+        #   #   #   #   #   #   #   #   Loops over values of lambda #   #   #   #   #   #   #   #
+        lambda_ -= lambda_step
+        while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
+            #   -   -   -   -   -   -
+            log(
                 "Setting Lambda ::: Lambda (0,inf) = {:1.3e}".format(float(lambda_)),
             )
-            print(
-                LogMessage(),
+            log(
                 "Setting Lambda ::: Lambda (0,1) = {:1.3e}".format(
                     float(lambda_ / (1 + lambda_))
                 ),
             )
+            self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
 
-            print(
-                LogMessage(),
+            #   Flag these until better results (HLT). Inside the loop contrary to the Bayesian equivalent
+            #   because _countPositiveResult can be set to zero inside the loop
+            if _countPositiveResult == 0:
+                lambdaStarHLT, rhoHLT, drhoHLT, gtHLT, gag_flag = self._flagResult(
+                    lambda_, _rho, _errBoot, _gt, _gAg
+                )
+            #   -   -   -   -   -   -
+
+            log(
                 "\t Setting Alpha ::: First Alpha = ",
                 self.algorithmPar.alphaA,
             )
-            _this_updated_rho, _this_updated_drho, _this_gAg, _ = self.lambdaToRho(
-                lambda_, estar_, self.algorithmPar.alphaAmp
+            (
+                _rhoUpdated,
+                _errBayesUpdated,
+                _errBootUpdated,
+                _likelihoodUpdated,
+                _gAgUpdated,
+                _gtUpdated,
+            ) = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaAmp)
+            self._store(
+                estar_,
+                _rhoUpdated,
+                _errBayesUpdated,
+                _errBootUpdated,
+                _likelihoodUpdated,
+                _gAgUpdated,
+                lambda_,
+                whichAlpha="A",
             )
-            self.rho_list[self.espace_dictionary[estar_]].append(
-                _this_updated_rho
-            )  #   store
-            print(
-                LogMessage(),
-                "\t \t Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaA),
-                " = {:1.3e}".format(float(_this_updated_rho)),
-                " Stat = {:1.3e}".format(float(_this_updated_drho)),
-            )
-            self.drho_list[self.espace_dictionary[estar_]].append(
-                _this_updated_drho
-            )  #   store
-            self.gAA0g_list[self.espace_dictionary[estar_]].append(
-                _this_gAg
-                / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-            )  #   store
-            self.lambda_list[self.espace_dictionary[estar_]].append(lambda_)
-            _residual1 = abs((_this_updated_rho - _this_rho) / (_this_updated_drho))
-            print(
-                LogMessage(),
-                "\t \t ",
-                f"{bcolors.OKBLUE}Residual{bcolors.ENDC}" + " = ",
-                float(_residual1),
-                "(alpha = {:2.2f}".format(self.algorithmPar.alphaA),
-                ")",
-            )
-
-            print(
-                LogMessage(),
-                "\t Setting Alpha ::: Second Alpha = ",
-                self.algorithmPar.alphaB,
-            )
-            _this_updated_rho2, _this_updated_drho2, _this_gAg2, _ = self.lambdaToRho(
-                lambda_, estar_, self.algorithmPar.alphaBmp
-            )
-            self.rho_list_alpha2[self.espace_dictionary[estar_]].append(
-                _this_updated_rho2
-            )  # store
-            print(
-                LogMessage(),
-                "\t \t  Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaB),
-                "= {:1.3e}".format(float(_this_updated_rho2)),
-                "Stat = {:1.3e}".format(float(_this_updated_drho2)),
-            )
-            self.drho_list_alpha2[self.espace_dictionary[estar_]].append(
-                _this_updated_drho2
-            )  # store
-            self.gAA0g_list_alpha2[self.espace_dictionary[estar_]].append(
-                _this_gAg2
-                / self.selectA0[self.algorithmPar.alphaB].valute_at_E_dictionary[estar_]
-            )  # store
-            _residual2 = abs((_this_updated_rho2 - _this_rho2) / (_this_updated_drho2))
-            print(
-                LogMessage(),
-                "\t \t  Residual = ",
-                float(_residual2),
-                "(alpha = {:2.2f}".format(self.algorithmPar.alphaB),
-                ")",
-            )
-
-            if how_many_alphas == 3:
-                print(
-                    LogMessage(),
-                    "\t Setting Alpha ::: Third Alpha = ",
-                    self.algorithmPar.alphaC,
+            if self.par.Na > 1:
+                log(
+                    "\t Setting Alpha ::: Second Alpha = ",
+                    self.algorithmPar.alphaB,
                 )
                 (
-                    _this_updated_rho3,
-                    _this_updated_drho3,
-                    _this_gAg3,
-                    _,
-                ) = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
-                self.rho_list_alpha3[self.espace_dictionary[estar_]].append(
-                    _this_updated_rho3
-                )  # store
-                print(
-                    LogMessage(),
-                    "\t \t  Rho (Alpha = {:2.2f}) ".format(self.algorithmPar.alphaC),
-                    "= {:1.3e}".format(float(_this_updated_rho3)),
-                    "Stat = {:1.3e}".format(float(_this_updated_drho3)),
+                    _rhoUpdatedB,
+                    _errBayesUpdatedB,
+                    _errBootUpdatedB,
+                    _likelihoodUpdatedB,
+                    _gAgUpdatedB,
+                    _gtUpdatedB,
+                ) = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaBmp)
+                self._store(
+                    estar_,
+                    _rhoUpdatedB,
+                    _errBayesUpdatedB,
+                    _errBootUpdatedB,
+                    _likelihoodUpdatedB,
+                    _gAgUpdatedB,
+                    lambda_,
+                    whichAlpha="B",
                 )
-                self.drho_list_alpha3[self.espace_dictionary[estar_]].append(
-                    _this_updated_drho3
-                )  # store
-                self.gAA0g_list_alpha3[self.espace_dictionary[estar_]].append(
-                    _this_gAg3
-                    / self.selectA0[self.algorithmPar.alphaC].valute_at_E_dictionary[
-                        estar_
-                    ]
-                )  # store
-                _residual3 = abs(
-                    (_this_updated_rho3 - _this_rho3) / (_this_updated_drho3)
+                _AB_Overlap = self._areRangesCompatible(
+                    _rhoUpdated, _errBootUpdated, _rhoUpdatedB, _errBootUpdatedB
                 )
-                print(
-                    LogMessage(),
-                    "\t \t  Residual ",
-                    float(_residual3),
-                    "(alpha = {:2.2f}".format(self.algorithmPar.alphaC),
-                )
-                comp_diff_AC = abs(_this_updated_rho - _this_updated_rho3) - (
-                    _this_updated_drho + _this_updated_drho3
-                )
-                print(
-                    LogMessage(),
-                    "\t \t  Rho Diff at alphas = (0 , -1.99) ::: {:2.2e}".format(
-                        float(comp_diff_AC / _this_updated_rho)
-                    ),
-                )
-            else:
-                comp_diff_AC = comp_diff_AB
+                if self.par.Na > 2:
+                    log(
+                        "\t Setting Alpha ::: Third Alpha = ",
+                        self.algorithmPar.alphaC,
+                    )
+                    (
+                        _rhoUpdatedC,
+                        _errBayesUpdatedC,
+                        _errBootUpdatedC,
+                        _likelihoodUpdatedC,
+                        _gAgUpdatedC,
+                        _gtUpdatedC,
+                    ) = self.lambdaToRho(lambda_, estar_, self.algorithmPar.alphaCmp)
+                    self._store(
+                        estar_,
+                        _rhoUpdatedC,
+                        _errBayesUpdatedC,
+                        _errBootUpdatedC,
+                        _likelihoodUpdatedC,
+                        _gAgUpdatedC,
+                        lambda_,
+                        whichAlpha="C",
+                    )
+                    _AC_Overlap = self._areRangesCompatible(
+                        _rhoUpdated, _errBootUpdated, _rhoUpdatedC, _errBootUpdatedC
+                    )
 
-            comp_diff_AB = abs(_this_updated_rho - _this_updated_rho2) - (
-                _this_updated_drho + _this_updated_drho2
-            )
+            newLambda_Overlap = self._areRangesCompatible(
+                _rhoUpdated, _compRatio * _errBootUpdated, _rho, _compRatio * _errBoot
+            )  # comparison with previous lambda
 
-            print(
-                LogMessage(),
-                "\t \t  Rho Diff at alphas = (0 : -1) ::: {:2.2E}".format(
-                    float(comp_diff_AB / _this_updated_rho)
-                ),
-            )
+            flagLambda_Overlap = self._areRangesCompatible(
+                _rhoUpdated, _compRatio * _errBootUpdated, rhoHLT, _compRatio * drhoHLT
+            )  # comparison with flagged lambda
+
+            if self.par.Na > 1:
+                newLambda_Overlap_B = self._areRangesCompatible(
+                    _rhoUpdatedB,
+                    _compRatio * _errBootUpdatedB,
+                    _rhoB,
+                    _compRatio * _errBootB,
+                )  # comparison with previous lambda
+
+                flagLambda_Overlap_B = self._areRangesCompatible(
+                    _rhoUpdatedB,
+                    _compRatio * _errBootUpdatedB,
+                    rhoHLT,
+                    _compRatio * drhoHLT,
+                )  # comparison with flagged lambda
+
+                if self.par.Na > 2:
+                    newLambda_Overlap_C = self._areRangesCompatible(
+                        _rhoUpdatedC,
+                        _compRatio * _errBootUpdatedC,
+                        _rhoC,
+                        _compRatio * _errBootC,
+                    )  # comparison with previous lambda
+
+                    flagLambda_Overlap_C = self._areRangesCompatible(
+                        _rhoUpdatedC,
+                        _compRatio * _errBootUpdatedC,
+                        rhoHLT,
+                        _compRatio * drhoHLT,
+                    )  # comparison with flagged lambda
+
             if (
-                _this_gAg
+                _likelihoodUpdated < minNLL
+            ):  # NLL, if less than before; flag the results
+                (
+                    minNLL,
+                    lambdaStarBayes,
+                    rhoBayes,
+                    drhoBayes,
+                    gtBAYES,
+                ) = self._flagResult(
+                    _likelihoodUpdated,
+                    lambda_,
+                    _rhoUpdated,
+                    _errBayesUpdated,
+                    _gtUpdated,
+                )
+
+            _skip = False
+            #   Checks compatibility between different alphas
+            if self.par.Na > 1 and not _AB_Overlap:
+                log("\t First and Second Alpha not compatible")
+                _skip = True
+                if newLambda_Overlap_B is False:
+                    log(
+                        "\t Result at Second Alpha not compatible with previous lambda at Second Alpha"
+                    )
+                    _skip = True
+            if self.par.Na > 2 and not _AC_Overlap:
+                log("\t First and Third Alpha not compatible")
+                _skip = True
+                if newLambda_Overlap_C is False:
+                    log(
+                        "\t Result at Third Alpha not compatible with previous lambda at Third Alpha"
+                    )
+                    _skip = True
+
+            #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
+            if newLambda_Overlap is False:
+                log(
+                    "\t Result at this Lambda does not overlap with previous: REJECTING result",
+                )
+                _skip = True
+            if flagLambda_Overlap is False:
+                log(
+                    "\t Result at this Lambda does not overlap with flagged: REJECTING result",
+                )
+                _skip = True
+                if self.par.Na > 1 and not flagLambda_Overlap_B:
+                    log(
+                        "\t Result at this Lambda, Second Alpha, does not overlap with flagged: REJECTING result",
+                    )
+                    _skip = True
+                    if self.par.Na > 2 and not flagLambda_Overlap_C:
+                        log(
+                            "\t Result at this Lambda, Third Alpha, does not overlap with flagged: REJECTING result",
+                        )
+                        _skip = True
+
+            #   Checks A/A0 is acceptable
+            if (
+                _gAgUpdated
                 / self.selectA0[self.algorithmPar.alphaA].valute_at_E_dictionary[estar_]
-                < self.par.A0cut
-                and _residual1 < prec_
-                and _residual2 < prec_
-                and comp_diff_AB < 0  # -(_this_updated_drho2 * 0.1)
-                and comp_diff_AC < 0  # -(_this_updated_drho * 0.1)
+                > self.par.A0cut
             ):
-                if _count == 1:
-                    lambda_flag = lambda_
-                    rho_flag = _this_updated_rho
-                    drho_flag = _this_updated_drho
-                if _count == 7:
-                    lambda_flag = lambda_
-                    rho_flag = _this_updated_rho
-                    drho_flag = _this_updated_drho
-                _count += 1
-                print(LogMessage(), f"{bcolors.OKGREEN}Counting{bcolors.ENDC}", _count)
+                log(
+                    "\t A/A0 is too large: rejecting result  (",
+                    float(
+                        _gAgUpdated
+                        / self.selectA0[
+                            self.algorithmPar.alphaA
+                        ].valute_at_E_dictionary[estar_]
+                    ),
+                    ")",
+                )
+                _skip = True
+
+            #   Having analysed all possible stopping conditions, proceed
+
+            if _skip is False:
+                #   Flag the first compatible result, because it is the one with the smaller error
+                if (
+                    _countPositiveResult == self.algorithmPar.plateau_id
+                ):  #   At future alphas we compare with rho_s at _countPositiveResult = 1. This can be changed.
+                    (
+                        lambdaStarHLT,
+                        rhoHLT,
+                        drhoHLT,
+                        gtHLT,
+                        gag_flag,
+                    ) = self._flagResult(
+                        lambda_, _rho, _errBoot, _gtUpdated, _gAgUpdated
+                    )
+                _countPositiveResult += 1
+                log(
+                    f"{bcolors.OKGREEN}Stopping Condition{bcolors.ENDC}",
+                    _countPositiveResult,
+                    "/",
+                    _cap,
+                )
             else:
-                _count = 0
+                _countPositiveResult = 0
 
-            _this_rho = _this_updated_rho
-            _this_rho2 = _this_updated_rho2
+            #   Update variables before restarting the loop
+            _rho = _rhoUpdated
+            _errBoot = _errBootUpdated
             lambda_ -= lambda_step
-
-            print(
-                LogMessage(),
-                "\t Ending while loop with lambda = ",
-                lambda_,
-                "lambdaMin = ",
-                self.algorithmPar.lambdaMin,
-            )
-
+            #   Resize lambda_step
             if lambda_ <= 0:
-                lambda_step /= resize
-                lambda_ += lambda_step * (resize - 1 / resize)
-                print(
-                    LogMessage(),
+                lambda_step /= _resize
+                lambda_ += lambda_step * (_resize - 1 / _resize)
+                log(
                     "Resize LambdaStep to ",
                     lambda_step,
                     "Setting Lambda = ",
@@ -793,476 +839,128 @@ class GaussianProcessWrapper:
                 )
 
             if lambda_ < self.algorithmPar.lambdaMin:
-                print(
-                    LogMessage(),
-                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Reached lower limit Lambda, did not find optimal lambda",
+                logging.warning(
+                    f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Stopping ::: Reached lower limit for lambda. Try decreasing 'algorithmPar.lambdaMin' or increase the smearing radius.",
                 )
 
-        #   while loop ends here
-
-        if rho_flag != 0:  #   if count was at filled at least once
-            self.lambda_result[self.espace_dictionary[estar_]] = lambda_flag
-            self.rho_result[self.espace_dictionary[estar_]] = rho_flag
-            self.drho_result[self.espace_dictionary[estar_]] = drho_flag
-        else:
-            print(
-                LogMessage(),
-                f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Did not find optimal lambda through plateau",
+        #   End of WHILE
+        if _countPositiveResult == 0:
+            logging.warning(
+                f"{bcolors.WARNING}WARNING{bcolors.ENDC} ::: Could NOT find a plateau in lambda",
             )
-            self.lambda_result[self.espace_dictionary[estar_]] = lambda_
-            self.rho_result[self.espace_dictionary[estar_]] = self.rho_list[
-                self.espace_dictionary[estar_]
-            ][-1]  # _this_rho
-            self.drho_result[self.espace_dictionary[estar_]] = self.drho_list[
-                self.espace_dictionary[estar_]
-            ][-1]  # _this_drho
 
-        print(
-            LogMessage(),
-            "Result ::: E = ",
-            estar_,
-            "Rho = ",
-            float(self.rho_result[self.espace_dictionary[estar_]]),
-            "Stat = ",
-            float(self.drho_result[self.espace_dictionary[estar_]]),
-            "Lambda = ",
-            float(self.lambda_result[self.espace_dictionary[estar_]]),
-        )
-
-        self.result_is_filled[self.espace_dictionary[estar_]] = True
-
-        print(
-            LogMessage(),
-            "Scan Lambda ::: Lambda * = ",
-            lambda_,
-            "at E = ",
-            estar_,
-        )
+        #   hlt
+        self.lambdaResultHLT[self.espace_dictionary[estar_]] = lambdaStarHLT
+        self.rhoResultHLT[self.espace_dictionary[estar_]] = rhoHLT
+        self.drho_result[self.espace_dictionary[estar_]] = drhoHLT
+        self.gt_HLT[self.espace_dictionary[estar_]] = gtHLT
+        self.aa0[self.espace_dictionary[estar_]] = gag_flag
+        #   bayesian
+        self.minNLL[self.espace_dictionary[estar_]] = minNLL
+        self.lambdaResultBayes[self.espace_dictionary[estar_]] = lambdaStarBayes
+        self.rhoResultBayes[self.espace_dictionary[estar_]] = rhoBayes
+        self.drho_bayes[self.espace_dictionary[estar_]] = drhoBayes
+        self.gt_Bayes[self.espace_dictionary[estar_]] = gtBAYES
 
         return (
-            self.rho_list[self.espace_dictionary[estar_]],
-            self.drho_list[self.espace_dictionary[estar_]],
-            self.gAA0g_list[self.espace_dictionary[estar_]],
-            self.rho_list_alpha2[self.espace_dictionary[estar_]],
-            self.drho_list_alpha2[self.espace_dictionary[estar_]],
-            self.gAA0g_list_alpha2[self.espace_dictionary[estar_]],
+            lambdaStarHLT,
+            rhoHLT,
+            drhoHLT,
+            minNLL,
+            lambdaStarBayes,
+            rhoBayes,
+            drhoBayes,
+            gtHLT,
+            gtBAYES,
+            gag_flag,
         )
 
-    def estimate_sys_error(self, estar_):
-        assert self.result_is_filled[self.espace_dictionary[estar_]] is True
-
-        _this_y = self.rho_result[self.espace_dictionary[estar_]]  #   rho at lambda*
-        _that_y, _that_yerr, _that_x, _ = self.lambdaToRho(
-            float(self.lambda_result[self.espace_dictionary[estar_]])
-            * self.algorithmPar.kfactor,
-            estar_,
+    def estimate_sys_error(self, e_i):
+        _this_y_HLT = self.rhoResultHLT[e_i]  # rho at lambda*
+        _that_y_HLT, _, _, _, _, _ = self.lambdaToRho(
+            self.lambdaResultHLT[e_i] * self.algorithmPar.kfactor,
+            self.espace[e_i],
             alpha_=0,
         )
 
-        self.rho_sys_err[self.espace_dictionary[estar_]] = abs(_this_y - _that_y) / 2
-        self.rho_quadrature_err[self.espace_dictionary[estar_]] = np.sqrt(
-            self.rho_sys_err[self.espace_dictionary[estar_]] ** 2
-            + self.drho_result[self.espace_dictionary[estar_]] ** 2
+        _this_y_Bayes = self.rhoResultBayes[e_i]  # rho at lambda*
+        _that_y_Bayes, _, _, _, _, _ = self.lambdaToRho(
+            self.lambdaResultBayes[e_i] * self.algorithmPar.kfactor,
+            self.espace[e_i],
+            alpha_=0,
         )
 
-        with open(os.path.join(self.par.logpath, "Result.txt"), "a") as output:
+        self.rho_sys_err_HLT[e_i] = abs(_this_y_HLT - _that_y_HLT) / 2
+        self.rho_quadrature_err_HLT[e_i] = np.sqrt(
+            self.rho_sys_err_HLT[e_i] ** 2 + self.drho_result[e_i] ** 2
+        )
+
+        self.rho_sys_err_Bayes[e_i] = abs(_this_y_Bayes - _that_y_Bayes) / 2
+        self.rho_quadrature_err_Bayes[e_i] = np.sqrt(
+            self.rho_sys_err_Bayes[e_i] ** 2 + self.drho_bayes[e_i] ** 2
+        )
+
+        return self.rho_sys_err_HLT[e_i], self.rho_sys_err_Bayes[e_i]
+
+    def run(self, savePlots=True, livePlots=False):
+        with open(os.path.join(self.par.logpath, "ResultHLT.txt"), "w") as output:
             print(
-                estar_,
-                float(self.lambda_result[self.espace_dictionary[estar_]]),
-                float(self.rho_result[self.espace_dictionary[estar_]]),
-                float(self.drho_result[self.espace_dictionary[estar_]]),
-                float(self.rho_sys_err[self.espace_dictionary[estar_]]),
-                float(self.rho_quadrature_err[self.espace_dictionary[estar_]]),
+                "# Energy \t Lambda(HLT) \t Rho(HLT) \t Stat(HLT) \t Sys(HLT) \t Quadrature \t A/A0",
+                file=output,
+            )
+        with open(os.path.join(self.par.logpath, "ResultBayes.txt"), "w") as output:
+            print(
+                "# Energy \t Lambda(Bayes) \t Rho(Bayes) \t Stat(Bayes) \t Sys(Bayes) \t Quadrature \t NLL",
                 file=output,
             )
 
-        return self.rho_sys_err[self.espace_dictionary[estar_]]
-
-    def plotKernel(self, plot_gaussian=False):
-        _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaA)) + ".txt"
-        with open(os.path.join(self.par.logpath, _name), "w") as output:
-            for _e in range(self.par.Ne):
-                _, _, _, gt = self.lambdaToRho(
-                    lambda_=self.lambda_result[_e],
-                    estar_=self.espace[_e],
-                    alpha_=self.algorithmPar.alphaAmp,
+        for e_i in range(self.par.Ne):
+            self.scanParameters(self.espace[e_i])
+            self.estimate_sys_error(e_i)
+            with open(os.path.join(self.par.logpath, "ResultHLT.txt"), "a") as output:
+                print(
+                    self.espace[e_i],
+                    self.lambdaResultHLT[e_i],
+                    float(self.rhoResultHLT[e_i]),
+                    float(self.drho_result[e_i]),
+                    float(self.rho_sys_err_HLT[e_i]),
+                    float(self.rho_quadrature_err_HLT[e_i]),
+                    float(self.aa0[e_i]),
+                    file=output,
                 )
-                print(self.espace[_e], gt, file=output)
-
-            self._plotKernel(
-                gt,
-                ne_=40,
-                omega=self.espace[_e],
-                alpha_=self.algorithmPar.alphaA,
-                plot_gaussian=plot_gaussian,
-            )
-
-        _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaB)) + ".txt"
-        with open(os.path.join(self.par.logpath, _name), "w") as output:
-            for _e in range(self.par.Ne):
-                _, _, _, gt = self.lambdaToRho(
-                    lambda_=self.lambda_result[_e],
-                    estar_=self.espace[_e],
-                    alpha_=self.algorithmPar.alphaBmp,
+            with open(os.path.join(self.par.logpath, "ResultBayes.txt"), "a") as output:
+                print(
+                    self.espace[e_i],
+                    self.lambdaResultBayes[e_i],
+                    float(self.rhoResultBayes[e_i]),
+                    float(self.drho_bayes[e_i]),
+                    float(self.rho_sys_err_Bayes[e_i]),
+                    float(self.rho_quadrature_err_Bayes[e_i]),
+                    float(self.minNLL[e_i]),
+                    file=output,
                 )
-                print(self.espace[_e], gt, file=output)
-        self._plotKernel(
-            gt,
-            ne_=40,
-            omega=self.espace[_e],
-            alpha_=self.algorithmPar.alphaB,
-            plot_gaussian=plot_gaussian,
-        )
 
-        _name = "CoefficientsAlpha" + str(float(self.algorithmPar.alphaC)) + ".txt"
-        with open(os.path.join(self.par.logpath, _name), "w") as output:
-            for _e in range(self.par.Ne):
-                _, _, _, gt = self.lambdaToRho(
-                    lambda_=self.lambda_result[_e],
-                    estar_=self.espace[_e],
-                    alpha_=self.algorithmPar.alphaCmp,
-                )
-                print(self.espace[_e], gt, file=output)
-        self._plotKernel(
-            gt,
-            ne_=40,
-            omega=self.espace[_e],
-            alpha_=self.algorithmPar.alphaC,
-            plot_gaussian=plot_gaussian,
-        )
+        return 0
 
-    def _plotKernel(self, gt_, omega, alpha_, ne_=40, plot_gaussian=False):
-        energies = np.linspace(1e-2, self.par.massNorm * 8, ne_)
-        kernel = np.zeros(ne_)
-        _file = (
-            "SmearingKernelSigma{:2.2e}".format(self.par.sigma)
-            + "Enorm{:2.2e}".format(self.par.massNorm)
-            + "Energy{:2.2e}".format(omega)
-            + "Alpha{:2.2f}".format(alpha_)
-            + ".txt"
-        )
-
-        with open(os.path.join(self.par.logpath, _file), "w") as output:
-            for _e in range(len(energies)):
-                kernel[_e] = combine_base_scalar(gt_, self.par, energies[_e])
-                print(energies[_e], kernel[_e], file=output)
-        plt.plot(
-            energies / self.par.massNorm,
-            kernel,
-            marker="o",
-            markersize=3.8,
-            ls="--",
-            label="Reconstructed kernel at $\omega/M_{\pi}$ = "
-            + "{:2.1e}".format(omega / self.par.massNorm),
-            color="black",
-            markerfacecolor=CB_colors[0],
-        )
-        if plot_gaussian is True:
-            plt.plot(
-                energies / self.par.massNorm,
-                gauss_fp(energies, omega, self.par.sigma, norm="half"),
-                ls="-",
-                label="Gaussian",
-                color="red",
-                linewidth=0.4,
-            )
-        plt.title(
-            r" $\sigma$"
-            + " = {:2.2f}".format(self.par.sigma / self.par.massNorm)
-            + r"$M_\pi$ "
-            + " $\;$ "
-            + r"$\alpha$ = {:2.2f}".format(alpha_)
-        )
-        plt.xlabel(r"$E$")
-        plt.legend()
-        # plt.tight_layout()
-        plt.savefig(
-            os.path.join(
-                self.par.plotpath,
-                "SmearingKernelSigma{:2.2e}".format(self.par.sigma)
-                + "Enorm{:2.2e}".format(self.par.massNorm)
-                + "Energy{:2.2e}".format(omega)
-                + "Alpha{:2.2f}".format(alpha_)
-                + ".png",
-            ),
-            dpi=400,
-        )
-        plt.clf()
-        return
-
-    def run(self, how_many_alphas=1, saveplots=True, plot_live=False):
-        print("Not Implemented")
-        exit()
-        with open(os.path.join(self.par.logpath, "Result.txt"), "w") as output:
-            print(
-                "# Energy \t Lambda \t Rho \t Stat \t Sys \t Quadrature ", file=output
-            )
-
-        if how_many_alphas == 1:
-            for e_i in range(self.par.Ne):
-                _, _, _ = self.scanLambda(self.espace[e_i])
-                _ = self.estimate_sys_error(self.espace[e_i])
-                if saveplots is True:
-                    self.plotStability(
-                        estar=self.espace[e_i], savePlot=saveplots, plot_live=plot_live
-                    )
-            print(
-                LogMessage(),
-                "Energies Rho Stat Sys = ",
-                self.espace,
-                self.rho_result,
-                self.drho_result,
-                self.rho_sys_err,
-            )
-            return
-        elif how_many_alphas == 2 or how_many_alphas == 3:
-            for e_i in range(self.par.Ne):
-                _, _, _, _, _, _ = self.scanLambdaAlpha(
-                    self.espace[e_i], how_many_alphas=how_many_alphas
-                )
-                _ = self.estimate_sys_error(self.espace[e_i])
-                self.plotKernel(plot_gaussian=False)
-                if saveplots is True:
-                    self.plotStabilityMultipleAlpha(
-                        estar=self.espace[e_i],
-                        savePlot=saveplots,
-                        nalphas=how_many_alphas,
-                        plot_live=plot_live,
-                    )
-            print(
-                LogMessage(),
-                "Energies Rho Stat Sys = ",
-                self.espace,
-                self.rho_result,
-                self.drho_result,
-                self.rho_sys_err,
-            )
-            return
-        else:
-            raise ValueError(
-                "how_many_alphas : Invalid value specified. Only 1, 2 or 3 are allowed."
-            )
-
-    def plotParameterScan(self, how_many_alphas=1, save_plots=True, plot_live=False):
-        assert all(self.result_is_filled) is True
-        if how_many_alphas == 1:
-            for e_i in range(self.par.Ne):
-                self.plotStability(estar=self.espace[e_i], savePlot=save_plots)
-            return
-        elif how_many_alphas == 2 or how_many_alphas == 3:
-            for e_i in range(self.par.Ne):
-                self.plotStabilityMultipleAlpha(
-                    estar=self.espace[e_i], savePlot=save_plots, nalphas=how_many_alphas
-                )
-            return
-        else:
-            raise ValueError(
-                "how_many_alphas : Invalid value specified. Only 1, 2 or 3 are allowed."
-            )
-
-    def plothltrho(self, savePlot=True):
-        plt.errorbar(
-            x=self.espace / self.par.massNorm,
-            y=np.array(self.rho_result, dtype=float),
-            yerr=np.array(self.drho_result, dtype=float),
-            marker="o",
-            markersize=1.5,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label="Stat",
-            color=CB_color_cycle[0],
-        )
-
-        plt.errorbar(
-            x=self.espace / self.par.massNorm,
-            y=np.array(self.rho_result, dtype=float),
-            yerr=np.array(self.rho_sys_err, dtype=float),
-            marker="o",
-            markersize=1.5,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label="Sys",
-            color=CB_color_cycle[1],
-        )
-
-        plt.errorbar(
-            x=self.espace / self.par.massNorm,
-            y=np.array(self.rho_result, dtype=float),
-            yerr=np.array(self.rho_quadrature_err, dtype=float),
-            marker="o",
-            markersize=1.5,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label="Quadrature Sum",
-            color=CB_color_cycle[2],
-        )
-
-        plt.title(r" $\sigma$" + " = {:2.2f} Mpi".format(self.par.sigma))
-        plt.xlabel(r"$E$")
-        plt.legend()
-        plt.grid()
-        plt.tight_layout()
-        if savePlot is True:
-            plt.savefig(
-                os.path.join(
-                    self.par.plotpath,
-                    "hltrhoigma{:2.2e}".format(self.par.sigma) + ".png",
-                ),
-                dpi=300,
-            )
-        plt.clf()
-        return
-
-    def plotStability(self, estar: float, savePlot=True, plot_live=False):
-        fig, ax = plt.subplots(1, 1, figsize=(6, 8))
-        plt.title(
-            r"$E/M_{\pi}$"
-            + "= {:2.2f}  ".format(estar / self.par.massNorm)
-            + r" $\sigma$"
-            + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
-        )
-        ax.errorbar(
-            x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=1.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color=CB_colors[0],
-        )
-        ax.axhspan(
-            ymin=float(
-                self.rho_result[self.espace_dictionary[estar]]
-                - self.drho_result[self.espace_dictionary[estar]]
-            ),
-            ymax=float(
-                self.rho_result[self.espace_dictionary[estar]]
-                + self.drho_result[self.espace_dictionary[estar]]
-            ),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax.set_xlabel(r"$\lambda$")
-        ax.set_ylabel(r"$\rho_\sigma$")
-        ax.legend(prop={"size": 12, "family": "Helvetica"})
-        ax.set_xscale("log")
-        ax.grid()
-
-        plt.tight_layout()
-        if savePlot is True:
-            plt.savefig(
-                os.path.join(
-                    self.par.plotpath,
-                    "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
-                ),
-                dpi=300,
-            )
-        if plot_live is True:
-            plt.show()
-        plt.close(fig)
-
-    def plotStabilityMultipleAlpha(
-        self, estar: float, savePlot=True, nalphas=2, plot_live=False
+    def stabilityPlot(
+        self,
+        generateHLTscan=True,
+        generateLikelihoodShared=True,
+        generateLikelihoodPlot=True,
+        generateKernelsPlot=True,
     ):
-        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
-        plt.rcParams["font.family"] = "serif"
-        plt.rcParams["mathtext.fontset"] = "cm"
-        plt.rc("xtick", labelsize=22)
-        plt.rc("ytick", labelsize=22)
-        plt.rcParams.update({"font.size": 22})
-        plt.title(
-            r"$E/M_{\pi}$"
-            + "= {:2.2f}  ".format(estar / self.par.massNorm)
-            + r" $\sigma$"
-            + " = {:2.2f} Mpi".format(self.par.sigma / self.par.massNorm)
-        )
-        ax.errorbar(
-            x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(self.rho_list[self.espace_dictionary[estar]], dtype=float),
-            yerr=np.array(self.drho_list[self.espace_dictionary[estar]], dtype=float),
-            marker=plot_markers[0],
-            markersize=4.8,
-            elinewidth=1.3,
-            capsize=2,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaA),
-            color="black",
-            ecolor=CB_colors[0],
-            markerfacecolor=CB_colors[0],
-        )
-        ax.errorbar(
-            x=np.array(self.lambda_list[self.espace_dictionary[estar]], dtype=float),
-            y=np.array(
-                self.rho_list_alpha2[self.espace_dictionary[estar]], dtype=float
-            ),
-            yerr=np.array(
-                self.drho_list_alpha2[self.espace_dictionary[estar]], dtype=float
-            ),
-            marker=plot_markers[1],
-            markersize=4.8,
-            elinewidth=1.3,
-            capsize=3,
-            ls="",
-            label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaB),
-            color="black",
-            ecolor=CB_colors[1],
-            markerfacecolor=CB_colors[1],
-        )
-        if nalphas == 3:
-            ax.errorbar(
-                x=np.array(
-                    self.lambda_list[self.espace_dictionary[estar]], dtype=float
-                ),
-                y=np.array(
-                    self.rho_list_alpha3[self.espace_dictionary[estar]], dtype=float
-                ),
-                yerr=np.array(
-                    self.drho_list_alpha3[self.espace_dictionary[estar]], dtype=float
-                ),
-                marker=plot_markers[2],
-                markersize=4.8,
-                elinewidth=1.3,
-                capsize=3,
-                ls="",
-                label=r"$\alpha = {:1.2f}$".format(self.algorithmPar.alphaC),
-                color="black",
-                ecolor=CB_colors[2],
-                markerfacecolor=CB_colors[2],
-            )
+        for e_i in range(self.par.Ne):
+            if generateHLTscan is True:
+                stabilityPlot(self, self.espace[e_i], savePlot=True, plot_live=False)
+            if generateLikelihoodShared is True:
+                sharedPlot_stabilityPlusLikelihood(
+                    self, self.espace[e_i], savePlot=True, plot_live=False
+                )
+            if generateLikelihoodPlot is True:
+                plotLikelihood(self, self.espace[e_i], savePlot=True, plot_live=False)
+            if generateKernelsPlot is True:
+                plotAllKernels(self)
 
-        ax.axhspan(
-            ymin=float(
-                self.rho_result[self.espace_dictionary[estar]]
-                - self.drho_result[self.espace_dictionary[estar]]
-            ),
-            ymax=float(
-                self.rho_result[self.espace_dictionary[estar]]
-                + self.drho_result[self.espace_dictionary[estar]]
-            ),
-            alpha=0.3,
-            color=CB_colors[4],
-        )
-        ax.set_xlabel(r"$\lambda$", fontsize=32)
-        ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
-        ax.legend(prop={"size": 26, "family": "Helvetica"}, frameon=False)
-        ax.set_xscale("log")
-        # ax.grid()
-
-        plt.tight_layout()
-        if savePlot is True:
-            plt.savefig(
-                os.path.join(
-                    self.par.plotpath,
-                    "LambdaScanE{:2.2e}".format(self.espace_dictionary[estar]) + ".png",
-                ),
-                dpi=420,
-            )
-        if plot_live is True:
-            plt.show()
-        plt.close(fig)
+    def plotResult(self):
+        plotSpectralDensity(self)
+        return
