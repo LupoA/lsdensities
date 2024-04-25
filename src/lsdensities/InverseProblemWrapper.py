@@ -688,6 +688,36 @@ class InverseProblemWrapper:
                 _rhoUpdated, _compRatio * _errBootUpdated, rhoHLT, _compRatio * drhoHLT
             )  # comparison with flagged lambda
 
+            if self.par.Na > 1:
+                newLambda_Overlap_B = self._areRangesCompatible(
+                    _rhoUpdatedB,
+                    _compRatio * _errBootUpdatedB,
+                    _rhoB,
+                    _compRatio * _errBootB,
+                )  # comparison with previous lambda
+
+                flagLambda_Overlap_B = self._areRangesCompatible(
+                    _rhoUpdatedB,
+                    _compRatio * _errBootUpdatedB,
+                    rhoHLT,
+                    _compRatio * drhoHLT,
+                )  # comparison with flagged lambda
+
+                if self.par.Na > 2:
+                    newLambda_Overlap_C = self._areRangesCompatible(
+                        _rhoUpdatedC,
+                        _compRatio * _errBootUpdatedC,
+                        _rhoC,
+                        _compRatio * _errBootC,
+                    )  # comparison with previous lambda
+
+                    flagLambda_Overlap_C = self._areRangesCompatible(
+                        _rhoUpdatedC,
+                        _compRatio * _errBootUpdatedC,
+                        rhoHLT,
+                        _compRatio * drhoHLT,
+                    )  # comparison with flagged lambda
+
             if (
                 _likelihoodUpdated < minNLL
             ):  # NLL, if less than before; flag the results
@@ -710,9 +740,19 @@ class InverseProblemWrapper:
             if self.par.Na > 1 and not _AB_Overlap:
                 log("\t First and Second Alpha not compatible")
                 _skip = True
+                if newLambda_Overlap_B is False:
+                    log(
+                        "\t Result at Second Alpha not compatible with previous lambda at Second Alpha"
+                    )
+                    _skip = True
             if self.par.Na > 2 and not _AC_Overlap:
                 log("\t First and Third Alpha not compatible")
                 _skip = True
+                if newLambda_Overlap_C is False:
+                    log(
+                        "\t Result at Third Alpha not compatible with previous lambda at Third Alpha"
+                    )
+                    _skip = True
 
             #   Checks if Rho at this lambda overlaps with Rho at flagged lambda
             if newLambda_Overlap is False:
@@ -725,6 +765,17 @@ class InverseProblemWrapper:
                     "\t Result at this Lambda does not overlap with flagged: REJECTING result",
                 )
                 _skip = True
+                if self.par.Na > 1 and not flagLambda_Overlap_B:
+                    log(
+                        "\t Result at this Lambda, Second Alpha, does not overlap with flagged: REJECTING result",
+                    )
+                    _skip = True
+                    if self.par.Na > 2 and not flagLambda_Overlap_C:
+                        log(
+                            "\t Result at this Lambda, Third Alpha, does not overlap with flagged: REJECTING result",
+                        )
+                        _skip = True
+
             #   Checks A/A0 is acceptable
             if (
                 _gAgUpdated
