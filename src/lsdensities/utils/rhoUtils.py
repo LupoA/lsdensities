@@ -29,15 +29,15 @@ class CustomFormatter(logging.Formatter):
         return super().format(record)
 
 
-# formatter = CustomFormatter("Message ::: " + '%(elapsed_time)s - %(levelname)s - %(message)s')
 formatter = CustomFormatter("Message ::: " + "%(elapsed_time)s - %(message)s")
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
 def log(*args, **kwargs):
+    level = kwargs.pop("level", logging.INFO)
     msg = " ".join(map(str, args))
-    logger.info(msg, **kwargs)
+    logger.log(level, msg, **kwargs)
 
 
 start_time = time.time()

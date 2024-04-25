@@ -114,7 +114,7 @@ def parse_inputs():
     inputs.Na = args.Na
     inputs.A0cut = args.A0cut
     inputs.loglevel = args.loglevel
-    return args
+    return inputs
 
 
 def parse_synthetic_inputs():
