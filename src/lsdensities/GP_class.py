@@ -438,16 +438,20 @@ class GaussianProcessWrapper:
             gt=_g_t_estar, params=self.par, estar=estar_, alpha=alpha_
         )
         log("\t\t gt ft = ", float(varianceRho))
-        log(
-            "\t\t A0 is ",
-            float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
-        )
+
+        assert (
+            self.par.kerneltype == "FULLNORMGAUSS"
+        ), "Gaussian Process only admit FULLNORMGAUSS as a prior. Consider using InverseProblemWrapper, or implement your prior."
+        _prior_diag = 1 / (np.sqrt(2 * np.pi) * self.par.sigma)
+
+        _prior_diag *= mp.exp(alpha_ * estar_)
         varianceRho = mp.fsub(
-            float(self.selectA0[float(alpha_)].valute_at_E_dictionary[estar_]),
+            _prior_diag,
             varianceRho,
         )
-        log("\t\t A0 - gt ft = {:2.2e}".format(float(varianceRho)))
+        log("\t\t exp(alpha E) - gt ft (E) = {:2.2e}".format(float(varianceRho)))
         varianceRho = mp.fdiv(varianceRho, _factor)
+
         varianceRho = mp.fdiv(varianceRho, mpf(2))
         drho_estar_Bayes = mp.sqrt(abs(varianceRho))
 
