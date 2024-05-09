@@ -116,7 +116,7 @@ Please make sure to update tests as appropriate.
 Development requirements can be installed by using ``pip install -r requirements.txt``, and they are listed in ``requirements.txt``.
 
 ## References
-For the mean ideas: https://arxiv.org/pdf/1903.06476.pdf
+For the main ideas: https://arxiv.org/pdf/1903.06476.pdf
 
 For the Bayesian setup and the general treatment of the bias: https://arxiv.org/pdf/2311.18125.pdf
 
