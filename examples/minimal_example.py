@@ -3,8 +3,8 @@ from lsdensities.utils.rhoUtils import (
     Inputs,
 )
 from mpmath import mp, mpf
-from lsdensities.core import Smatrix_mp
-from lsdensities.transform import h_Et_mp_Eslice, y_combine_central_Eslice_mp
+from lsdensities.core import hlt_matrix
+from lsdensities.transform import coefficients_ssd, get_ssd_scalar
 from lsdensities.utils.rhoMath import gauss_fp
 
 # compute the smeared spectral density at some energy,
@@ -39,19 +39,19 @@ regularising_parameter = mpf(str(1e-6))  # regularising parameters; must be tune
 # can be made as small as zero, in which case the result will be exact in
 # the limit of infinite tmax
 
-regularised_matrix = Smatrix_mp(parameters.tmax, alpha_=0) + (
+regularised_matrix = hlt_matrix(parameters.tmax, alpha=0) + (
     regularising_parameter * lattice_covariance
 )
 matrix_inverse = regularised_matrix ** (-1)
 
-coeff = h_Et_mp_Eslice(
+coeff = coefficients_ssd(
     matrix_inverse,  #   linear coefficients
     parameters,
     energy,
-    alpha_=0,
+    alpha=0,
 )
 
-result = y_combine_central_Eslice_mp(
+result = get_ssd_scalar(
     coeff,  #   linear combination of data
     lattice_correlator,
     parameters,

@@ -1,4 +1,4 @@
-from lsdensities.core import Smatrix_mp
+from lsdensities.core import hlt_matrix
 from lsdensities.transform import ft_mp
 
 
@@ -7,13 +7,13 @@ def test_Smat_convergence():
     T_list = []
     upper_bound = int(500)
 
-    Sinf = Smatrix_mp(upper_bound, alpha_=0.0, type="EXP")
+    Sinf = hlt_matrix(upper_bound, alpha=0.0, type="EXP")
     fixed_Sinf = float(Sinf[3, 2])
     print("$S_{3,2}_{inf}$ = ", fixed_Sinf)
 
     for i in range(100, upper_bound, 100):
         tmax = int(i / 2 - 1)
-        Scalc = Smatrix_mp(tmax, type="COSH", alpha_=0.0, T=i)
+        Scalc = hlt_matrix(tmax, type="COSH", alpha=0.0, T=i)
         S_list.append(float(Scalc[3, 2]))
         T_list.append(i)
         print("$S_{3,2}$ = ", float(Scalc[3, 2]))
