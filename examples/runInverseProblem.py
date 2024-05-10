@@ -5,10 +5,10 @@ from lsdensities.utils.rhoUtils import (
     end,
     generate_seed,
 )
-from lsdensities.utils.rhoUtils import create_out_paths
+
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
 from lsdensities.utils.rhoParser import parse_inputs
+from lsdensities.utils.rhoStat import resample
 import os
 from mpmath import mp, mpf
 import numpy as np
@@ -18,25 +18,29 @@ import random
 
 
 def main():
+    '''
+    Solves the inverse problem with the HLT method and provides, at the same time, the corresponding Bayesian solution,
+    which is based on a white-noise Gaussian Process, see [hep-lat/2311.18125].
+    HLT solution: parameter lambda is chosen from a stability analysis.
+    Bayesian solution: parameter lambda is chosen from the minimum of the negative log likelihood.
+    Smearing kernel: fixed by par.ker_type with smearing radius par.sigma
+    '''
     print(LogMessage(), "Initialising")
     par = parse_inputs()
-    par.init()
     init_precision(par.prec)
+
+    #   When a datafile is read, we don't assign values of par until the file is passed
+    #   Reading datafile, storing correlator. Initialisation of par is inside read_datafile
+    rawcorr = u.read_datafile(par, resampled=False) # specify if the correlator is resampled, since it affects
+                                                    # the computation of its statistical error
     par.report()
+    rawcorr.evaluate() # computes average correlator
 
     seed = generate_seed(par)
     random.seed(seed)
     np.random.seed(random.randint(0, 2 ** (32) - 1))
 
-    #   Reading datafile, storing correlator
-    rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
-    par.assign_values()
-    par.report()
-    par.plotpath, par.logpath = create_out_paths(par)
-
     #   Folding the correlator (if applicable)
-    rawcorr.evaluate()
-    rawcorr.tmax = par.tmax
     if par.periodicity == "COSH":
         print(LogMessage(), "Folding correlator")
         symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
@@ -44,27 +48,14 @@ def main():
 
     #   #   #   Resampling
     if par.periodicity == "EXP":
-        corr = u.Obs(
-            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
-        )
-        resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        corr = resample(rawcorr, par)
     if par.periodicity == "COSH":
-        corr = u.Obs(
-            T=symCorr.T,
-            tmax=symCorr.tmax,
-            nms=par.num_boot,
-            is_resampled=True,
-        )
-        resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
-
-    corr.sample = resample.run()
-    corr.evaluate()
+        corr = resample(symCorr, par)
     #   -   -   -   -   -   -   -   -   -   -   -
 
     #   Covariance
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
-    corr.corrmat_from_covmat(plot=False)
     with open(os.path.join(par.logpath, "covarianceMatrix.txt"), "w") as output:
         for i in range(par.time_extent):
             for j in range(par.time_extent):
@@ -107,7 +98,7 @@ def main():
         generateHLTscan=True,
         generateLikelihoodShared=True,
         generateLikelihoodPlot=True,
-        generateKernelsPlot=True,
+        generateKernelsPlot=False,
     )  # Lots of plots as it is
     HLT.plotResult()
     end()

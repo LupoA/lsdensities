@@ -3,7 +3,10 @@ import matplotlib.pyplot as plt
 import math
 import random
 from mpmath import mp
-
+import lsdensities.utils.rhoUtils as u
+from .rhoUtils import LogMessage, Inputs
+import multiprocessing as multiprocessing
+from typing import List
 
 def averageVector_fp(vector, get_error=True, get_var=False):
     sum = 0
@@ -164,3 +167,93 @@ def averageScalar_mp(in_, bootstrap=True):
         aux_ = mp.sqrt(samplesize_)
         out_[1] = mp.fdiv(out_[1], aux_)
     return out_
+
+def resample(input_corr, par):
+    if par.periodicity == "EXP":
+        output_corr = u.Obs(
+            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
+        )
+        resample = ParallelBootstrapLoop(par, input_corr.sample, is_folded=False)
+    if par.periodicity == "COSH":
+        output_corr = u.Obs(
+            T=input_corr.T,
+            tmax=input_corr.tmax,
+            nms=par.num_boot,
+            is_resampled=True,
+        )
+        resample = ParallelBootstrapLoop(par, input_corr.sample, is_folded=False)
+
+    output_corr.sample = resample.run()
+    output_corr.evaluate()
+    return output_corr
+
+
+class ParallelBootstrapLoop:
+    def __init__(self, par: Inputs, in_: np.ndarray, is_folded=False):
+        self.par = par
+        self.looplen = par.num_boot
+        self.vlen = par.time_extent
+        self.inputsample = in_
+        self.num_processes = multiprocessing.cpu_count()
+        self.chunk_size = self.looplen // self.num_processes
+        if self.looplen % self.num_processes != 0:
+            self.chunk_size += 1
+        self.out_array = multiprocessing.Array("d", self.looplen * self.vlen)
+        self.out_ = np.frombuffer(self.out_array.get_obj()).reshape(
+            (self.looplen, self.vlen)
+        )
+        self.processes: List[multiprocessing.Process] = []
+        self.is_folded = is_folded
+
+    def run(self) -> np.ndarray:
+        for i in range(self.num_processes):
+            start = i * self.chunk_size
+            end = min(start + self.chunk_size, self.looplen)
+            if self.is_folded is False:
+                process = multiprocessing.Process(
+                    target=parallel_bootstrap_compact_fp,
+                    args=(
+                        self.par,
+                        self.inputsample,
+                        self.out_,
+                        start,
+                        end,
+                        random.randint(0, 2 ** (32) - 1),
+                    ),
+                )
+            if self.is_folded is True:
+                process = multiprocessing.Process(
+                    target=parallel_bootstrap_compact_fp,
+                    args=(
+                        self.par,
+                        self.inputsample,
+                        self.out_,
+                        start,
+                        end,
+                        random.randint(0, 2 ** (32) - 1),
+                        self.is_folded,
+                    ),
+                )
+            try:
+                process.start()
+            except Exception as e:
+                print(f"Failed to start process {i}: {e}")
+                self.terminate_all_processes()
+                raise
+            self.processes.append(process)
+        print(LogMessage(), "Bootstrap ::: Running parallel loop")
+        for process in self.processes:
+            try:
+                process.join()
+            except Exception as e:
+                print(f"Failed to join process {process}: {e}")
+                self.terminate_all_processes()
+                raise
+        print(LogMessage(), "Bootstrap ::: End loop, joining processes")
+        return self.out_
+
+    def terminate_all_processes(self) -> None:
+        for process in self.processes:
+            if process.is_alive():
+                process.terminate()
+            process.join()

@@ -1,9 +1,8 @@
 import lsdensities.utils.rhoUtils as u
 from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, generate_seed
 from lsdensities.utils.rhoParser import parse_inputs
-from lsdensities.utils.rhoUtils import create_out_paths
+from lsdensities.utils.rhoStat import resample
 from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
 from mpmath import mp, mpf
 import random
 import numpy as np
@@ -13,29 +12,36 @@ from lsdensities.GP_class import (
     GaussianProcessWrapper,
 )
 
+#   use True if you have the ill conditioned matrix already stored in a file
+#   use False if you need to compute it. Can take some time.
 read_SIGMA_ = True
 
 
 def main():
+    '''
+    This function solve the inverse problem using the traditional Bayesian approach based on Gaussian Processes.
+    The output is smeared with an unconstrained kernel. If this is a problem, switch to InverseProblemWrapper rather than GaussianProcessWrapper.
+    Hyperparameters: we use the negative log likelihood to determine lambda. At the same time we perform the HLT-type stability analysis.
+    The smearing radius of the Gaussian model prior is not treated as a hyperparameter. It is an input (par.sigma).
+    For completeness, the function returns both Bayesian and Frequentist error.
+    These are unconventional choice, but this package is mainly interested in the fixed-smearing kernel solution,
+    provided by InverseProblemWrapper, see [hep-lat/2311.18125]
+    '''
     print(LogMessage(), "Initialising")
     par = parse_inputs()
-    par.init()
     init_precision(par.prec)
+    #   When a datafile is read, we don't assign values of par until the file is passed
+    #   Reading datafile, storing correlator. Initialisation of par is inside read_datafile
+    rawcorr = u.read_datafile(par, resampled=False) # specify if the correlator is resampled, since it affects
+                                                    # the computation of its statistical error
     par.report()
+    rawcorr.evaluate() # computes average correlator
 
     seed = generate_seed(par)
     random.seed(seed)
     np.random.seed(random.randint(0, 2 ** (32) - 1))
 
-    #   Reading datafile, storing correlator
-    rawcorr, par.time_extent, par.num_samples = u.read_datafile(par.datapath)
-    par.assign_values()
-    par.report()
-    par.plotpath, par.logpath = create_out_paths(par)
-
     #   Folding the correlator (if applicable)
-    rawcorr.evaluate()
-    rawcorr.tmax = par.tmax
     if par.periodicity == "COSH":
         print(LogMessage(), "Folding correlator")
         symCorr = symmetrisePeriodicCorrelator(corr=rawcorr, par=par)
@@ -43,21 +49,9 @@ def main():
 
     #   #   #   Resampling
     if par.periodicity == "EXP":
-        corr = u.Obs(
-            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
-        )
-        resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
+        corr = resample(rawcorr, par)
     if par.periodicity == "COSH":
-        corr = u.Obs(
-            T=symCorr.T,
-            tmax=symCorr.tmax,
-            nms=par.num_boot,
-            is_resampled=True,
-        )
-        resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
-
-    corr.sample = resample.run()
-    corr.evaluate()
+        corr = resample(symCorr, par)
     #   -   -   -   -   -   -   -   -   -   -   -
 
     #   Covariance
@@ -71,7 +65,7 @@ def main():
     print(LogMessage(), "Cond[Cov C] = {:3.3e}".format(float(mp.cond(corr.mpcov))))
 
     cNorm = mpf(str(corr.central[1] ** 2))
-    lambdaMax = 1e4
+    lambdaMax = 1e3
     energies = np.linspace(par.emin, par.emax, par.Ne)
 
     hltParams = AlgorithmParameters(
@@ -82,7 +76,7 @@ def main():
         lambdaStep=lambdaMax / 2,
         lambdaScanCap=8,
         kfactor=0.1,
-        lambdaMin=5e-2,
+        lambdaMin=5e-4,
         comparisonRatio=0.3,
     )
     matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
@@ -104,8 +98,8 @@ def main():
         generateHLTscan=True,
         generateLikelihoodShared=True,
         generateLikelihoodPlot=True,
-        generateKernelsPlot=True,
-    )  # Lots of plots as it is
+        generateKernelsPlot=False,
+    )
     GP.plotResult()
     end()
 

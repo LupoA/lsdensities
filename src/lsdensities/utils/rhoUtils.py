@@ -228,7 +228,7 @@ def print_hlt_format(mtobs, T, nms, filename, directory):
                 print(i, mtobs[j, i], file=output)
 
 
-def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
+def read_datafile(par, resampled=False):  # (filename_, directory_):
     """
     The input file has a header with time_extent and number of measurements.
     then data config by config. Example:
@@ -240,7 +240,8 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     #   0   corr[0]
     #   ... so on
     """
-    with open(datapath_, "r") as file:
+    datapath = par.datapath
+    with (open(datapath, "r") as file):
         header = next(file).strip()
         print(LogMessage(), "Reading file :::", "Header: ", header)
         header_nms = int(header.split(" ")[0])
@@ -257,8 +258,13 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
             n = int(indx / header_T)
             # print(l.rstrip(), "     ", t, n)
             mcorr_.sample[n, t] = float(lndex.split(" ")[1])
+        par.time_extent = header_T
+        par.num_samples = header_nms
+        par.init()
+        par.assign_values()
+        mcorr_.tmax = par.tmax
     #   Returns np array of correlators
-    return mcorr_, header_T, header_nms
+    return mcorr_
 
 
 def init_precision(digits_):
