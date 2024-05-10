@@ -22,7 +22,7 @@ dependencies = [
     "mpmath",
     "scipy",
     "matplotlib",
-    "progressbar",
+    "PyQt5",
 ]
 
 [project.urls]

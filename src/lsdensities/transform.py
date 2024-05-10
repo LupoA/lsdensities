@@ -1,5 +1,4 @@
 from mpmath import mp, mpf
-from progressbar import ProgressBar
 from .core import ft_mp, gte
 from .utils.rhoStat import averageScalar_mp, averageVector_mp
 
@@ -75,9 +74,8 @@ def get_ssd_averaged_vector(gt, corr_type, params):
     :param params: instance of Inputs class
     :return: [mp.matrix(params.Ne), mp.matrix(params.Ne)] corresponding to avg and std
     """
-    pbar = ProgressBar()
     rhob = mp.matrix(params.Ne, params.num_boot)
-    for b in pbar(range(params.num_boot)):
+    for b in range(params.num_boot):
         y = corr_type.sample[b][:]
         for e in range(params.Ne):
             rhob[e, b] = 0
