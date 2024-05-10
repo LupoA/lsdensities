@@ -192,7 +192,6 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
 
-
     return res
 
 

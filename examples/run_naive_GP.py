@@ -18,7 +18,7 @@ read_SIGMA_ = True
 
 
 def main():
-    '''
+    """
     This function solve the inverse problem using the traditional Bayesian approach based on Gaussian Processes.
     The output is smeared with an unconstrained kernel. If this is a problem, switch to InverseProblemWrapper rather than GaussianProcessWrapper.
     Hyperparameters: we use the negative log likelihood to determine lambda. At the same time we perform the HLT-type stability analysis.
@@ -26,16 +26,18 @@ def main():
     For completeness, the function returns both Bayesian and Frequentist error.
     These are unconventional choice, but this package is mainly interested in the fixed-smearing kernel solution,
     provided by InverseProblemWrapper, see [hep-lat/2311.18125]
-    '''
+    """
     print(LogMessage(), "Initialising")
     par = parse_inputs()
     init_precision(par.prec)
     #   When a datafile is read, we don't assign values of par until the file is passed
     #   Reading datafile, storing correlator. Initialisation of par is inside read_datafile
-    rawcorr = u.read_datafile(par, resampled=False) # specify if the correlator is resampled, since it affects
-                                                    # the computation of its statistical error
+    rawcorr = u.read_datafile(
+        par, resampled=False
+    )  # specify if the correlator is resampled, since it affects
+    # the computation of its statistical error
     par.report()
-    rawcorr.evaluate() # computes average correlator
+    rawcorr.evaluate()  # computes average correlator
 
     seed = generate_seed(par)
     random.seed(seed)

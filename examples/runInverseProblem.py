@@ -18,23 +18,25 @@ import random
 
 
 def main():
-    '''
+    """
     Solves the inverse problem with the HLT method and provides, at the same time, the corresponding Bayesian solution,
     which is based on a white-noise Gaussian Process, see [hep-lat/2311.18125].
     HLT solution: parameter lambda is chosen from a stability analysis.
     Bayesian solution: parameter lambda is chosen from the minimum of the negative log likelihood.
     Smearing kernel: fixed by par.ker_type with smearing radius par.sigma
-    '''
+    """
     print(LogMessage(), "Initialising")
     par = parse_inputs()
     init_precision(par.prec)
 
     #   When a datafile is read, we don't assign values of par until the file is passed
     #   Reading datafile, storing correlator. Initialisation of par is inside read_datafile
-    rawcorr = u.read_datafile(par, resampled=False) # specify if the correlator is resampled, since it affects
-                                                    # the computation of its statistical error
+    rawcorr = u.read_datafile(
+        par, resampled=False
+    )  # specify if the correlator is resampled, since it affects
+    # the computation of its statistical error
     par.report()
-    rawcorr.evaluate() # computes average correlator
+    rawcorr.evaluate()  # computes average correlator
 
     seed = generate_seed(par)
     random.seed(seed)

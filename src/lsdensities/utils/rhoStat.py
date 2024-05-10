@@ -8,6 +8,7 @@ from .rhoUtils import LogMessage, Inputs
 import multiprocessing as multiprocessing
 from typing import List
 
+
 def averageVector_fp(vector, get_error=True, get_var=False):
     sum = 0
     stdv = 0
@@ -167,6 +168,7 @@ def averageScalar_mp(in_, bootstrap=True):
         aux_ = mp.sqrt(samplesize_)
         out_[1] = mp.fdiv(out_[1], aux_)
     return out_
+
 
 def resample(input_corr, par):
     if par.periodicity == "EXP":

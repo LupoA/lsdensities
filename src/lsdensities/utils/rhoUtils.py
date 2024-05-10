@@ -241,7 +241,7 @@ def read_datafile(par, resampled=False):  # (filename_, directory_):
     #   ... so on
     """
     datapath = par.datapath
-    with (open(datapath, "r") as file):
+    with open(datapath, "r") as file:
         header = next(file).strip()
         print(LogMessage(), "Reading file :::", "Header: ", header)
         header_nms = int(header.split(" ")[0])
