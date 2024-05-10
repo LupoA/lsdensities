@@ -50,9 +50,9 @@ def main():
 
     #   #   #   Resampling
     if par.periodicity == "EXP":
-        corr = resample(rawcorr, par)
+        corr = resample(rawcorr, par, parallelise=False)
     if par.periodicity == "COSH":
-        corr = resample(symCorr, par)
+        corr = resample(symCorr, par, parallelise=False)
     #   -   -   -   -   -   -   -   -   -   -   -
 
     #   Covariance

@@ -1,6 +1,6 @@
 from mpmath import mp, mpf
 from .core import ft_mp, gte
-from .utils.rhoStat import averageScalar_mp, averageVector_mp
+from .utils.rhoStat import average_1d_mpmatrix, average_2d_mpmatrix
 
 
 def coefficients_ssd(matrix, params, estar, alpha):
@@ -82,7 +82,7 @@ def get_ssd_averaged_vector(gt, corr_type, params):
             for i in range(params.tmax):
                 aux_ = mp.fmul(gt[e, i], y[i])
                 rhob[e, b] = mp.fadd(rhob[e, b], aux_)
-    return averageVector_mp(rhob)
+    return average_2d_mpmatrix(rhob)
 
 
 def get_ssd_averaged_scalar(gt, corr_samples, params):
@@ -103,7 +103,7 @@ def get_ssd_averaged_scalar(gt, corr_samples, params):
         for i in range(params.tmax):
             aux_ = mp.fmul(gt[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
-    return averageScalar_mp(rhob)
+    return average_1d_mpmatrix(rhob)
 
 
 def combine_fMf_scalar(gt, params, estar, alpha):
@@ -160,8 +160,8 @@ def y_combine_sample_Eslice_mp_ToFile(file, ht_sliced, mpmatrix, params):
                 aux_ = mp.fmul(ht_sliced[i], y[i])
                 rhob[b] = mp.fadd(rhob[b], aux_)
             print(b, float(rhob[b]), file=output)
-        # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
-    return averageScalar_mp(rhob)
+        # print(LogMessage(), "rho[e] +/- stat ", float(average_1d_mpmatrix(rhob)[0]), (float(average_1d_mpmatrix(rhob)[1])))
+    return average_1d_mpmatrix(rhob)
 
 
 def combine_likelihood(minv, params, mpcorr):
