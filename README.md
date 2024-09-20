@@ -118,7 +118,7 @@ Development requirements can be installed by using ``pip install -r requirements
 ## References
 For the main ideas: https://arxiv.org/pdf/1903.06476.pdf
 
-For the Bayesian setup and the general treatment of the bias: [https://arxiv.org/pdf/2311.18125.pdf](https://arxiv.org/pdf/2409.04413)
+For the Bayesian setup and the general treatment of the bias: https://arxiv.org/pdf/2409.04413
 
 ## License
 
