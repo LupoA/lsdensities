@@ -16,11 +16,10 @@ target_result_precision = 1e-8
 
 logger = logging.getLogger("log")
 logger.setLevel(logging.WARNING)  # default log level is WARNING
-logger.propagate = False # avoid duplication of messages in some cases
+logger.propagate = False  # avoid duplication of messages in some cases
 
 if not logger.hasHandlers():
     stream_handler = logging.StreamHandler()
-
 
     # custom formatter class to include elapsed time
     class CustomFormatter(logging.Formatter):
@@ -32,7 +31,6 @@ if not logger.hasHandlers():
             elapsed_time_ms = time.time() - self.start_time
             record.elapsed_time = "{:.3f} s".format(elapsed_time_ms)
             return super().format(record)
-
 
     # set custom formatter for the handler
     formatter = CustomFormatter("Message ::: %(elapsed_time)s - %(message)s")
