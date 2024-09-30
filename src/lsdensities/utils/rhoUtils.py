@@ -15,23 +15,31 @@ target_result_precision = 1e-8
 #   #   #   #   #   #  ----- logger -----   #   #   #   #   #   #
 
 logger = logging.getLogger("log")
-stream_handler = logging.StreamHandler()
+logger.setLevel(logging.WARNING)  # default log level is WARNING
+logger.propagate = False # avoid duplication of messages in some cases
+
+if not logger.hasHandlers():
+    stream_handler = logging.StreamHandler()
 
 
-class CustomFormatter(logging.Formatter):
-    def __init__(self, *args, **kwargs):
-        self.start_time = time.time()
-        super().__init__(*args, **kwargs)
+    # custom formatter class to include elapsed time
+    class CustomFormatter(logging.Formatter):
+        def __init__(self, *args, **kwargs):
+            self.start_time = time.time()
+            super().__init__(*args, **kwargs)
 
-    def format(self, record):
-        elapsed_time_ms = time.time() - self.start_time
-        record.elapsed_time = "{:.3f} s".format(elapsed_time_ms)
-        return super().format(record)
+        def format(self, record):
+            elapsed_time_ms = time.time() - self.start_time
+            record.elapsed_time = "{:.3f} s".format(elapsed_time_ms)
+            return super().format(record)
 
 
-formatter = CustomFormatter("Message ::: " + "%(elapsed_time)s - %(message)s")
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
+    # set custom formatter for the handler
+    formatter = CustomFormatter("Message ::: %(elapsed_time)s - %(message)s")
+    stream_handler.setFormatter(formatter)
+
+    # add the handler to the logger
+    logger.addHandler(stream_handler)
 
 
 def log(*args, **kwargs):
