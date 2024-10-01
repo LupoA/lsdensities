@@ -38,12 +38,12 @@ class AlgorithmParameters:
         alphaB=1 / 2,
         alphaC=1.99,
         lambdaMax=50,
-        lambdaStep=0.5,
+        lambdaStep=25,
         lambdaScanCap=6,
         plateau_id=1,
         kfactor=0.1,
         lambdaMin=1e-6,
-        comparisonRatio=1,
+        comparisonRatio=0.4,
         resize=4,
     ):
         assert alphaA != alphaB
@@ -66,7 +66,7 @@ class AlgorithmParameters:
         self.resize = resize
 
 
-class A0_t:
+class _NormaliseMeasure:
     def __init__(self, par: Inputs, alpha=0, emin=0):
         self.valute_at_E = mp.matrix(par.Ne, 1)
         self.valute_at_E_dictionary = {}  # Auxiliary dictionary: A0espace[n] = A0espace_dictionary[espace[n]] # espace must be float
@@ -131,17 +131,17 @@ class InverseProblemWrapper:
         self.selectSigmaMat = {}  #   Usage: selectSigmaMat[alpha] = Sigma
         #   Containers for the factor A0
         self.selectA0 = {}
-        self.A0_A = A0_t(
+        self.A0_A = _NormaliseMeasure(
             alpha=self.algorithmPar.alphaAmp, emin=self.eminMP, par=self.par
         )
         self.selectA0[algorithmPar.alphaA] = self.A0_A
         if self.par.Na > 1:
-            self.A0_B = A0_t(
+            self.A0_B = _NormaliseMeasure(
                 alpha=self.algorithmPar.alphaBmp, emin=self.eminMP, par=self.par
             )
             self.selectA0[algorithmPar.alphaB] = self.A0_B
             if self.par.Na > 2:
-                self.A0_C = A0_t(
+                self.A0_C = _NormaliseMeasure(
                     alpha=self.algorithmPar.alphaCmp,
                     emin=self.eminMP,
                     par=self.par,

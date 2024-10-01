@@ -1,5 +1,5 @@
 Setting up lsdensities
-=================
+======================
 
 In your directory of choice, clone the repository,
 
@@ -75,7 +75,7 @@ An important variable set by this function is ``parameters.tmax`` which specifie
     running ``parameters.assign_values()`` is mandatory, and applications may not work if this function is not called. Attributed of parameters should not be modified after ``assign_values()`` is called.
 
 A first look: solving against synthetic correlators (no datafile required)
-------------------------------
+--------------------------------------------------------------------------
 
 In the following we create a single sample for a correlator and we extract the smeared spectral density at a given energy.
 This basic application of the library is intended to familiarise the user with its basic feature, but it does not contain all the information that is necessary to run against a real dataset.
@@ -175,7 +175,7 @@ The derived solution should approach the true value as ``regularising_parameter`
     When using a datafile, you do NOT need to remove the correlator at :math:`t=0` from it, because this is done automatically by the library.
 
 Example applications in the examples directory
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some applications implementing variations of the strategy described above are available in the ``examples`` directory.
 
