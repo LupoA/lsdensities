@@ -10,7 +10,7 @@ The library takes a measurements for a lattice correlator :math:`C(t)`, which is
 
     \rho(\sigma;\omega) = \int dE \, \mathcal{S}_\sigma(\omega-E) \, \rho(E) \, .
 
-The smearing kernel :math:`\mathcal{S}(\omega-E) is a Gaussian function by default. Different options are available, and others can be implemented or requested.
+The smearing kernel :math:`\mathcal{S}(\omega-E)` is a Gaussian function by default. Different options are available, and others can be implemented or requested.
 
 It is assumed that the relation between the correlator and the spectral density is of the following type:
 

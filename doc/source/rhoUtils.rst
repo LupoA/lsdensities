@@ -134,6 +134,7 @@ Inputs can defined manually
 or via command line
 
 .. code-block:: python
+
     par = parse_inputs()
     init_precision(par.prec)
     par.assign_values()
