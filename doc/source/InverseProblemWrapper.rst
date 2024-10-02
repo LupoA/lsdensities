@@ -4,9 +4,9 @@ lsdensities/InverseProblemWrapper.py
 Overview
 --------
 
-The file contains the main class `InverseProblemWrapper` and a few auxiliary classes.
+The file contains the main class `:ref:`InverseProblemWrapper <InverseProblemWrapper-label>`` and a few auxiliary classes.
 
-The optimisation process within InverseProblemWrapper seeks to obtain the smeared spectral density at different, decreasing values of `lambda`. Once a plateau is identified, meaning that subsequent values of lambda provide compatibles
+The optimisation process within :ref:`InverseProblemWrapper <InverseProblemWrapper-label>` seeks to obtain the smeared spectral density at different, decreasing values of `lambda`. Once a plateau is identified, meaning that subsequent values of lambda provide compatibles
 estimates for the smeared density, a value for `lambda` inside the plateau and the corresponding smeared
 spectral densities are pulled out, and identified as the result. As further check, the result is compared with a second value of `lambda`, looking for differences to add as systematic errors. The auxiliary `AlgorithmParameters` class
 encapsulates the parameters the control this scan over `lambda`. They instruct the class on what should be interpreted as a satisfying plateau, how many points in the plateau should be evaluated, where to perform the control for systematic error and so on.
@@ -27,7 +27,9 @@ The above equation amounts to solve a linear system,
 
 The matrix :math:`\Sigma` is also pre-computed by the `SigmaMatrix` class. The normalising facotr `c` is computed within the InverseProblemWrapper class, and the vector `f` can be found in `lsdensities/core.py`.
 
-In the following we describe the auxiliary classes first, then InverseProblemWrapper.
+In the following we describe the auxiliary classes first, then :ref:`InverseProblemWrapper <InverseProblemWrapper-label>`.
+
+.. _AlgorithmParameters-label:
 
 class AlgorithmParameters
 -------------------------
@@ -76,6 +78,8 @@ Here’s how you can initialize and use the `AlgorithmParameters` class:
     print(f"Comparison Ratio: {params.comparisonRatio}")
 
 
+.. _InverseProblemWrapper-label:
+
 class InverseProblemWrapper
 ---------------------------
 
@@ -85,7 +89,7 @@ The class takes the following input parameters:
 
 **Parameters**
 
-    - ``par`` (`Inputs`): An instance of the `Inputs` class containing required parameters about the lattice.
+    - ``par`` (:ref:`Inputs <Inputs-label>`): An instance of the :ref:`Inputs <Inputs-label>` class containing required parameters about the lattice.
     - ``algorithmPar`` (`AlgorithmParameters`): An instance of the AlgorithmParameters class containing the parameter for the selection of `lambda`
     - ``matrix_bundle`` (`MatrixBundle`): Instance of the MatrixBoundle class, which contains the covariance matrix of the correlator and its normalisation factor.
     - ``correlator`` (Obs): An instance of the Obs class which contains the measurements of the lattice correlators, together with other related features.
@@ -182,7 +186,7 @@ If the periodicity is set to COSH, the expression is generalised appropriately.
 The class takes the following parameters
 
     **Parameters**
-        - ``par`` (`Inputs`): An instance of the `Inputs` class containing required parameters.
+        - ``par`` (:ref:`Inputs <Inputs-label>`): An instance of the :ref:`Inputs <Inputs-label>` class containing required parameters.
         - ``alphaMP`` (`mpmath.mpf`, optional): The `alpha` parameter. Defaults to `0`.
 
 The class has the following attributes
@@ -190,7 +194,7 @@ The class has the following attributes
     **par**
         The parameters passed as inputs
 
-        Type: Inputs class
+        Type: :ref:`Inputs <Inputs-label>` class
 
     **tmax**
         Simply par.tmax (redundant)
@@ -219,7 +223,7 @@ Values can be accessed by using the integer index, or by exact energy value thro
 The class takes the following parameters
 
     **Parameters**
-        - ``par`` (`Inputs`): An instance of the `Inputs` class containing required parameters.
+        - ``par`` (:ref:`Inputs <Inputs-label>`): An instance of the :ref:`Inputs <Inputs-label>` class containing required parameters.
         - ``alpha`` (`mpmath.mpf`, optional): The `alpha` parameter. Defaults to `0`.
         - ``emin`` (`mpmath.mpf`, optional): The lower bound of the integral. Defaults to `0`.
 
@@ -246,9 +250,9 @@ The class has the following attributes
 
             Type: `mpmath.mpf`
     **par**
-            An instance of the `Inputs` class containing some required parameters.
+            An instance of the :ref:`Inputs <Inputs-label>` class containing some required parameters.
 
-            Type: Inputs
+            Type: :ref:`Inputs <Inputs-label>`
 
 The class has the following methods
 

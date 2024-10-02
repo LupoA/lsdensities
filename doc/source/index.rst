@@ -32,7 +32,17 @@ where :math:`a` is the lattice spacing and :math:`\tau_{\max}` the number of dat
 
     \vec{g}(\sigma;\omega) = \argmin_{\vec{g} \in \mathbb{R}^{\tau_{\rm max}}} \int_0^\infty dE \, e^{\alpha E} | \sum_{r=1}^{\tau_{\rm max}} g_\tau(\omega) b_T(a \tau, E) - \mathcal{S}_\sigma(E,\omega) |^2 \\  + \lambda \; \sum_{\tau_1, \tau_2=1}^{\tau_{\rm max}} g_{\tau_1}(\omega) \, B_{\tau_1 \tau_2}\,  g_{\tau_2}(\omega) \, , \;\;\;\;\; \lambda \in (0,\infty)
 
-At :math:`\lambda=0` this expression provides the exact solution for the problem, which is however deeply unstable when the correlator is affected by noise. The class `InverseProblemWrapper.py` provides routines that automatically optimise the value of :math:`\lambda`.
+.. _what_is_lambda-label:
+
+At :math:`\lambda=0` this expression provides the exact solution for the problem,
+which is however deeply unstable when the correlator is affected by noise.
+The class `InverseProblemWrapper.py` provides routines that automatically
+optimise the value of :math:`\lambda`.
+
+.. _what_is_alpha-label:
+
+Different values of :math:`\alpha < 2` can be also chosen. This allows to work with different
+norms. Different choices can have better convergence properties at different energies.
 
 
 
@@ -45,3 +55,4 @@ Contents
 
    Introduction
    InverseProblemWrapper
+   rhoUtils

@@ -39,9 +39,19 @@ Alternatively, in the test directory, you can run the tests, which should take s
 Usage examples
 ==============
 
-The examples directory contains a number of files that can help familiarising with the library. A number of them creates synthetic correlators and therefore does not require any input datafile, while other files contain more realistic examples, where most of the workflow is automatised by the ``InverseProblemWrapper``.
-We can start by looking at some common, basic features.
+There are two ways of using this library, depending on how the user wants to interface with the
+optimisation of the parameter :ref:`lambda <what_is_lambda-label>`. One way is to use the library to compute
+the spectral density at a fixed value of lambda. One can loop over different values of lambda and choose the value
+that is deemed correct. Alternatively, the optimisation of lambda is automatised in the :ref:`InverseProblemWrapper <InverseProblemWrapper-label>` class. This is the recommended way.
+In the class is used, only a handful of inputs and the data must be passed to the library, and the rest is handled automatically.
+The user still has a large degree of freedom by tuning the input :ref:`parameters of the class <AlgorithmParameters-label>`.
+Moreover, the :ref:`InverseProblemWrapper <InverseProblemWrapper-label>` class will output the smeared spectral density both from a Bayesian and a frequentist algorithm.
 
+To immediately look the workflow without the InverseProblemWrapper, look at ``examples/minimal_example.py``.
+
+To immediately look at the workflow using the InverseProblemWrapper, look at ``examples/runInverseProblem.py`` (requires a datafile).
+
+We can start by looking at some common, basic features.
 At the beginning, the desired level of numerical precision can be selected. This can be done with the command
 
 .. code-block:: python
@@ -51,7 +61,7 @@ At the beginning, the desired level of numerical precision can be selected. This
 
 which sets, in this example, the precision to approximately 64 numerical digits.
 
-An ``Input`` object must be then defined. This object specify some basic inputs, such as the type of the smearing kernel, its smearing radius, or the energies at which we want to obtain the solution. The Input object is ubiquitous in lsdensities and it should be well understood.
+An :ref:`Inputs <Inputs-label>` object must be then defined. This object specify some basic inputs, such as the type of the smearing kernel, its smearing radius, or the energies at which we want to obtain the solution. The Input object is ubiquitous in lsdensities and it should be well understood.
 While its attributed have default values, they should be set manually or via input files. For instance:
 
 .. code-block:: python
@@ -63,7 +73,7 @@ While its attributed have default values, they should be set manually or via inp
     parameters.sigma = 0.25  # smearing radius in given energy units
 
 Some inputs are dimensionful quantities, and the user should take care of using them consistently (e.g. everything is expressed in GeV).
-Once the desired attributed for the Inputs object are specify, a function needs to called in order to fill some internal attributed based on the values provided.
+Once the desired attributed for the :ref:`Inputs <Inputs-label>` object are specify, a function needs to called in order to fill some internal attributed based on the values provided.
 
 .. code-block:: python
 
@@ -74,8 +84,8 @@ An important variable set by this function is ``parameters.tmax`` which specifie
 .. warning::
     running ``parameters.assign_values()`` is mandatory, and applications may not work if this function is not called. Attributed of parameters should not be modified after ``assign_values()`` is called.
 
-A first look: solving against synthetic correlators (no datafile required)
---------------------------------------------------------------------------
+A first look: solving against synthetic correlators (no datafile required) at a single value of :math:`\lambda`
+---------------------------------------------------------------------------------------------------------------
 
 In the following we create a single sample for a correlator and we extract the smeared spectral density at a given energy.
 This basic application of the library is intended to familiarise the user with its basic feature, but it does not contain all the information that is necessary to run against a real dataset.
@@ -140,7 +150,7 @@ This has to be in general regularised. In this example it would not be necessary
     matrix_inverse = regularised_matrix ** (-1)
 
 The value of ``regularising_parameter`` regularises the solution but introduces a bias.
-Its effect accounted for with a high degree of automation by the ``InverseProblemWrapper`` class.
+Its effect accounted for with a high degree of automation by the :ref:`InverseProblemWrapper <InverseProblemWrapper-label>` class.
 In this first example, we simply set it to a small value.
 
 Having computed and inverted the appropriate matrix, we can obtain the coefficients by using the ``coefficients_ssd`` function
@@ -173,6 +183,12 @@ The derived solution should approach the true value as ``regularising_parameter`
 .. warning::
     The time argument of the correlator must be shifted by one unit. This is because the correlator in zero `cannot enter the reconstruction process <https://arxiv.org/pdf/1903.06476>`_.
     When using a datafile, you do NOT need to remove the correlator at :math:`t=0` from it, because this is done automatically by the library.
+
+A second look: scan over :math:`\lambda` and automatised workflow
+-----------------------------------------------------------------
+
+under construction
+
 
 Example applications in the examples directory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
