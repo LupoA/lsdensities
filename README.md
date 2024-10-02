@@ -18,6 +18,10 @@ for the solution of the inverse problem.
 
 Niccolò Forzano, Alessandro Lupo.
 
+## Documentation
+
+Documentation is under construction. It can be found <a href="https://lupoa.github.io/lsdensities/index.html">here</a> in its preliminary form.
+
 ## Installation
 
 One can download, build and install the package
