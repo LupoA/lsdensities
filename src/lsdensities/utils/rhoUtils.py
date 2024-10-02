@@ -2,9 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
-import math
-from ..core import hlt_matrix
-from .rhoMath import norm2_mp
 import time
 from mpmath import mp, mpf
 import hashlib
@@ -266,7 +263,6 @@ def read_datafile(par, resampled=False):  # (filename_, directory_):
             mcorr_.sample[n, t] = float(lndex.split(" ")[1])
         par.time_extent = header_T
         par.num_samples = header_nms
-        par.init()
         par.assign_values()
         mcorr_.tmax = par.tmax
     #   Returns np array of correlators
@@ -303,7 +299,7 @@ class Inputs:
         self.periodicity = "EXP"
         self.A0cut = 0
         # self.l = -1
-        self.prec = -1
+        self.prec = 105
         self.mpsigma = mpf("0")
         self.mpemax = mpf("0")
         self.mpemin = mpf("0")
@@ -313,7 +309,18 @@ class Inputs:
         self.kerneltype = "FULLNORMGAUSS"
         self.loglevel = "WARNING"
 
-    def assign_values(self):
+    def _init(self, create_output_directories):
+        init_precision(self.prec)
+        if self.loglevel == "INFO":
+            logger.setLevel(logging.INFO)
+        elif self.loglevel == "DEBUG":
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.WARNING)
+        if create_output_directories:
+            self.plotpath, self.logpath = create_out_paths(self)
+
+    def assign_values(self, create_output_directories=True):
         """
         Assigns tmax based on time_extent and periodicity if tmax was not specified
         Creates mpf(var) from float type var
@@ -349,17 +356,7 @@ class Inputs:
             + "KerType"
             + str(self.kerneltype)
         )
-
-    def init(self):
-        self.assign_values()
-        init_precision(self.prec)
-        self.plotpath, self.logpath = create_out_paths(self)
-        if self.loglevel == "INFO":
-            logger.setLevel(logging.INFO)
-        elif self.loglevel == "DEBUG":
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.WARNING)
+        self._init(create_output_directories)
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)
@@ -398,48 +395,13 @@ class Inputs:
 
 
 class MatrixBundle:
+    """
+    The B functional will be Bmatrix (the covariance, the identity, ...) normalised by bnorm (a number)
+    """
+
     def __init__(self, Bmatrix: mp.matrix, bnorm=mpf(1)):
         self.B = Bmatrix
         self.bnorm = bnorm
-
-
-def adjust_precision(tmax: int):
-    """
-    currently not used;
-    This function should *reduce* the numerical precision
-    from the large input value
-    to a value suggested by the condition
-    number of S
-    If the starting prec is too small the function might
-    too small of a value which results in a warning
-    """
-    S_ = hlt_matrix(tmax, alpha=0)
-    condS = mp.cond(S_)
-    n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
-    print(
-        LogMessage(),
-        "Adjust precision ::: ",
-        "Suggested numerical precision based on tmax is {:4d}".format(n_prec),
-    )
-    print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
-    init_precision(n_prec)
-    S_ = hlt_matrix(tmax, alpha=0)
-    condS = mp.cond(S_)
-    n_prec_post = math.ceil(math.log10(condS)) + 3
-    if n_prec_post != n_prec:
-        print(
-            LogMessage(),
-            f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Suggested precision might be small. Suggest restarting with higher --prec option",
-        )
-        print(
-            LogMessage(),
-            f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Asserting whether minimal precision 1e-8 on the inversion is guaranteed ",
-        )
-    invS = S_ ** (-1)
-    diff = S_ * invS
-    diff = norm2_mp(diff) - 1
-    assert float(diff) < target_result_precision
-    return 0
 
 
 class bcolors:

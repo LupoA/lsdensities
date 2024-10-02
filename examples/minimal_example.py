@@ -1,7 +1,4 @@
-from lsdensities.utils.rhoUtils import (
-    init_precision,
-    Inputs,
-)
+from lsdensities.utils.rhoUtils import Inputs
 from mpmath import mp, mpf
 from lsdensities.core import hlt_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
@@ -10,8 +7,8 @@ from lsdensities.utils.rhoMath import gauss_fp
 # compute the smeared spectral density at some energy,
 # from a lattice correlator
 
-init_precision(128)
 parameters = Inputs()
+parameters.prec = 128  # numerical precision in decimal digits
 parameters.time_extent = 32
 parameters.kerneltype = "FULLNORMGAUSS"  # Kernel smearing spectral density
 parameters.periodicity = "EXP"  # EXP / COSH for open / periodic boundary conditions

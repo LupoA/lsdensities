@@ -169,8 +169,11 @@ The class features a number of methods. The main one that is intended to be acce
         After this is done, it computes the systematic error by repeating the calculation at a different value of `lambda`, which was prescribed in the ``AlgorithmicParameters`` class passed
         as an input. Finally, it prints various results in an output file. Depending on the boolean argument, it stores a number of plots in the output directory. livePlots will make the plots appear as the application is executed.
 
+:orphan:
+
+-----------------
 class SigmaMatrix
------------
+-----------------
 
 Class computing and storing elements of the matrix :math:`\Sigma`. If the periodicity is set to EXP, this corresponds to
 
@@ -211,8 +214,11 @@ The class has the following methods
     **evaluate**
         Fills the entries of ``self.matrix``. Does not `return`.
 
+:orphan:
+
+---------------------------------
 class _NormaliseMeasure (Private)
----------------------------
+---------------------------------
 
 The `_NormaliseMeasure` class pre-evaluated part of the normalising facotrs required by the InverseProblemWrapper class. It is an array (one-dimensional matrix) of mpf numbers, one for each energy requested.
 Values can be accessed by using the integer index, or by exact energy value through a dictionary. The value computed is historically called :math:`A_0`

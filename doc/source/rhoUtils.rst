@@ -8,7 +8,7 @@ as loggers, a datafile reader, directories creation etc.
 
 .. _Inputs-label:
 
-class Inputs
+Inputs class
 ------------
 
 This is a container for a number of inputs that must be specified in order to work with this library.
@@ -117,6 +117,23 @@ The following attributes are available:
 
         Type: str
 
+Examples usage
+~~~~~~~~~~~~~~
 
+Inputs can defined manually
 
+.. code-block:: python
 
+    parameters = Inputs()
+    parameters.time_extent = 32
+    parameters.kerneltype = "FULLNORMGAUSS"  # Kernel smearing spectral density
+    parameters.periodicity = "EXP"  # EXP / COSH for open / periodic boundary conditions
+    parameters.sigma = 0.25  # smearing radius in given energy units
+    parameters.assign_values()
+
+or via command line
+
+.. code-block:: python
+    par = parse_inputs()
+    init_precision(par.prec)
+    par.assign_values()
