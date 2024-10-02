@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>lsdensities/InverseProblemWrapper.py &#8212; lsdensities  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"tex": {"macros": {"argmin": "\\mathop{\\rm arg\\,min}\\limits"}}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="lsdensities/utils/rhoUtils.py" href="rhoUtils.html" />
+    <link rel="prev" title="Setting up lsdensities" href="Introduction.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rhoUtils.html" title="lsdensities/utils/rhoUtils.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">lsdensities/InverseProblemWrapper.py</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="lsdensities-inverseproblemwrapper-py">
+<h1>lsdensities/InverseProblemWrapper.py<a class="headerlink" href="#lsdensities-inverseproblemwrapper-py" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>The file contains the main class <cite>:ref:`InverseProblemWrapper &lt;InverseProblemWrapper-label&gt;`</cite> and a few auxiliary classes.</p>
+<p>The optimisation process within <a class="reference internal" href="#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> seeks to obtain the smeared spectral density at different, decreasing values of <cite>lambda</cite>. Once a plateau is identified, meaning that subsequent values of lambda provide compatibles
+estimates for the smeared density, a value for <cite>lambda</cite> inside the plateau and the corresponding smeared
+spectral densities are pulled out, and identified as the result. As further check, the result is compared with a second value of <cite>lambda</cite>, looking for differences to add as systematic errors. The auxiliary <cite>AlgorithmParameters</cite> class
+encapsulates the parameters the control this scan over <cite>lambda</cite>. They instruct the class on what should be interpreted as a satisfying plateau, how many points in the plateau should be evaluated, where to perform the control for systematic error and so on.</p>
+<p>Up to three different values of <cite>alpha</cite> can be used. If additional values are used, the algorithm will seek for a common plateau among different values of <cite>alpha</cite>. We remind that <cite>lambda</cite> and <cite>alpha</cite> refers to the variables entering the
+expression for the coefficients,</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\vec{g}(\sigma;\omega) = \argmin_{\vec{g} \in \mathbb{R}^{\tau_{\rm max}}} \int_0^\infty dE \, e^{\alpha E} | \sum_{r=1}^{\tau_{\rm max}} g_\tau(\omega) b_T(a \tau, E) - \mathcal{S}_\sigma(E,\omega) |^2 \\  + \lambda \; \sum_{\tau_1, \tau_2=1}^{\tau_{\rm max}} g_{\tau_1}(\omega) \, B_{\tau_1 \tau_2}\,  g_{\tau_2}(\omega) \, , \;\;\;\;\; \lambda \in (0,\infty)\end{split}\]</div>
+<p>The matrix B is proportional to the covariance matrix of the correlator. Part of the proportionality factor is the norm (in the sense defined above, i.e. <span class="math notranslate nohighlight">\(alpha\)</span> and energy dependent) of the smearing kernel. This is pre-computed at all requested energies by the private class _NormaliseMeasure.
+The above equation amounts to solve a linear system,</p>
+<div class="math notranslate nohighlight">
+\[g_{\tau_1}(\sigma;\omega) = [\Sigma(\alpha) + c(\lambda, \alpha, \omega) \text{Cov}]^{-1}_{\tau_1 \tau_2} \, f_{\tau_1}(\omega,\sigma,\alpha)\]</div>
+<p>The matrix <span class="math notranslate nohighlight">\(\Sigma\)</span> is also pre-computed by the <cite>SigmaMatrix</cite> class. The normalising facotr <cite>c</cite> is computed within the InverseProblemWrapper class, and the vector <cite>f</cite> can be found in <cite>lsdensities/core.py</cite>.</p>
+<p>In the following we describe the auxiliary classes first, then <a class="reference internal" href="#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>.</p>
+</section>
+<section id="class-algorithmparameters">
+<span id="algorithmparameters-label"></span><h2>class AlgorithmParameters<a class="headerlink" href="#class-algorithmparameters" title="Link to this heading">¶</a></h2>
+<p>This auxiliary class contains the parameter that determine the search for the optimal value of <cite>lambda</cite>.</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">alphaA</span></code> (<cite>float</cite>, optional): The first alpha value. Defaults to <cite>0</cite>. Must be less than 2.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alphaB</span></code> (<cite>float</cite>, optional): The second alpha value, distinct from <cite>alphaA</cite>. Defaults to <cite>1/2</cite>. Must be less than 2.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alphaC</span></code> (<cite>float</cite>, optional): The third alpha value, distinct from both <cite>alphaA</cite> and <cite>alphaB</cite>. Defaults to <cite>1.99</cite>. Must be less than 2.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lambdaMax</span></code> (<cite>float</cite>, optional): The starting value for the scan over <cite>lambda</cite>. Defaults to <cite>50</cite>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lambdaStep</span></code> (<cite>float</cite>, optional): The step size for scanning over <cite>lambda</cite>. Defaults to <cite>25</cite>. After one iteration, lambda is replaced by lambda - lambdaStep. If a negative value is hit, lambdaStep is rescaled. When lambdaMin is hit, the algorithm stops.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lambdaScanCap</span></code> (<cite>int</cite>, optional): The number of subsequent compatible measurements required to stop the scan. Defaults to <cite>6</cite>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plateau_id</span></code> (<cite>int</cite>, optional): A plateau consists of subsequently compatible measurements. This parameter determines which of this values is taken as the solution. Defaults to <cite>1</cite>, meaning that from a chain of compatible values, the first one (corresponding to the larger value of lambda) is chosen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kfactor</span></code> (<cite>float</cite>, optional): A factor used to estimate systematics by repeating the calculation at <cite>lambda = kfactor * lambda(reference)</cite>. Defaults to <cite>0.1</cite>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lambdaMin</span></code> (<cite>float</cite>, optional): The minimum value for <cite>lambda</cite> in the scan. Defaults to <cite>1e-6</cite>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comparisonRatio</span></code> (<cite>float</cite>, optional): Used to define compatibility between measurements. Measurements are considered compatible if they agree within <cite>comparisonRatio * uncertainty</cite>. Defaults to <cite>0.4</cite>, meaning that values are considered compatible if they agree within “0.4 sigma”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resize</span></code> (<cite>int</cite>, optional): If <cite>lambda</cite> hits zero before reaching <cite>lambdaMin</cite>, the step size is resized. This allows the algorithm to sample values of <cite>lambda</cite> at different scales. Defaults to <cite>4</cite>.</p></li>
+</ul>
+<p>With default parameters, the algorithm will scan the following values of <cite>lambda</cite>: 50, 25, 18.75, 6.25, 3.125, 1.5625, 0.78125, 0.390625, 0.1953125, 0.09765625, 0.048828125, and so on until lambdaMin is hit, or a plateau is identified.</p>
+</div></blockquote>
+<p><strong>Example usage</strong></p>
+<p>Here’s how you can initialize and use the <cite>AlgorithmParameters</cite> class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lsdensities</span> <span class="kn">import</span> <span class="n">AlgorithmParameters</span>
+
+<span class="c1"># Initialize the parameters for the scan</span>
+    <span class="n">inverse_problem_parameters</span> <span class="o">=</span> <span class="n">AlgorithmParameters</span><span class="p">(</span>
+    <span class="n">alphaA</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">alphaB</span><span class="o">=</span><span class="mf">1.99</span><span class="p">,</span>
+    <span class="n">alphaC</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">lambdaMax</span><span class="o">=</span><span class="n">lambdaMax</span><span class="p">,</span>
+    <span class="n">lambdaStep</span><span class="o">=</span><span class="n">lambdaMax</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">lambdaScanCap</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">kfactor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">lambdaMin</span><span class="o">=</span><span class="mf">5e-2</span><span class="p">,</span>
+    <span class="n">comparisonRatio</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lambda Max: </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">lambdaMax</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Alpha A: </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">alphaA</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Comparison Ratio: </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">comparisonRatio</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="class-inverseproblemwrapper">
+<span id="inverseproblemwrapper-label"></span><h2>class InverseProblemWrapper<a class="headerlink" href="#class-inverseproblemwrapper" title="Link to this heading">¶</a></h2>
+<p>Performs the scan over lambda, selects a solution, which is stored in internal variables together with other output values.</p>
+<p>The class takes the following input parameters:</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">par</span></code> (<a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a>): An instance of the <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> class containing required parameters about the lattice.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">algorithmPar</span></code> (<cite>AlgorithmParameters</cite>): An instance of the AlgorithmParameters class containing the parameter for the selection of <cite>lambda</cite></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matrix_bundle</span></code> (<cite>MatrixBundle</cite>): Instance of the MatrixBoundle class, which contains the covariance matrix of the correlator and its normalisation factor.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">correlator</span></code> (Obs): An instance of the Obs class which contains the measurements of the lattice correlators, together with other related features.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">energies</span></code> (np.array) Numpy array containing the energies, typically <code class="docutils literal notranslate"><span class="pre">np.linspace(par.emin,</span> <span class="pre">par.emax,</span> <span class="pre">par.Ne)</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<p>The class has a large number of attributes. We report the most important ones that the user may need to access.</p>
+<p>The class has the following methods:</p>
+<blockquote>
+<div><dl>
+<dt><strong>lambdaResultHLT</strong></dt><dd><p>Array for which each entry is the optimal value of <cite>lambda</cite> obtained from the plateau search. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>rhoResultHLT</strong></dt><dd><p>Array for which each entry is the smeared spectral density corresponding to the optimal value of <cite>lambda</cite> given by <code class="docutils literal notranslate"><span class="pre">self.lambdaResultHLT</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>drho_result</strong></dt><dd><p>Array for which each entry is the statistical error on the smeared spectral density stored in <code class="docutils literal notranslate"><span class="pre">self.rhoResultHLT</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>rho_sys_err_HLT</strong></dt><dd><p>Array for which each entry is the systematic error on the smeared spectral density stored in <code class="docutils literal notranslate"><span class="pre">self.rhoResultHLT</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>lambdaResultBayes</strong></dt><dd><p>Array for which each entry is the optimal value of <cite>lambda</cite> obtained minimising the negative log likelihood (NLL). Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>rhoResultBayes</strong></dt><dd><p>Array for which each entry is the smeared spectral density corresponding to the optimal value of <cite>lambda</cite> given by <code class="docutils literal notranslate"><span class="pre">self.lambdaResultBayes</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>drho_bayes</strong></dt><dd><p>Array for which each entry is the statistical error (sqrt of the width of the posterior distribution) on the smeared spectral density stored in <code class="docutils literal notranslate"><span class="pre">self.rhoResultBayes</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>rho_sys_err_Bayes</strong></dt><dd><p>Array for which each entry is the systematic error on the smeared spectral density stored in <code class="docutils literal notranslate"><span class="pre">self.rhoResultBayes</span></code>. Different entries correspond to different energies.</p>
+<p>Type: np.float64</p>
+</dd>
+<dt><strong>gt_HLT</strong></dt><dd><p>For each energy, a list containing the linear coefficients <span class="math notranslate nohighlight">\(g_\tau\)</span> generating the solution <code class="docutils literal notranslate"><span class="pre">self.rhoResultHLT</span></code>. Its structure is <code class="docutils literal notranslate"><span class="pre">[[]</span> <span class="pre">for</span> <span class="pre">_</span> <span class="pre">in</span> <span class="pre">range(self.par.Ne)]</span></code>, meaning that
+it is effectively a 2D array, where one dimension runs over the data index (time) and the other labels different energies.</p>
+<p>Type: List of lists</p>
+</dd>
+<dt><strong>gt_Bayes</strong></dt><dd><p>For each energy, a list containing the linear coefficients <span class="math notranslate nohighlight">\(g_\tau\)</span> generating the solution <code class="docutils literal notranslate"><span class="pre">self.rhoResultBayes</span></code>. Its structure is <code class="docutils literal notranslate"><span class="pre">[[]</span> <span class="pre">for</span> <span class="pre">_</span> <span class="pre">in</span> <span class="pre">range(self.par.Ne)]</span></code>, meaning that
+it is effectively a 2D array, where one dimension runs over the data index (time) and the other labels different energies.</p>
+<p>Type: List of lists</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class features a number of methods. The main one that is intended to be accessed externally is InverseProblemWrapper.run(). This function performs the scan over
+<cite>lambda</cite> and selects the solution. A number of preparatory functions needs to be however called.</p>
+<blockquote>
+<div><dl>
+<dt><strong>fillEspaceMP</strong> ()</dt><dd><p>Fills internal variables containing the energies at which we requested to solve the inverse problem. Additionally fills a dictionary, so that
+the integer index can be accessed from the value of the energies.</p>
+<p>This should be made private.</p>
+</dd>
+<dt><strong>prepareHLT</strong> ()</dt><dd><p>runs <code class="docutils literal notranslate"><span class="pre">fillEspaceMP()</span></code>, computes and stores the <span class="math notranslate nohighlight">\(\Sigma\)</span> matrix and normalising factors.</p>
+</dd>
+<dt><strong>run</strong> (savePlots=True, livePlots=False)</dt><dd><p>For each energy in <code class="docutils literal notranslate"><span class="pre">self.energies</span></code>, it calls the method <code class="docutils literal notranslate"><span class="pre">self.scanParameters</span></code> which performs a scan over <cite>lambda</cite> and finds the best values, both frequentist and Bayesian.
+After this is done, it computes the systematic error by repeating the calculation at a different value of <cite>lambda</cite>, which was prescribed in the <code class="docutils literal notranslate"><span class="pre">AlgorithmicParameters</span></code> class passed
+as an input. Finally, it prints various results in an output file. Depending on the boolean argument, it stores a number of plots in the output directory. livePlots will make the plots appear as the application is executed.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">orphan<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<section id="class-sigmamatrix">
+<h3>class SigmaMatrix<a class="headerlink" href="#class-sigmamatrix" title="Link to this heading">¶</a></h3>
+<p>Class computing and storing elements of the matrix <span class="math notranslate nohighlight">\(\Sigma\)</span>. If the periodicity is set to EXP, this corresponds to</p>
+<div class="math notranslate nohighlight">
+\[\Sigma_{\tau_1 \tau_2} = \frac{1}{\tau_1 + \tau_2 + 2 - \alpha}\]</div>
+<p>If the periodicity is set to COSH, the expression is generalised appropriately.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The presence of a +2 is due to the fact that we do not use the correlator evaluated at <span class="math notranslate nohighlight">\(t=0\)</span>. No additional shift is required.</p>
+</div>
+<p>The class takes the following parameters</p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">par</span></code> (<a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a>): An instance of the <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> class containing required parameters.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alphaMP</span></code> (<cite>mpmath.mpf</cite>, optional): The <cite>alpha</cite> parameter. Defaults to <cite>0</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class has the following attributes</p>
+<blockquote>
+<div><dl>
+<dt><strong>par</strong></dt><dd><p>The parameters passed as inputs</p>
+<p>Type: <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> class</p>
+</dd>
+<dt><strong>tmax</strong></dt><dd><p>Simply par.tmax (redundant)</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>matrix</strong></dt><dd><p>The matrix <span class="math notranslate nohighlight">\(\Sigma\)</span></p>
+<p>Type: mp.matrix(par.tmax, par.tmax)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class has the following methods</p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>evaluate</strong></dt><dd><p>Fills the entries of <code class="docutils literal notranslate"><span class="pre">self.matrix</span></code>. Does not <cite>return</cite>.</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">orphan<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+</section>
+<section id="class-normalisemeasure-private">
+<h3>class _NormaliseMeasure (Private)<a class="headerlink" href="#class-normalisemeasure-private" title="Link to this heading">¶</a></h3>
+<p>The <cite>_NormaliseMeasure</cite> class pre-evaluated part of the normalising facotrs required by the InverseProblemWrapper class. It is an array (one-dimensional matrix) of mpf numbers, one for each energy requested.
+Values can be accessed by using the integer index, or by exact energy value through a dictionary. The value computed is historically called <span class="math notranslate nohighlight">\(A_0\)</span></p>
+<div class="math notranslate nohighlight">
+\[A_0(\omega) = \int_{E_0}^\infty dE \,  e^{\alpha E} \, | \mathcal{S}_\sigma(\omega-E) |^2\]</div>
+<p>The class takes the following parameters</p>
+<blockquote>
+<div><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">par</span></code> (<a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a>): An instance of the <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> class containing required parameters.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code> (<cite>mpmath.mpf</cite>, optional): The <cite>alpha</cite> parameter. Defaults to <cite>0</cite>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">emin</span></code> (<cite>mpmath.mpf</cite>, optional): The lower bound of the integral. Defaults to <cite>0</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class has the following attributes</p>
+<blockquote>
+<div><dl>
+<dt><strong>valute_at_E</strong></dt><dd><p>The matrix that stores the evaluated values of <span class="math notranslate nohighlight">\(A_0\)</span> for all energies in <cite>espace_mp</cite>.</p>
+<p>Type: <cite>mpmath.matrix</cite></p>
+</dd>
+<dt><strong>valute_at_E_dictionary</strong></dt><dd><p>A dictionary where the keys are energy values and the values are the corresponding evaluated <span class="math notranslate nohighlight">\(A_0\)</span>.</p>
+<p>Type: <cite>dict</cite></p>
+</dd>
+<dt><strong>is_filled</strong></dt><dd><p>A flag that indicates whether the <span class="math notranslate nohighlight">\(A_0\)</span> values have been computed and stored.</p>
+<p>Type: <cite>bool</cite></p>
+</dd>
+<dt><strong>alphaMP</strong></dt><dd><p>The multiple-precision value of <cite>alpha</cite>, which is used in the <span class="math notranslate nohighlight">\(A_0\)</span> evaluation.</p>
+<p>Type: <cite>mpmath.mpf</cite></p>
+</dd>
+<dt><strong>eminMP</strong></dt><dd><p>The multiple-precision minimum energy used in the calculation.</p>
+<p>Type: <cite>mpmath.mpf</cite></p>
+</dd>
+<dt><strong>par</strong></dt><dd><p>An instance of the <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> class containing some required parameters.</p>
+<p>Type: <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a></p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The class has the following methods</p>
+<blockquote>
+<div><dl>
+<dt><strong>evaluate</strong> <cite>(espace_mp)</cite></dt><dd><p>computes <span class="math notranslate nohighlight">\(A_0\)</span> for all energy values in <cite>espace_mp</cite> and assigns <code class="docutils literal notranslate"><span class="pre">self.is_filles</span> <span class="pre">=</span> <span class="pre">True</span></code>. Does not <cite>return</cite>.</p>
+<dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">espace_mp</span></code> (<cite>mpmath.matrix</cite>): A multi-precision matrix that contains the energy values at which <span class="math notranslate nohighlight">\(A_0\)</span> is evaluated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">lsdensities/InverseProblemWrapper.py</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#class-algorithmparameters">class AlgorithmParameters</a></li>
+<li><a class="reference internal" href="#class-inverseproblemwrapper">class InverseProblemWrapper</a><ul>
+<li><a class="reference internal" href="#class-sigmamatrix">class SigmaMatrix</a></li>
+<li><a class="reference internal" href="#class-normalisemeasure-private">class _NormaliseMeasure (Private)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="Introduction.html"
+                          title="previous chapter">Setting up lsdensities</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="rhoUtils.html"
+                          title="next chapter">lsdensities/utils/rhoUtils.py</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/InverseProblemWrapper.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rhoUtils.html" title="lsdensities/utils/rhoUtils.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">lsdensities/InverseProblemWrapper.py</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Alessandro Lupo, Niccolò Forzano.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Welcome to the lsdensities’ documentation. &#8212; lsdensities  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"tex": {"macros": {"argmin": "\\mathop{\\rm arg\\,min}\\limits"}}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setting up lsdensities" href="Introduction.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Welcome to the lsdensities’ documentation.</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="welcome-to-the-lsdensities-documentation">
+<h1>Welcome to the lsdensities’ documentation.<a class="headerlink" href="#welcome-to-the-lsdensities-documentation" title="Link to this heading">¶</a></h1>
+<p><strong>Lattice Spectral Densities</strong> is a python library providing tools for the calculation of smeared spectral densities from lattice correlators.
+The library uses the <a class="reference external" href="https://arxiv.org/pdf/2409.04413">HLT method</a> in both its frequentist and Bayesian formulations. It is based on <a class="reference external" href="https://mpmath.org/">mpmath</a> for handling arbitrary precision arithmetics.</p>
+<p>The library takes a measurements for a lattice correlator <span class="math notranslate nohighlight">\(C(t)\)</span>, which is sampled at a finite number of points, and returns the associated spectral density <span class="math notranslate nohighlight">\(\rho(E)\)</span> smeared with a chosen kernel:</p>
+<div class="math notranslate nohighlight">
+\[\rho(\sigma;\omega) = \int dE \, \mathcal{S}_\sigma(\omega-E) \, \rho(E) \, .\]</div>
+<p>The smearing kernel <span class="math notranslate nohighlight">\(\mathcal{S}(\omega-E)\)</span> is a Gaussian function by default. Different options are available, and others can be implemented or requested.</p>
+<p>It is assumed that the relation between the correlator and the spectral density is of the following type:</p>
+<div class="math notranslate nohighlight">
+\[C(t) = \int_0^\infty dE \, \rho(E) \, b_T(t, E)\]</div>
+<p>where <span class="math notranslate nohighlight">\(b_T(t, E)\)</span> can be either <span class="math notranslate nohighlight">\(e^{-t E}\)</span> or <span class="math notranslate nohighlight">\(e^{-t E} + e^{(-T+t) E}\)</span>. Other options can be implemented or requested.</p>
+<p>The smeared spectral density is computed from a linear combination of the correlators,</p>
+<div class="math notranslate nohighlight">
+\[\rho(\sigma, \omega) = \sum_{\tau = 1}^{\tiny \tau_{\rm max} } g_t(E) C(a \tau) \, , \;\;\;\;\; 0 &lt; \tau \leq \tau_{\max} \; , \;\;\; \;\; \tau = t / a \; ,\]</div>
+<p>where <span class="math notranslate nohighlight">\(a\)</span> is the lattice spacing and <span class="math notranslate nohighlight">\(\tau_{\max}\)</span> the number of data points. The coefficients are computed according to the following expression:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\vec{g}(\sigma;\omega) = \argmin_{\vec{g} \in \mathbb{R}^{\tau_{\rm max}}} \int_0^\infty dE \, e^{\alpha E} | \sum_{r=1}^{\tau_{\rm max}} g_\tau(\omega) b_T(a \tau, E) - \mathcal{S}_\sigma(E,\omega) |^2 \\  + \lambda \; \sum_{\tau_1, \tau_2=1}^{\tau_{\rm max}} g_{\tau_1}(\omega) \, B_{\tau_1 \tau_2}\,  g_{\tau_2}(\omega) \, , \;\;\;\;\; \lambda \in (0,\infty)\end{split}\]</div>
+<p id="what-is-lambda-label">At <span class="math notranslate nohighlight">\(\lambda=0\)</span> this expression provides the exact solution for the problem,
+which is however deeply unstable when the correlator is affected by noise.
+The class <cite>InverseProblemWrapper.py</cite> provides routines that automatically
+optimise the value of <span class="math notranslate nohighlight">\(\lambda\)</span>.</p>
+<p id="what-is-alpha-label">Different values of <span class="math notranslate nohighlight">\(\alpha &lt; 2\)</span> can be also chosen. This allows to work with different
+norms. Different choices can have better convergence properties at different energies.</p>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Setting up lsdensities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Introduction.html#checking-that-it-works">Checking that it works</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html#usage-examples">Usage examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Introduction.html#a-first-look-solving-against-synthetic-correlators-no-datafile-required-at-a-single-value-of-lambda">A first look: solving against synthetic correlators (no datafile required) at a single value of <span class="math notranslate nohighlight">\(\lambda\)</span></a></li>
+<li class="toctree-l2"><a class="reference internal" href="Introduction.html#scan-over-lambda-and-automatised-workflow">Scan over <span class="math notranslate nohighlight">\(\lambda\)</span> and automatised workflow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="InverseProblemWrapper.html">lsdensities/InverseProblemWrapper.py</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="InverseProblemWrapper.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InverseProblemWrapper.html#class-algorithmparameters">class AlgorithmParameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InverseProblemWrapper.html#class-inverseproblemwrapper">class InverseProblemWrapper</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rhoUtils.html">lsdensities/utils/rhoUtils.py</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rhoUtils.html#inputs-class">Inputs class</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="#">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Welcome to the lsdensities’ documentation.</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="Introduction.html"
+                          title="next chapter">Setting up lsdensities</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Welcome to the lsdensities’ documentation.</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Alessandro Lupo, Niccolò Forzano.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Setting up lsdensities &#8212; lsdensities  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"tex": {"macros": {"argmin": "\\mathop{\\rm arg\\,min}\\limits"}}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="lsdensities/InverseProblemWrapper.py" href="InverseProblemWrapper.html" />
+    <link rel="prev" title="Welcome to the lsdensities’ documentation." href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="InverseProblemWrapper.html" title="lsdensities/InverseProblemWrapper.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the lsdensities’ documentation."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Setting up lsdensities</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="setting-up-lsdensities">
+<h1>Setting up lsdensities<a class="headerlink" href="#setting-up-lsdensities" title="Link to this heading">¶</a></h1>
+<p>In your directory of choice, clone the repository,</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/LupoA/lsdensities
+</pre></div>
+</div>
+<p>You can then install by running:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>lsdensities
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+<section id="checking-that-it-works">
+<h2>Checking that it works<a class="headerlink" href="#checking-that-it-works" title="Link to this heading">¶</a></h2>
+<p>Moving to the example directory</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>lsdensities/examples/
+</pre></div>
+</div>
+<p>Run the minimal example,</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>minimal_example.py
+</pre></div>
+</div>
+<p>Alternatively, in the test directory, you can run the tests, which should take seconds.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>lsdensities/tests/
+pytest
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage-examples">
+<h1>Usage examples<a class="headerlink" href="#usage-examples" title="Link to this heading">¶</a></h1>
+<p>There are two ways of using this library, depending on how the user wants to interface with the
+optimisation of the parameter <a class="reference internal" href="index.html#what-is-lambda-label"><span class="std std-ref">lambda</span></a>. One way is to use the library to compute
+the smeared spectral density at a fixed value of lambda. One can loop over different values of lambda and choose the value
+that is deemed correct. Alternatively, the optimisation of lambda is automatised in the <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> class. This is the recommended way.</p>
+<p>If the class is used, only a handful of inputs and the data must be passed to the library, and the rest is handled automatically.
+The user still has a large degree of freedom by tuning the input <a class="reference internal" href="InverseProblemWrapper.html#algorithmparameters-label"><span class="std std-ref">parameters of the class</span></a>.
+Moreover, the <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> class will output the smeared spectral density both from a Bayesian and a frequentist algorithm.</p>
+<p>To immediately look the workflow without the InverseProblemWrapper, look at <code class="docutils literal notranslate"><span class="pre">examples/minimal_example.py</span></code>.</p>
+<p>To immediately look at the workflow using the InverseProblemWrapper, look at <code class="docutils literal notranslate"><span class="pre">examples/runInverseProblem.py</span></code> (requires a datafile).</p>
+<p>We can start by looking at some common, basic features. First, an <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> object must be created. This object specifies some basic inputs, such as the type of the smearing kernel, its smearing radius, or the energies at which we want to obtain the solution. The Input object is ubiquitous in lsdensities and it should be well understood.
+While its attributed have default values, they should be set manually or via input files. For instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span> <span class="o">=</span> <span class="n">Inputs</span><span class="p">()</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">periodicity</span> <span class="o">=</span> <span class="s2">&quot;EXP&quot;</span>  <span class="c1"># &quot;EXP&quot; or  &quot;COSH&quot; depending</span>
+                                <span class="c1"># on the lattice having open</span>
+                                <span class="c1"># or periodic boundary conditions in time</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># smearing radius in given energy units</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">prec</span> <span class="o">=</span> <span class="mi">128</span> <span class="c1"># working precision, in this 128 decimal digits</span>
+</pre></div>
+</div>
+<p>Some inputs are dimensionful quantities, and the user should take care of using them consistently (e.g. everything is expressed in GeV).
+Once the desired attributed for the <a class="reference internal" href="rhoUtils.html#inputs-label"><span class="std std-ref">Inputs</span></a> object are specify, a function needs to called in order to fill some internal attributed based on the values provided.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span><span class="o">.</span><span class="n">assign_values</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>An important variable set by this function is <code class="docutils literal notranslate"><span class="pre">parameters.tmax</span></code> which specifies the number of datapoints that will be actually used.
+If unspecified, it uses the maximum values, which is inferred by <code class="docutils literal notranslate"><span class="pre">parameters.time_extent</span></code> and <code class="docutils literal notranslate"><span class="pre">parameter.periodicity</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">assign_values()</span></code> function will also fix the working precision for the mpmath library based on <code class="docutils literal notranslate"><span class="pre">parameters.prec</span></code>. If needed, this can be changed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">num_digits</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">init_precision</span><span class="p">(</span><span class="n">num_digits</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Another way to set up certain parameters is by command line</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">par</span> <span class="o">=</span> <span class="n">parse_inputs</span><span class="p">()</span>
+<span class="n">par</span><span class="o">.</span><span class="n">assign_values</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>running <code class="docutils literal notranslate"><span class="pre">parameters.assign_values()</span></code> is mandatory, and applications may not work if this function is not called. The user should be very careful modifying attributes of Inputs after <code class="docutils literal notranslate"><span class="pre">assign_values()</span></code> is called.</p>
+</div>
+<section id="a-first-look-solving-against-synthetic-correlators-no-datafile-required-at-a-single-value-of-lambda">
+<h2>A first look: solving against synthetic correlators (no datafile required) at a single value of <span class="math notranslate nohighlight">\(\lambda\)</span><a class="headerlink" href="#a-first-look-solving-against-synthetic-correlators-no-datafile-required-at-a-single-value-of-lambda" title="Link to this heading">¶</a></h2>
+<p>In the following we create a single sample for a correlator and we extract the smeared spectral density at a given energy.
+This basic application of the library is intended to familiarise the user with its basic feature, but it does not contain all the information that is necessary to run against a real dataset.</p>
+<p>First, initialise the precision and the Input object. Since the data will be synthetic, we have to additionally specify the time extent of the lattice, which is normally red from the datafile.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span> <span class="o">=</span> <span class="n">Inputs</span><span class="p">()</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">time_extent</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">kerneltype</span> <span class="o">=</span> <span class="s2">&quot;FULLNORMGAUSS&quot;</span>  <span class="c1"># Kernel smearing spectral density</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">periodicity</span> <span class="o">=</span> <span class="s2">&quot;EXP&quot;</span>  <span class="c1"># EXP / COSH for open / periodic boundary conditions</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># smearing radius in given energy units</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">prec</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">assign_values</span><span class="p">()</span>  <span class="c1"># assigns internal variables based on given inputs</span>
+</pre></div>
+</div>
+<p>We then create the synthetic correlator to serve as input. This must be an <a class="reference external" href="https://mpmath.org/doc/current/matrices.html">mp.matrix</a> type.
+The number of rows is the number of data points at which the correlator is computed (<code class="docutils literal notranslate"><span class="pre">parameters.tmax</span></code>).
+The number of columns is the number of samples for the correlator, in this case one. The associated covariance matrix should have matching size.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">lattice_correlator</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span>
+    <span class="n">parameters</span><span class="o">.</span><span class="n">tmax</span><span class="p">,</span> <span class="mi">1</span>
+<span class="p">)</span>
+<span class="n">lattice_covariance</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">matrix</span><span class="p">(</span>
+    <span class="n">parameters</span><span class="o">.</span><span class="n">tmax</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We fill the correlator with a simple exponential function decaying according to a values MASS. We also populate the covariance matrix artificially.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">MASS</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># in the given energy units</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">tmax</span><span class="p">):</span>  <span class="c1"># mock data</span>
+    <span class="n">lattice_correlator</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">mpf</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">mpf</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">MASS</span><span class="p">)))</span>
+    <span class="n">lattice_covariance</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">lattice_correlator</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.02</span> <span class="c1"># for this quick example</span>
+                                                            <span class="c1"># we set the covariance to diagonal,</span>
+                                                            <span class="c1"># with a value of e.g. 2% of the correlator</span>
+</pre></div>
+</div>
+<p>Notice that the argument of the exponential defining <code class="docutils literal notranslate"><span class="pre">lattice_correlator</span></code> is shifted by one, because the correlator at <span class="math notranslate nohighlight">\(t=0\)</span> cannot be used.</p>
+<p>The library then provides function to compute the smeared spectral density as a linear combination of the correlators,</p>
+<div class="math notranslate nohighlight">
+\[\rho_\sigma(E) = \sum_{t=1}^{t_{\text{max}}} g_t(E,\sigma) \,  C(t)\]</div>
+<p>The coefficients <span class="math notranslate nohighlight">\(g_t(E,\sigma)\)</span> are compute through a linear system. To this end, we shall define the appropriate matrix:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ill_conditioned_matrix</span> <span class="o">=</span> <span class="n">hlt_matrix</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">tmax</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This has to be in general regularised. In this example it would not be necessary since we created our correlator was defined with mpmath to be exact up to 64 digits, but we do it for pedagogical reasons</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">regularising_parameter</span> <span class="o">=</span> <span class="n">mpf</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">))</span>
+<span class="n">regularised_matrix</span> <span class="o">=</span> <span class="n">ill_conditioned_matrix</span> <span class="o">+</span> <span class="p">(</span>
+    <span class="n">regularising_parameter</span> <span class="o">*</span> <span class="n">lattice_covariance</span>
+<span class="p">)</span>
+<span class="n">matrix_inverse</span> <span class="o">=</span> <span class="n">regularised_matrix</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The value of <code class="docutils literal notranslate"><span class="pre">regularising_parameter</span></code> regularises the solution but introduces a bias.
+Its effect accounted for with a high degree of automation by the <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> class.
+In this first example, we simply set it to a small value.</p>
+<p>Having computed and inverted the appropriate matrix, we can obtain the coefficients by using the <code class="docutils literal notranslate"><span class="pre">coefficients_ssd</span></code> function</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">energy</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="c1"># the energy at which we compute the smeared spectral density</span>
+<span class="n">coeff</span> <span class="o">=</span> <span class="n">coefficients_ssd</span><span class="p">(</span>
+    <span class="n">matrix_inverse</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="p">,</span>
+    <span class="n">energy</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The result is then computed with the <code class="docutils literal notranslate"><span class="pre">get_ssd_scalar</span></code> function</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>   <span class="n">result</span> <span class="o">=</span> <span class="n">get_ssd_scalar</span><span class="p">(</span>
+   <span class="n">coeff</span><span class="p">,</span>  <span class="c1">#   linear combination of data</span>
+   <span class="n">lattice_correlator</span><span class="p">,</span>
+   <span class="n">parameters</span><span class="p">,</span>
+   <span class="p">)</span>
+
+<span class="n">In</span> <span class="n">this</span> <span class="n">example</span><span class="p">,</span> <span class="n">the</span> <span class="n">derived</span> <span class="n">solution</span> <span class="n">can</span> <span class="n">be</span> <span class="n">compared</span> <span class="k">with</span> <span class="n">the</span> <span class="n">true</span> <span class="n">value</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">true_value</span> <span class="o">=</span> <span class="n">gauss_fp</span><span class="p">(</span><span class="n">peak</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">parameters</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The derived solution should approach the true value as <code class="docutils literal notranslate"><span class="pre">regularising_parameter</span></code> is reduced towards zero and <code class="docutils literal notranslate"><span class="pre">par.time_extent</span></code> is increased.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The time argument of the correlator must be shifted by one unit. This is because the correlator in zero <a class="reference external" href="https://arxiv.org/pdf/1903.06476">cannot enter the reconstruction process</a>.
+When using a datafile, you do NOT need to remove the correlator at <span class="math notranslate nohighlight">\(t=0\)</span> from it, because this is done automatically by the library.</p>
+</div>
+</section>
+<section id="scan-over-lambda-and-automatised-workflow">
+<h2>Scan over <span class="math notranslate nohighlight">\(\lambda\)</span> and automatised workflow<a class="headerlink" href="#scan-over-lambda-and-automatised-workflow" title="Link to this heading">¶</a></h2>
+<p>under construction. See <code class="docutils literal notranslate"><span class="pre">examples/runInverseProblem.py</span></code> for an example.</p>
+<section id="example-applications-in-the-examples-directory">
+<h3>Example applications in the examples directory<a class="headerlink" href="#example-applications-in-the-examples-directory" title="Link to this heading">¶</a></h3>
+<p>The file <code class="docutils literal notranslate"><span class="pre">minimal_example.py</span></code> contains a slightly less verbose of the code reported above.</p>
+<p>The file <code class="docutils literal notranslate"><span class="pre">runExact.py</span></code> contains a similar example where the smeared spectral density is computed at a large number of energies.</p>
+<p>The file <code class="docutils literal notranslate"><span class="pre">runInverseProblem.py</span></code> contains an example of automated workflow using the InverseProblemWrapper class.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Setting up lsdensities</a><ul>
+<li><a class="reference internal" href="#checking-that-it-works">Checking that it works</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage-examples">Usage examples</a><ul>
+<li><a class="reference internal" href="#a-first-look-solving-against-synthetic-correlators-no-datafile-required-at-a-single-value-of-lambda">A first look: solving against synthetic correlators (no datafile required) at a single value of <span class="math notranslate nohighlight">\(\lambda\)</span></a></li>
+<li><a class="reference internal" href="#scan-over-lambda-and-automatised-workflow">Scan over <span class="math notranslate nohighlight">\(\lambda\)</span> and automatised workflow</a><ul>
+<li><a class="reference internal" href="#example-applications-in-the-examples-directory">Example applications in the examples directory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Welcome to the lsdensities’ documentation.</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="InverseProblemWrapper.html"
+                          title="next chapter">lsdensities/InverseProblemWrapper.py</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/Introduction.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="InverseProblemWrapper.html" title="lsdensities/InverseProblemWrapper.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the lsdensities’ documentation."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Setting up lsdensities</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Alessandro Lupo, Niccolò Forzano.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

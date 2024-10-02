@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>lsdensities/utils/rhoUtils.py &#8212; lsdensities  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="lsdensities/InverseProblemWrapper.py" href="InverseProblemWrapper.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="InverseProblemWrapper.html" title="lsdensities/InverseProblemWrapper.py"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">lsdensities/utils/rhoUtils.py</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="lsdensities-utils-rhoutils-py">
+<h1>lsdensities/utils/rhoUtils.py<a class="headerlink" href="#lsdensities-utils-rhoutils-py" title="Link to this heading">¶</a></h1>
+<p>This modules contain some of the core classes used throughout the library, such as the Inputs class,
+a container for all inputs related to the physics of the problem, or the Obs class, which aggregate in one place
+features of observables (samples, mean, variance, covariance and so on). It also contains miscellaneous utility functions such
+as loggers, a datafile reader, directories creation etc.</p>
+<section id="inputs-class">
+<span id="inputs-label"></span><h2>Inputs class<a class="headerlink" href="#inputs-class" title="Link to this heading">¶</a></h2>
+<p>This is a container for a number of inputs that must be specified in order to work with this library.
+Most functions do not accept the inputs separately, and the Inputs class must be passed to them,
+in order to reduce the number of arguments.</p>
+<p>The following attributes are available:</p>
+<blockquote>
+<div><dl>
+<dt><strong>datapath</strong></dt><dd><p>Path to the input data (correlator)</p>
+<p>Type: str</p>
+</dd>
+<dt><strong>time_extent</strong></dt><dd><p>Time extent of the lattice. If a datafile is red, this variable is inferred from the file.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>num_samples</strong></dt><dd><p>Sample size of the correlator. If a datafile is red, this variable is inferred from the file.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>periodicity</strong></dt><dd><p>String describing the periodicity in time of the correlator. Accepted values are “EXP” for open boundaries, “COSH” for periodic boundaries.</p>
+<p>Type: str</p>
+</dd>
+<dt><strong>tmax</strong></dt><dd><p>number of datapoints to be used. If not set, it will be inferred based on the values time_extent and periodicity.
+Note that the correlator at t=0 is excluded. For this reason, if periodicity == EXP,
+<code class="docutils literal notranslate"><span class="pre">tmax</span> <span class="pre">=</span> <span class="pre">time_extent-1</span></code>. If periodicity == COSH, <code class="docutils literal notranslate"><span class="pre">tmax</span> <span class="pre">=</span> <span class="pre">int(time_extent/2)</span></code>.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>num_boot</strong></dt><dd><p>Bootstrap samples. Relevant if you perform a bootstrap of the correlator within lsdensities.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>sigma</strong></dt><dd><p>Smearing radius of the kernel.</p>
+<p>Type: float</p>
+</dd>
+<dt><strong>prec</strong></dt><dd><p>Working numerical precision for mpmath.</p>
+<p>Type: int.</p>
+</dd>
+<dt><strong>kerneltype</strong></dt><dd><p>Smearing kernel. Implemented options are a Gaussian (with different normalisations) or a Cauchy Kernel.
+Accepted values are “FULLNORMGAUSS”, “HALFNORMGAUSS”, “CAUCHY”. The first is a Gaussian normalised
+over the full real axis, the second is normalised in [0, inf), the third is a Cauchy kernel.</p>
+<p>Type: str</p>
+</dd>
+<dt><strong>loglevel</strong></dt><dd><p>Level of verbosity, handled by the logging python library. Accepted values are WARNING (default), INFO (verbose).</p>
+</dd>
+<dt><strong>Na</strong></dt><dd><p>Number of different values for the parameter <a class="reference internal" href="index.html#what-is-alpha-label"><span class="std std-ref">alpha</span></a> used to determine best value of <a class="reference internal" href="index.html#what-is-lambda-label"><span class="std std-ref">lambda</span></a>.
+Relevant if the user wants to work with <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>.
+Accepted values are 1, 2 or 3.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>emin</strong></dt><dd><p>Smallest energy at which the smeared spectral density is computed.
+Relevant if the user wants to work with <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>, which requires a set of energies.
+To use InverseProblemWrapper on a single energy, simply select <cite>emin`=`emax</cite> and <cite>Ne=1</cite>.</p>
+<p>Type: float</p>
+</dd>
+<dt><strong>emax</strong></dt><dd><p>Largest energy at which the smeared spectral density is computed.
+Relevant if the user wants to work with <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>, which requires a set of energies.
+To use InverseProblemWrapper on a single energy, simply select <cite>emin`=`emax</cite> and <cite>Ne=1</cite>.</p>
+<p>Type: float</p>
+</dd>
+<dt><strong>Ne</strong></dt><dd><p>Number of energies at which the smeared spectral density is computed.
+Relevant if the user wants to work with <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>, which requires a set of energies.
+To use InverseProblemWrapper on a single energy, simply select <cite>emin`=`emax</cite> and <cite>Ne=1</cite>.</p>
+<p>Type: int</p>
+</dd>
+<dt><strong>A0cut</strong></dt><dd><p>Smallest value of A[g]/A[0] accepted by <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> during the search for the optimal value of <a class="reference internal" href="index.html#what-is-lambda-label"><span class="std std-ref">lambda</span></a>.
+Relevant if the user wants to work with <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a>.</p>
+<p>Type: float</p>
+</dd>
+<dt><strong>outdir</strong></dt><dd><p>Directory where all the output will be stored.</p>
+<p>Type: str</p>
+</dd>
+<dt><strong>logpath</strong></dt><dd><p>Subdirectory of <cite>outdir</cite> containing logs</p>
+<p>Type: str</p>
+</dd>
+<dt><strong>plotpath</strong></dt><dd><p>Subdirectory of <cite>outdir</cite> containing plots</p>
+<p>Type: str</p>
+</dd>
+</dl>
+</div></blockquote>
+<section id="examples-usage">
+<h3>Examples usage<a class="headerlink" href="#examples-usage" title="Link to this heading">¶</a></h3>
+<p>Inputs can defined manually</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">parameters</span> <span class="o">=</span> <span class="n">Inputs</span><span class="p">()</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">time_extent</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">kerneltype</span> <span class="o">=</span> <span class="s2">&quot;FULLNORMGAUSS&quot;</span>  <span class="c1"># Kernel smearing spectral density</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">periodicity</span> <span class="o">=</span> <span class="s2">&quot;EXP&quot;</span>  <span class="c1"># EXP / COSH for open / periodic boundary conditions</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># smearing radius in given energy units</span>
+<span class="n">parameters</span><span class="o">.</span><span class="n">assign_values</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>or via command line</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">par</span> <span class="o">=</span> <span class="n">parse_inputs</span><span class="p">()</span>
+<span class="n">init_precision</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">prec</span><span class="p">)</span>
+<span class="n">par</span><span class="o">.</span><span class="n">assign_values</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">lsdensities/utils/rhoUtils.py</a><ul>
+<li><a class="reference internal" href="#inputs-class">Inputs class</a><ul>
+<li><a class="reference internal" href="#examples-usage">Examples usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="InverseProblemWrapper.html"
+                          title="previous chapter">lsdensities/InverseProblemWrapper.py</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/rhoUtils.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="InverseProblemWrapper.html" title="lsdensities/InverseProblemWrapper.py"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">lsdensities/utils/rhoUtils.py</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Alessandro Lupo, Niccolò Forzano.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>
