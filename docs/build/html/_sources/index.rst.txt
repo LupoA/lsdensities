@@ -53,6 +53,7 @@ Contents
    :maxdepth: 2
    :caption: Contents:
 
+   TheMethod
    Introduction
    InverseProblemWrapper
    rhoUtils

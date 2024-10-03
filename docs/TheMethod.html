@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The procedure &#8212; lsdensities  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=def86cc0" />
+    
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"tex": {"macros": {"argmin": "\\mathop{\\rm arg\\,min}\\limits"}}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setting up lsdensities" href="Introduction.html" />
+    <link rel="prev" title="Welcome to the lsdensities’ documentation." href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the lsdensities’ documentation."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The procedure</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="the-procedure">
+<h1>The procedure<a class="headerlink" href="#the-procedure" title="Link to this heading">¶</a></h1>
+<p>Our method consists in a set of rules that aim to provide an unbiased estimate for a smeared spectral density. The lsdensities
+library provides functions for the implementation of these rules.</p>
+<blockquote>
+<div><p>1. Establish a parametric map between the input data <span class="math notranslate nohighlight">\(C(t)\)</span> and a smeared spectral density <span class="math notranslate nohighlight">\(\rho_\sigma(\omega)\)</span>.
+Given a set of parameters <span class="math notranslate nohighlight">\(\mathbb{p} = \lambda, \alpha\)</span>.</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[C(t) \underset{\mathbb{p}}{\mapsto} \rho^{\mathbb{p}}_\sigma(E)\]</div>
+<p>This is implemented through the equation</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\vec{g}(\sigma;\omega) = \argmin_{\vec{g} \in \mathbb{R}^{\tau_{\rm max}}} \int_0^\infty dE \, e^{\alpha E} | \sum_{r=1}^{\tau_{\rm max}} g_\tau(\omega) b_T(a \tau, E) - \mathcal{S}_\sigma(E,\omega) |^2 \\  + \lambda \; \sum_{\tau_1, \tau_2=1}^{\tau_{\rm max}} g_{\tau_1}(\omega) \, B_{\tau_1 \tau_2}\,  g_{\tau_2}(\omega) \, , \;\;\;\;\; \lambda \in (0,\infty)\end{split}\]</div>
+<p>For a generic set of parameters <span class="math notranslate nohighlight">\(\mathbb{p}\)</span>, in particular for <span class="math notranslate nohighlight">\(\lambda\)</span>, this will not be the solution we are after. However, for a subset of
+values of <span class="math notranslate nohighlight">\(\mathbb{p}\)</span>, the map provides a solution that is compatible, within the statistical error of the input data,
+with the spectral density associated with <span class="math notranslate nohighlight">\(C(t)\)</span> and smeared with the desired kernel.</p>
+</div></blockquote>
+</div></blockquote>
+<p>The second operation that must be performed is then:</p>
+<blockquote>
+<div><ol class="arabic" start="2">
+<li><p>Identification of the value of <span class="math notranslate nohighlight">\(\lambda\)</span> (and <span class="math notranslate nohighlight">\(\alpha\)</span> if desired) such that the solution is compatible with the input within errors.</p>
+<blockquote>
+<div><p>This task can be implemented manually by the user, but this library manages it automatically via the <a class="reference internal" href="InverseProblemWrapper.html#inverseproblemwrapper-label"><span class="std std-ref">InverseProblemWrapper</span></a> class in two different ways.
+Two optimal values of <span class="math notranslate nohighlight">\(\lambda\)</span> will be suggested
+based on two different interpretations.</p>
+<p>One relies on the identification of a plateau in the values of <span class="math notranslate nohighlight">\(\rho_\sigma\)</span>
+as a function of <span class="math notranslate nohighlight">\(\lambda\)</span>, as the latter variable is reduced.
+The results are collected in <a class="reference internal" href="InverseProblemWrapper.html#rhoresulthlt-label"><span class="std std-ref">InverseProblemWrapper.rhoResultHLT</span></a>.</p>
+<p>The other suggested value is based on Bayesian inference and is the result of the maximisation of a likelihood function.
+The results are collected in <a class="reference internal" href="InverseProblemWrapper.html#rhoresultbayes-label"><span class="std std-ref">InverseProblemWrapper.rhoResultBayes</span></a>.</p>
+<p>If everything works correctly, the two values should be compatible.</p>
+<p>The search for the optimal value of <span class="math notranslate nohighlight">\(\lambda\)</span>
+requires input values to be passed through the <a class="reference internal" href="InverseProblemWrapper.html#algorithmparameters-label"><span class="std std-ref">AlgorithmParameters</span></a> class.</p>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Welcome to the lsdensities’ documentation.</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="Introduction.html"
+                          title="next chapter">Setting up lsdensities</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/TheMethod.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="Introduction.html" title="Setting up lsdensities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the lsdensities’ documentation."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">lsdensities  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">The procedure</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Alessandro Lupo, Niccolò Forzano.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

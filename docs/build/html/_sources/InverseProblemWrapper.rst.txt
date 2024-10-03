@@ -104,6 +104,8 @@ The class has the following methods:
 
         Type: np.float64
 
+.. _rhoResultHLT-label:
+
     **rhoResultHLT**
         Array for which each entry is the smeared spectral density corresponding to the optimal value of `lambda` given by ``self.lambdaResultHLT``. Different entries correspond to different energies.
 
@@ -123,6 +125,8 @@ The class has the following methods:
         Array for which each entry is the optimal value of `lambda` obtained minimising the negative log likelihood (NLL). Different entries correspond to different energies.
 
         Type: np.float64
+
+.. _rhoResultBayes-label:
 
     **rhoResultBayes**
         Array for which each entry is the smeared spectral density corresponding to the optimal value of `lambda` given by ``self.lambdaResultBayes``. Different entries correspond to different energies.
