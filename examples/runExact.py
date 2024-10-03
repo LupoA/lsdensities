@@ -71,7 +71,7 @@ def generate(par, espace):
 def main():
     log("Initialising")
     par = parse_synthetic_inputs()
-    par.init()
+    par.assign_values(create_output_directories=False)
     par.report()
     espace = np.linspace(par.emin, par.emax, par.Ne)
 

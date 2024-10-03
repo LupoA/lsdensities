@@ -1,5 +1,4 @@
 from lsdensities.utils.rhoUtils import (
-    init_precision,
     Inputs,
 )
 from mpmath import mp, mpf
@@ -9,12 +8,12 @@ from lsdensities.utils.rhoMath import gauss_fp
 
 
 def run(time_extent):
-    init_precision(128)
     parameters = Inputs()
     parameters.time_extent = time_extent
     parameters.kerneltype = "FULLNORMGAUSS"
     parameters.periodicity = "EXP"
     parameters.sigma = 0.25
+    parameters.prec = 128
     peak = 1
     energy = 0.5
     parameters.assign_values()
@@ -66,3 +65,6 @@ def test_convergence():
     assert diff16 > diff32
     assert diff32 > diff48
     assert diff48 > diff64
+
+
+test_convergence()

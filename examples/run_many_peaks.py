@@ -85,7 +85,7 @@ def generate(par, espace, STATES):
 def main():
     print(LogMessage(), "Initialising")
     par = parse_synthetic_inputs()
-    par.init()
+    par.assign_values()
     par.report()
     espace = np.linspace(par.emin, par.emax, par.Ne)
 
@@ -96,7 +96,7 @@ def main():
     random.seed(seed)
     np.random.seed(random.randint(0, 2 ** (32) - 1))
 
-    NRUN = 100
+    NRUN = 2
     filename = (
         "data_Ne_"
         + str(par.Ne)
