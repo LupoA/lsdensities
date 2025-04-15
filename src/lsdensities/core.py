@@ -1,6 +1,7 @@
 from mpmath import mp, mpf
 from .utils.rhoMath import cauchy
-
+from scipy.integrate import quad
+import numpy as np
 
 def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
     S_ = mp.matrix(tmax, tmax)
@@ -120,7 +121,19 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             aux = aux * aux2 * cauchy(k, sigma_, e)
             return aux
 
-        res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
+
+        try:
+            result, err = quad(integrand, float(e0), np.inf,
+                               limit=200, epsabs=1e-10, epsrel=1e-10)
+            #print('Error in integral: ', err)
+            if not np.isfinite(result) or result < 0 or err > 1e-6:
+                raise ValueError("Suspicious result")
+            res = result
+        except Exception as e:
+            print(f"[SciPy fallback] Reason: {e}")
+            res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
+
+
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res
