@@ -584,7 +584,8 @@ class InverseProblemWrapper:
         )
 
         #   #   #   #   #   #   #   #   Loops over values of lambda #   #   #   #   #   #   #   #
-        lambda_ -= lambda_step
+        # lambda_ -= lambda_step
+        lambda_ /= lambda_step
         while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
             #   -   -   -   -   -   -
             log(
@@ -823,7 +824,8 @@ class InverseProblemWrapper:
             #   Update variables before restarting the loop
             _rho = _rhoUpdated
             _errBoot = _errBootUpdated
-            lambda_ -= lambda_step
+            # lambda_ -= lambda_step
+            lambda_ /= lambda_step
             #   Resize lambda_step
             if lambda_ <= 0:
                 lambda_step /= _resize

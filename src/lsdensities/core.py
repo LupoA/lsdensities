@@ -91,6 +91,17 @@ def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
     return res
 
 
+def generalised_ft_theta(t, sigma, e0):
+    aux = (sigma * t / 2) - (e0 / sigma)
+    res = mp.erfc(aux)
+    aux = t * t * sigma * sigma / 4
+    aux -= t * e0
+    res *= mp.exp(aux)
+    res += mp.erfc(e0 / sigma)
+    res /= 2 * t
+    return res
+
+
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS"):
     if ker_type == "FULLNORMGAUSS":
         res = generalised_ft(t, alpha, sigma_, e, e0)
@@ -107,7 +118,7 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             pterm = generalised_ft_halfnorm(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
     elif ker_type == "CAUCHY":
-        # Define the function to be integrated
+
         def integrand(k):
             aux = mp.exp(alpha * k)
             aux2 = -t * k
@@ -121,6 +132,11 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             return aux
 
         res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
+    elif ker_type == "THETA-ERF":
+        res = generalised_ft_theta(t - alpha, sigma_, e0)
+        if type == "COSH":
+            pterm = generalised_ft_theta(T - t + alpha, sigma_, e0)
+            res = mp.fadd(res, pterm)
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res
@@ -227,20 +243,6 @@ def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
     if par.periodicity == "COSH":
         _res = _res * (mp.exp(-t1 * e1) + mp.exp((-par.time_extent + t1) * e1))
     return _res
-
-
-def SigmaMat(alpha, s, e0, par):
-    SigmaMat_ = mp.matrix(par.tmax, par.tmax)
-
-    for i in range(par.tmax):
-        for j in range(par.tmax):
-            entry = mp.quad(
-                lambda x: integrandSigmaMat(x, alpha, s, i, j, e0, par),
-                [e0, mp.inf],
-                error=True,
-            )
-            SigmaMat_[i, j] = entry[0]
-    return SigmaMat_
 
 
 def gte(T, t, e, periodicity):

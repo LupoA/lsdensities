@@ -134,7 +134,7 @@ def combine_fMf_scalar(gt, params, estar, alpha):
 
 def combine_base_scalar(gt, params, estar):
     """
-    Computes sum_t g(t) exp(-tE) or its periodic generalisation
+    Computes sum_t g(t, omega) exp(-tE) or its periodic generalisation
     Scalar version: operation is performed at a single energy "estar".
     """
     out_ = 0

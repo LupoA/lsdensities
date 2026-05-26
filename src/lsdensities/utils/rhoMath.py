@@ -3,6 +3,7 @@ from numpy import linalg as LA
 import math
 import scipy.linalg as sp_linalg
 from mpmath import mp
+from scipy.special import erf
 
 
 def kronecker_fp(a, b):
@@ -38,6 +39,11 @@ def cauchy(k, sigma_, omega_):
     aux = aux * aux + sigma_ * sigma_
     aux = sigma_ / aux
     return aux
+
+
+def theta_erf(x, x0, sigma):
+    res = 1 + erf((x - x0) / sigma)
+    return res / 2
 
 
 def norm2_fp(matrix):  # for square matrices only

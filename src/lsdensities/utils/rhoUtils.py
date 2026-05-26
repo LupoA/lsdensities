@@ -123,11 +123,17 @@ class Obs:
         self.nms = nms
         self.sample = np.zeros((nms, T))  # Sample elements
         self.cov = np.zeros((T, T))  # Cov matrix estimated from sample
+        self.cholesky = np.zeros((T, T))
         self.corrmat = np.zeros((T, T))  # Corr matrix estimated from sample
         self.is_resampled = is_resampled
         self.mpsample = mp.matrix(self.nms, self.tmax)
         self.mpcov = mp.matrix(self.tmax, self.tmax)
+        self.mpcholesky = mp.matrix(self.tmax, self.tmax)
         self.mpcentral = mp.matrix(self.tmax, 1)
+
+        self.cholesky_evaluated = False
+        self.central_err_evaluated = False
+        self.cov_evaluated = False
 
     def evaluate(self):
         """
@@ -143,8 +149,9 @@ class Obs:
             self.err = self.sigma / np.sqrt(self.nms)
         if self.is_resampled is True:
             self.err = self.sigma
+        self.central_err_evaluated = True
 
-    def evaluate_covmatrix(self, plot=False):
+    def evaluate_covmatrix(self, plot=False, symmetrise=False, regularise=0):
         """
         From sample, computes covariance matrix in self.cov
         """
@@ -154,7 +161,18 @@ class Obs:
             plt.imshow(self.cov, cmap="viridis")
             plt.colorbar()
             plt.show()
+        self.cov_evaluated = True
+        if symmetrise:
+            self.cov = (self.cov + self.cov.T) * 0.5
+        if regularise > 0:
+            self.cov += np.eye(self.cov.shape[0]) * regularise
         return self.cov
+
+    def evaluate_cholesky(self):
+        assert self.cov_evaluated is True
+        self.cholesky = np.linalg.cholesky(self.cov)
+        self.cholesky_evaluated = True
+        return self.cholesky
 
     def corrmat_from_covmat(self, plot=False):
         """
@@ -171,11 +189,13 @@ class Obs:
             plt.colorbar()
             plt.show()
 
-    def fill_mp_sample(self):
+    def fill_mp_sample(self, w_cholesky=False):
         """
         This operation also includes the shifting of the correlator index
         so that corr(0) is never used
         """
+        assert self.cov_evaluated is True
+
         for n in range(self.nms):
             for i in range(self.tmax):  # tmax = T/2 if folded otherwise T-1
                 self.mpsample[n, i] = mpf(str(self.sample[n][i + 1]))
@@ -185,6 +205,12 @@ class Obs:
             self.mpcentral[i] = self.central[i + 1]
             for j in range(self.tmax):
                 self.mpcov[i, j] = mpf(str(self.cov[i + 1][j + 1]))
+
+        if w_cholesky:
+            assert self.cholesky_evaluated is True
+            for i in range(self.tmax):
+                for j in range(self.tmax):
+                    self.mpcholesky[i, j] = mpf(str(self.cholesky[i + 1][j + 1]))
 
     def fill_mp_sample_NOSHIFT(self):
         for n in range(self.nms):
