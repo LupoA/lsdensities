@@ -1,7 +1,7 @@
 from lsdensities.utils.rhoUtils import generate_seed, Inputs, init_precision
 
 
-def rng_seeding():
+def test_rng_seeding():
     init_precision(128)
     par = Inputs()
 
