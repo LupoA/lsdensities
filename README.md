@@ -18,10 +18,6 @@ for the solution of the inverse problem.
 
 Niccolò Forzano, Alessandro Lupo.
 
-## Documentation
-
-Documentation is under construction. It can be found <a href="https://lupoa.github.io/lsdensities/index.html">here</a> in its preliminary form.
-
 ## Installation
 
 One can download, build and install the package
@@ -120,9 +116,9 @@ Please make sure to update tests as appropriate.
 Development requirements can be installed by using ``pip install -r requirements.txt``, and they are listed in ``requirements.txt``.
 
 ## References
-For the main ideas: https://arxiv.org/pdf/1903.06476.pdf
+For the mean ideas: https://arxiv.org/pdf/1903.06476.pdf
 
-For the Bayesian setup and the general treatment of the bias: https://arxiv.org/pdf/2409.04413
+For the Bayesian setup and the general treatment of the bias: https://arxiv.org/pdf/2311.18125.pdf
 
 ## License
 

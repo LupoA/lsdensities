@@ -12,7 +12,7 @@ import numpy as np
 def effective_mass(corr, par, type="COSH"):
     th = int(par.time_extent / 2)
     thm = th - 1
-    mass = Obs(T=thm, nms=par.num_boot, is_resampled=True, tmax=thm)
+    mass = Obs(T=thm, nms=par.num_boot, sample_type="bootstrap", tmax=thm)
     if type == "COSH":
         mass.sample[:, :] = np.arccosh(
             (corr.sample[:, 2 : th + 1] + corr.sample[:, 0 : th - 1])
@@ -27,11 +27,11 @@ def effective_mass(corr, par, type="COSH"):
     return mass
 
 
-def foldPeriodicCorrelator(corr, par, is_resampled=False):
+def foldPeriodicCorrelator(corr, par, sample_type="montecarlo"):
     assert par.periodicity == "COSH"
     halfT = int(par.time_extent / 2)
     foldedCorr = Obs(
-        T=halfT + 1, tmax=par.tmax, nms=par.num_samples, is_resampled=is_resampled
+        T=halfT + 1, tmax=par.tmax, nms=par.num_samples, sample_type=sample_type
     )
     for n in range(par.num_samples):
         foldedCorr.sample[n, 0] = corr.sample[n, 0]
@@ -46,7 +46,7 @@ def foldPeriodicCorrelator(corr, par, is_resampled=False):
 def symmetrisePeriodicCorrelator(corr, par):
     assert par.periodicity == "COSH"
     symmCorr = Obs(
-        T=corr.T, tmax=corr.tmax, nms=corr.nms, is_resampled=corr.is_resampled
+        T=corr.T, tmax=corr.tmax, nms=corr.nms, sample_type=corr.sample_type
     )
     for n in range(par.num_samples):
         symmCorr.sample[n, 0] = corr.sample[n, 0]
@@ -111,7 +111,7 @@ def parseArgumentCorrelatorAnalysis():
     parser.add_argument(
         "--periodicity",
         type=str,
-        help="Accepted stirngs are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
+        help="Accepted strings are 'EXP' or 'COSH', depending on the correlator being periodic or open.",
         default="EXP",
     )
     args = parser.parse_args()

@@ -3,9 +3,12 @@ from .utils.rhoMath import cauchy
 
 
 def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
+    """
+    Cauchy matrix A_N (arXiv:2605.14652, Sec. II)
+    """
     S_ = mp.matrix(tmax, tmax)
     for i in range(tmax):
-        for j in range(tmax):
+        for j in range(i, tmax):
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
             entry = mp.fsub(arg, alpha)  # i+j+2-a
@@ -13,7 +16,6 @@ def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
             arg = mp.fmul(arg, e0)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
-            S_[i, j] = entry
             if type == "COSH":
                 assert T > 0
                 entry2 = mp.fsub(mpf(i), mpf(j))
@@ -39,11 +41,16 @@ def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
                 entry2 = mp.fdiv(arg2, entry2)
                 entry3 = mp.fdiv(arg3, entry3)
                 entry4 = mp.fdiv(arg4, entry4)
-                S_[i, j] += entry2 + entry3 + entry4
+                entry += entry2 + entry3 + entry4
+            S_[i, j] = entry
+            S_[j, i] = entry
     return S_
 
 
 def generalised_ft(t, alpha, sigma, e, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652
+    '''
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma, sigma)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -66,6 +73,9 @@ def generalised_ft(t, alpha, sigma, e, e0):
 
 
 def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for the half-norm normalisation of the gussian kernel
+    '''
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma, sigma)  # s^2
     arg = mp.fmul(aux, newt)  # s^2 (t-alpha)
@@ -91,7 +101,24 @@ def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
     return res
 
 
+def generalised_ft_theta(t, sigma, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for a step function
+    '''
+    aux = (sigma * t / 2) - (e0 / sigma)
+    res = mp.erfc(aux)
+    aux = t * t * sigma * sigma / 4
+    aux -= t * e0
+    res *= mp.exp(aux)
+    res += mp.erfc(e0 / sigma)
+    res /= 2 * t
+    return res
+
+
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS"):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for any coded kernel
+    '''
     if ker_type == "FULLNORMGAUSS":
         res = generalised_ft(t, alpha, sigma_, e, e0)
         if type == "COSH":
@@ -107,7 +134,7 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             pterm = generalised_ft_halfnorm(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
     elif ker_type == "CAUCHY":
-        # Define the function to be integrated
+
         def integrand(k):
             aux = mp.exp(alpha * k)
             aux2 = -t * k
@@ -121,6 +148,11 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             return aux
 
         res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
+    elif ker_type == "THETA-ERF":
+        res = generalised_ft_theta(t - alpha, sigma_, e0)
+        if type == "COSH":
+            pterm = generalised_ft_theta(T - t + alpha, sigma_, e0)
+            res = mp.fadd(res, pterm)
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res
@@ -191,7 +223,6 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
         res = mp.quad(integrand2, [e0, mp.inf], method="gauss-legendre")
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
-
     return res
 
 
@@ -213,6 +244,9 @@ def a0_array(espace_mp, par, alpha):
 
 
 def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
+    '''
+    For Gaussian Processes, what hlt_matrix() is to HLT
+    '''
     _res = ft_mp(
         e=e1,
         t=t2,
@@ -228,20 +262,6 @@ def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
     if par.periodicity == "COSH":
         _res = _res * (mp.exp(-t1 * e1) + mp.exp((-par.time_extent + t1) * e1))
     return _res
-
-
-def SigmaMat(alpha, s, e0, par):
-    SigmaMat_ = mp.matrix(par.tmax, par.tmax)
-
-    for i in range(par.tmax):
-        for j in range(par.tmax):
-            entry = mp.quad(
-                lambda x: integrandSigmaMat(x, alpha, s, i, j, e0, par),
-                [e0, mp.inf],
-                error=True,
-            )
-            SigmaMat_[i, j] = entry[0]
-    return SigmaMat_
 
 
 def gte(T, t, e, periodicity):

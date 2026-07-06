@@ -1,7 +1,5 @@
 import numpy as np
-from numpy import linalg as LA
 import math
-import scipy.linalg as sp_linalg
 from mpmath import mp
 
 
@@ -31,6 +29,7 @@ def gauss_fp(x, x0, sigma, norm="Full"):
         return np.exp(-((x - x0) ** 2) / (2 * sigma**2))
     if norm == "Half" or norm == "half":
         return (np.exp(-((x - x0) ** 2) / (2 * sigma**2))) / halfnorm_fp(x0, sigma)
+    raise ValueError(f"Invalid norm '{norm}' (expected 'full', 'half' or 'none')")
 
 
 def cauchy(k, sigma_, omega_):
@@ -38,19 +37,6 @@ def cauchy(k, sigma_, omega_):
     aux = aux * aux + sigma_ * sigma_
     aux = sigma_ / aux
     return aux
-
-
-def norm2_fp(matrix):  # for square matrices only
-    assert matrix.shape[0] == matrix.shape[1]
-    return LA.norm(matrix) / np.sqrt(matrix.shape[0])
-
-
-def choelesky_invert_scipy(
-    in_,
-):  # invert positive definite matrix. wee faster than numpy
-    _L, _lower = sp_linalg.cho_factor(in_)
-    out_ = sp_linalg.cho_solve((_L, _lower), np.eye(in_.shape[0]))
-    return out_
 
 
 def norm2_mp(matrix):  # for square matrices only
