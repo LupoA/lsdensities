@@ -29,6 +29,7 @@ def gauss_fp(x, x0, sigma, norm="Full"):
         return np.exp(-((x - x0) ** 2) / (2 * sigma**2))
     if norm == "Half" or norm == "half":
         return (np.exp(-((x - x0) ** 2) / (2 * sigma**2))) / halfnorm_fp(x0, sigma)
+    raise ValueError(f"Invalid norm '{norm}' (expected 'full', 'half' or 'none')")
 
 
 def cauchy(k, sigma_, omega_):

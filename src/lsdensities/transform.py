@@ -10,20 +10,19 @@ def coefficients_ssd(matrix, params, estar, alpha):
 
     Operation is performed for a single energy "estar"
     """
-    gt = mp.matrix(params.tmax, 1)
-    for i in range(params.tmax):
-        for j in range(params.tmax):
-            gt[i] += matrix[i, j] * ft_mp(
-                e=estar,
-                t=mpf(j + 1),
-                sigma_=params.mpsigma,
-                alpha=mpf(alpha),
-                e0=params.mpe0,
-                type=params.periodicity,
-                T=params.time_extent,
-                ker_type=params.kerneltype,
-            )
-    return gt
+    ft = mp.matrix(params.tmax, 1)
+    for j in range(params.tmax):
+        ft[j] = ft_mp(
+            e=estar,
+            t=mpf(j + 1),
+            sigma_=params.mpsigma,
+            alpha=mpf(alpha),
+            e0=params.mpe0,
+            type=params.periodicity,
+            T=params.time_extent,
+            ker_type=params.kerneltype,
+        )
+    return matrix * ft
 
 
 def get_ssd_scalar(gt, corr, params):

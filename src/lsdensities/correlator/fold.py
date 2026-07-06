@@ -1,7 +1,11 @@
 from ..utils.rhoUtils import Obs, LogMessage, read_datafile
 from ..utils.rhoParallelUtils import ParallelBootstrapLoop
-from .correlatorUtils import foldPeriodicCorrelator, InputsCorrelatorAnalysis
-from ..utils.rhoParser import parseArgumentCorrelatorAnalysis
+from .correlatorUtils import (
+    effective_mass,
+    foldPeriodicCorrelator,
+    InputsCorrelatorAnalysis,
+    parseArgumentCorrelatorAnalysis,
+)
 
 
 def main():
@@ -28,12 +32,12 @@ def main():
     #    rawcorr.plot(label="raw data")
 
     #   Here is the folding
-    foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, is_resampled=False)
+    foldedCorr = foldPeriodicCorrelator(corr=rawcorr, par=par, sample_type="montecarlo")
     foldedCorr.evaluate()
     #    foldedCorr.plot(label="folded")
 
     #   Here is the resampling
-    corr = Obs(int(par.time_extent / 2) + 1, par.num_boot, is_resampled=True)
+    corr = Obs(int(par.time_extent / 2) + 1, par.num_boot, sample_type="bootstrap")
     resample = ParallelBootstrapLoop(par, foldedCorr.sample, is_folded=True)
     corr.sample = resample.run()
     corr.evaluate()
@@ -42,8 +46,6 @@ def main():
     print(LogMessage(), "Evaluate covariance")
     corr.evaluate_covmatrix(plot=False)
     corr.corrmat_from_covmat(plot=False)
-
-    from correlatorUtils import effective_mass
 
     effmass = effective_mass(corr, par, type="COSH")
     effmass.plot(logscale=False)

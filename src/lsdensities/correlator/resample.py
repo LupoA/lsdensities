@@ -1,8 +1,7 @@
-import rhoUtils as u
-from ..rhoUtils import LogMessage
-from ..utils.rhoParser import parseArgumentCorrelatorAnalysis
+from ..utils import rhoUtils as u
+from ..utils.rhoUtils import LogMessage
 from ..utils.rhoParallelUtils import ParallelBootstrapLoop
-from .correlatorUtils import InputsCorrelatorAnalysis
+from .correlatorUtils import InputsCorrelatorAnalysis, parseArgumentCorrelatorAnalysis
 
 
 def main():
@@ -20,7 +19,7 @@ def main():
     rawcorr.evaluate()
 
     #   Here is the resampling
-    corr = u.Obs(par.time_extent, par.num_boot, is_resampled=True)
+    corr = u.Obs(par.time_extent, par.num_boot, sample_type="bootstrap")
     resample = ParallelBootstrapLoop(par, rawcorr.sample)
     corr.sample = resample.run()
     corr.evaluate()

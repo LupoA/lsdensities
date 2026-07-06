@@ -13,7 +13,6 @@ import os
 from mpmath import mp, mpf
 import numpy as np
 from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
-from lsdensities.utils.rhoUtils import MatrixBundle
 import random
 
 
@@ -45,7 +44,7 @@ def main():
     #   #   #   Resampling
     if par.periodicity == "EXP":
         corr = u.Obs(
-            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
+            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, sample_type="bootstrap"
         )
         resample = ParallelBootstrapLoop(par, rawcorr.sample, is_folded=False)
     if par.periodicity == "COSH":
@@ -53,7 +52,7 @@ def main():
             T=symCorr.T,
             tmax=symCorr.tmax,
             nms=par.num_boot,
-            is_resampled=True,
+            sample_type="bootstrap",
         )
         resample = ParallelBootstrapLoop(par, symCorr.sample, is_folded=False)
 
@@ -92,24 +91,24 @@ def main():
         lambdaMin=5e-2,
         comparisonRatio=0.3,
     )
-    matrix_bundle = MatrixBundle(Bmatrix=corr.mpcov, bnorm=cNorm)
-
     HLT = InverseProblemWrapper(
         par=par,
         algorithmPar=hltParams,
-        matrix_bundle=matrix_bundle,
+        B=corr.mpcov,
+        bnorm=cNorm,
         correlator=corr,
         energies=energies,
     )
     HLT.prepareHLT()
     HLT.run()
-    HLT.stabilityPlot(
-        generateHLTscan=True,
-        generateLikelihoodShared=True,
-        generateLikelihoodPlot=True,
-        generateKernelsPlot=True,
-    )  # Lots of plots as it is
-    HLT.plotResult()
+    output_file = HLT.save()
+    print(LogMessage(), "Wrote stability-analysis data to", output_file)
+    print(
+        LogMessage(),
+        "Plot it with: python3 plot_output.py stability --file",
+        output_file,
+        "--energy <E>",
+    )
     end()
 
 

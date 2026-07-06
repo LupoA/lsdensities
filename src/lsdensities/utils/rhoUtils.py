@@ -68,17 +68,11 @@ def generate_seed(par):
 
 
 def create_out_paths(par):
-    if not os.path.exists(par.outdir):
-        os.mkdir(par.outdir)
     dir = os.path.join(par.outdir, par.directoryName)
-    if not os.path.exists(dir):
-        os.mkdir(dir)
     plotpath = os.path.join(dir, "Plots")
     logpath = os.path.join(dir, "Logs")
-    if not os.path.exists(plotpath):
-        os.mkdir(plotpath)
-    if not os.path.exists(logpath):
-        os.mkdir(logpath)
+    os.makedirs(plotpath, exist_ok=True)
+    os.makedirs(logpath, exist_ok=True)
     return plotpath, logpath
 
 
@@ -88,39 +82,74 @@ def ranvec(vec, dim, a, b):
     return vec
 
 
+#: Supported Obs.sample_type values.
+SAMPLE_TYPES = ("montecarlo", "bootstrap", "jackknife")
+
+
+def _variance_scale_factor(sample_type, n):
+    """
+    Var[central value] = _variance_scale_factor(sample_type, n) * Var[single config, ddof=1].
+
+    - montecarlo: raw, independent measurements -> standard error of the mean, 1/n.
+    - bootstrap: replicates' own spread already estimates the error directly, 1.
+    - jackknife: delete-1 replicates are strongly correlated (each shares n-1 of n
+      configs with every other), so their raw spread underestimates the true
+      error; the textbook correction is (n-1)**2/n. See e.g. Efron & Tibshirani,
+      "An Introduction to the Bootstrap", Ch. 11.
+    """
+    if sample_type == "montecarlo":
+        return 1.0 / n
+    if sample_type == "bootstrap":
+        return 1.0
+    if sample_type == "jackknife":
+        return (n - 1) ** 2 / n
+    raise ValueError(
+        f"Invalid sample_type '{sample_type}' (expected one of {SAMPLE_TYPES})"
+    )
+
+
 class Obs:
     """
     Class for an array of observables
     T: lenght of the array.
     tmax: highest element of the array that is used for analysis.
-    is_resampled: True if the samples are already an average (e.g. jackknife, bootstrap), False otherwise.
+    sample_type: one of "montecarlo" (raw, independent measurements), "bootstrap"
+        or "jackknife" (samples already resampled from raw data). Determines how
+        the error on the central value (and the covariance matrix) is obtained
+        from the spread of `sample` -- see _variance_scale_factor.
 
     Attributes:
     central: values of the array.
-    err: error on central.
-    sigma: std, which corresponds to err if is_resampled = True. When if_resampled = False, the
-           two are related by sqrt(measurements).
+    err: error on central (sample_type-dependent; see _variance_scale_factor).
+    sigma: std of a single configuration (ddof=1), regardless of sample_type.
+           NOT the error on central unless sample_type == "bootstrap" (where the two
+           coincide by construction).
     nms: number of measurements,
     sample: an array of measurements (len = nms) for each array in the observable.
-    cov: covariance matrix
+    cov: covariance matrix of the central value (same sample_type scaling as err,
+         so that cov[i, i] == err[i]**2 always).
     corrmat: correlation matrix
     mpsample: sample, converted into mp variables, and of leght reduced from T to tmax
     mpcov: cov from mpsample
     mpcentral: central from mpsample
     """
 
-    def __init__(self, T: int, tmax: int, nms: int = 1, is_resampled=False):
+    def __init__(self, T: int, tmax: int, nms: int = 1, sample_type="montecarlo"):
+        if sample_type not in SAMPLE_TYPES:
+            raise ValueError(
+                f"Invalid sample_type '{sample_type}' (expected one of {SAMPLE_TYPES})"
+            )
         self.central = np.zeros(T)  # Central value of the sample
         self.err = np.zeros(T)  # Error on the central value
-        self.sigma = np.zeros(T)  # Variance of the sample
+        self.sigma = np.zeros(T)  # Std of a single configuration (ddof=1)
         self.T = T  # number of time slices
         self.tmax = tmax  # Max t we use
         self.nms = nms
         self.sample = np.zeros((nms, T))  # Sample elements
-        self.cov = np.zeros((T, T))  # Cov matrix estimated from sample
+        self.cov = np.zeros((T, T))  # Cov matrix of the central value
         self.cholesky = np.zeros((T, T))
         self.corrmat = np.zeros((T, T))  # Corr matrix estimated from sample
-        self.is_resampled = is_resampled
+        self.sample_type = sample_type
         self.mpsample = mp.matrix(self.nms, self.tmax)
         self.mpcov = mp.matrix(self.tmax, self.tmax)
         self.mpcholesky = mp.matrix(self.tmax, self.tmax)
@@ -135,23 +164,23 @@ class Obs:
         From sample, computes central and err and store them into
         self.central, self.err
         """
+        scale = np.sqrt(_variance_scale_factor(self.sample_type, self.nms))
         for i in range(self.T):
             self.central[i], self.sigma[i] = (
                 np.average(self.sample[:, i]),
                 np.std(self.sample[:, i], ddof=1),
             )
-        if self.is_resampled is False:
-            self.err = self.sigma / np.sqrt(self.nms)
-        if self.is_resampled is True:
-            self.err = self.sigma
+        self.err = self.sigma * scale
         self.central_err_evaluated = True
 
     def evaluate_covmatrix(self, plot=False, symmetrise=False, regularise=0):
         """
-        From sample, computes covariance matrix in self.cov
+        From sample, computes the covariance matrix of the central value in self.cov
+        (scaled consistently with self.err, i.e. self.cov[i, i] == self.err[i] ** 2).
         """
+        scale = _variance_scale_factor(self.sample_type, self.nms)
         sample_matrix = np.array(self.sample).T
-        self.cov = np.cov(sample_matrix, bias=False)
+        self.cov = np.cov(sample_matrix, bias=False) * scale
         if plot:
             plt.imshow(self.cov, cmap="viridis")
             plt.colorbar()
@@ -174,10 +203,11 @@ class Obs:
         Computes the correlation matrix from the covariance matrix
         and saves it into self.corrmat
         """
+        cov_diag = np.diagonal(self.cov)
         for vi in range(self.T):
             for vj in range(self.T):
-                self.corrmat[vi][vj] = self.cov[vi][vj] / (
-                    self.sigma[vi] * self.sigma[vj]
+                self.corrmat[vi][vj] = self.cov[vi][vj] / np.sqrt(
+                    cov_diag[vi] * cov_diag[vj]
                 )
         if plot is True:
             plt.imshow(self.corrmat)
@@ -242,7 +272,8 @@ class Obs:
 
 def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     """
-    The input file has a header with time_extent and number of measurements.
+    You should write your own, compatible with your format!
+    Here we assume that the input file has a header with time_extent and number of measurements.
     then data config by config. Example:
     #   32  100
     #   0   corr[0]
@@ -260,7 +291,10 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
         print(LogMessage(), "Reading file :::", "Time extent ", header_T)
         print(LogMessage(), "Reading file :::", "Measurements ", header_nms)
         mcorr_ = Obs(
-            T=header_T, tmax=header_T - 1, nms=header_nms, is_resampled=resampled
+            T=header_T,
+            tmax=header_T - 1,
+            nms=header_nms,
+            sample_type="bootstrap" if resampled else "montecarlo",
         )
         # loop over file: read and store
         for indx, lndex in enumerate(file):
@@ -397,12 +431,6 @@ class Inputs:
         print(LogMessage(), "Init :::", "A integral from E0 = ", float(self.mpe0))
 
 
-class MatrixBundle:
-    def __init__(self, Bmatrix: mp.matrix, bnorm=mpf(1)):
-        self.B = Bmatrix
-        self.bnorm = bnorm
-
-
 class bcolors:
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -414,18 +442,6 @@ class bcolors:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
 
-
-CB_color_cycle = [
-    "#377eb8",
-    "#ff7f00",
-    "#4daf4a",
-    "#f781bf",
-    "#a65628",
-    "#984ea3",
-    "#999999",
-    "#e41a1c",
-    "#dede00",
-]
 
 CB_colors = [
     "#1f77b4",  # Dark Blue

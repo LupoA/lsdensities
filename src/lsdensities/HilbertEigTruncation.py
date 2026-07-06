@@ -1,15 +1,24 @@
+import logging
+
 from .core import hlt_matrix
 from .transform import ft_mp
 from .utils.rhoStat import averageVector_fp
 from mpmath import mp, mpf
 import numpy as np
 from .utils.rhoUtils import Inputs, Obs, log
-import os
-import json
+from . import ioutils
 
 
 class HETpar:
-    """ """
+    """
+    alphaA, alphaB, alphaC : values of the smearing-kernel exponent used to
+        cross-check the eigen-space truncation (mirrors the stability
+        analysis' use of several alpha, arXiv:2605.14652 Fig. 6/7). Only
+        alphaA is required; set par.Na to 1, 2 or 3 to also use alphaB/alphaC.
+    n_consecutive : number of consecutive eigenmodes whose contribution to
+        rho must be compatible with zero before the sum is truncated there
+        (arXiv:2605.14652 Eq. 34).
+    """
 
     def __init__(
         self,
@@ -27,6 +36,12 @@ class HETpar:
 
 
 class SigmaMatrix:
+    """
+    Eigen-basis representation of the Backus-Gilbert matrix A_N (arXiv:2605.14652,
+    Sec. III.B): Htild = Bh . A_N . Bh^T (Bh whitens the data covariance) is
+    symmetric by construction, so its eigendecomposition is real and orthogonal.
+    """
+
     def __init__(self, par: Inputs, Bh, alphaMP=0.0):
         self.par = par
         self.tmax = par.tmax
@@ -34,27 +49,12 @@ class SigmaMatrix:
         self.Bh = Bh
 
         self.matrix = mp.matrix(self.tmax, self.tmax)
-        self.inverse = mp.matrix(self.tmax, self.tmax)
-
         self.Htild = None
         self.eigvals = None
         self.eigvecs = None
 
     def _compute_eigendecomposition(self):
-        eigvals, eigvecs = mp.eig(self.Htild)
-
-        if 0:
-            print("\n--- Eigenvalues debug ---")
-            for i, ev in enumerate(eigvals):
-                try:
-                    re = mp.re(ev)
-                    im = mp.im(ev)
-                    print(f"{i}: real={re}, imag={im}, |imag|={abs(im)}\n")
-                except Exception:
-                    # in case it's already real (mpf)
-                    print(f"{i}: real={ev}, imag=0\n")
-
-            print("------------------------\n")
+        eigvals, eigvecs = mp.eigsy(self.Htild)
 
         idx = sorted(range(len(eigvals)), key=lambda i: eigvals[i], reverse=True)
         eigvals = [eigvals[i] for i in idx]
@@ -76,17 +76,23 @@ class SigmaMatrix:
             type=self.par.periodicity,
             T=self.par.time_extent,
         )
-
-        # log(" Evaluating H inverse")
-        # self.inverse = invert_matrix_ge(self.matrix)
-
         log(" Building Htild")
         self.Htild = self.Bh * self.matrix * self.Bh.T
-
         log(" Computing eigendecomposition")
         self._compute_eigendecomposition()
-
         log(" Done!")
+
+
+class EigenspaceChannel:
+    """Bookkeeping for one value of the kernel exponent alpha in the eigen-space analysis."""
+
+    def __init__(self, label: str, alpha: float, num_energies: int):
+        self.label = label
+        self.alpha = alpha
+        self.sigma_matrix = None  # set by HilbertEigTruncWrapper.prepare()
+        self.kstop = np.zeros(num_energies)
+        self.res = np.zeros(num_energies)
+        self.err = np.zeros(num_energies)
 
 
 class HilbertEigTruncWrapper:
@@ -115,31 +121,47 @@ class HilbertEigTruncWrapper:
         self.emaxMP = mpf(str(par.emax))
         self.eminMP = mpf(str(par.emin))
         self.espace_dictionary = {}  #   Usage: espace_dictionary[espace[n]] = n
-        self.selectSigmaMat = {}  #   Usage: selectSigmaMat[alpha] = Sigma
-        #   First alpha
-        self.SigmaMatA = None  # SigmaMatrix(self.par, algorithmPar.alphaA)
-        self.kstopA = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.resA = np.ndarray(self.par.Ne, dtype=np.float64)
-        self.errA = np.ndarray(self.par.Ne, dtype=np.float64)
 
-        #   Second alpha
+        #   Alpha channels: "A" always present, "B" and "C" enabled via par.Na.
+        self.channels = {}
+        self.secondary_channels = []
+
+        def _add_channel(label, alpha):
+            channel = EigenspaceChannel(label, alpha, self.par.Ne)
+            self.channels[label] = channel
+            return channel
+
+        self.channelA = _add_channel("A", self.algorithmPar.alphaA)
         if self.par.Na > 1:
-            self.SigmaMatB = None  # SigmaMatrix(self.par, algorithmPar.alphaB)
-            self.kstopB = np.ndarray(self.par.Ne, dtype=np.float64)
-            self.resB = np.ndarray(self.par.Ne, dtype=np.float64)
-            self.errB = np.ndarray(self.par.Ne, dtype=np.float64)
-            #   Third alpha
+            self.channelB = _add_channel("B", self.algorithmPar.alphaB)
+            self.secondary_channels.append(self.channelB)
             if self.par.Na > 2:
-                self.SigmaMatC = None  # SigmaMatrix(self.par, algorithmPar.alphaC)
-                self.kstopC = np.ndarray(self.par.Ne, dtype=np.float64)
-                self.resC = np.ndarray(self.par.Ne, dtype=np.float64)
-                self.errC = np.ndarray(self.par.Ne, dtype=np.float64)
+                self.channelC = _add_channel("C", self.algorithmPar.alphaC)
+                self.secondary_channels.append(self.channelC)
+
+        #   Backward-compatible flat aliases
+        self.kstopA, self.resA, self.errA = (
+            self.channelA.kstop,
+            self.channelA.res,
+            self.channelA.err,
+        )
+        if "B" in self.channels:
+            self.kstopB, self.resB, self.errB = (
+                self.channelB.kstop,
+                self.channelB.res,
+                self.channelB.err,
+            )
+        if "C" in self.channels:
+            self.kstopC, self.resC, self.errC = (
+                self.channelC.kstop,
+                self.channelC.res,
+                self.channelC.err,
+            )
 
         #   Control variables
         self.espace_is_filled = False
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
-        self.log_path = "."
-        # - - - - - - - - - - - - - - - End of INIT - - - - - - - - - - - - - - - #
+        self._scan_data = None  # filled by run(), consumed by save()
 
     def _fillEspaceMP(self):
         """
@@ -150,63 +172,39 @@ class HilbertEigTruncWrapper:
             self.espaceMP[e_id] = mpf(str(self.espace[e_id]))
             self.espace_dictionary[self.espace[e_id]] = e_id
         self.espace_is_filled = True
-        return
 
     def prepare(self):
         self._fillEspaceMP()
-        if self.useCOV:
-            self.Bh = self.correlator.mpcholesky ** (-1)
-        else:
-            self.Bh = mp.eye(self.par.tmax)
-        # First alpha
-        self.SigmaMatA = SigmaMatrix(self.par, self.Bh, self.algorithmPar.alphaA)
-        self.SigmaMatA.evaluate()
-        self.selectSigmaMat[str(self.algorithmPar.alphaA)] = self.SigmaMatA
-
-        # Second alpha
-        if self.par.Na > 1:
-            self.SigmaMatB = SigmaMatrix(self.par, self.Bh, self.algorithmPar.alphaB)
-            self.SigmaMatB.evaluate()
-            self.selectSigmaMat[str(self.algorithmPar.alphaB)] = self.SigmaMatB
-
-            if self.par.Na > 2:
-                self.SigmaMatC = SigmaMatrix(
-                    self.par, self.Bh, self.algorithmPar.alphaC
-                )
-                self.SigmaMatC.evaluate()
-                self.selectSigmaMat[str(self.algorithmPar.alphaC)] = self.SigmaMatC
-
-        os.makedirs(self.par.logpath, exist_ok=True)
-        self.log_path = os.path.join(
-            self.par.logpath,
-            rf"HET_tmax{self.par.tmax}_sigma{self.par.sigma}_Ne{self.par.Ne}_Na{self.par.Na}_kernel{self.par.kerneltype}.json",
+        self.Bh = (
+            self.correlator.mpcholesky ** (-1) if self.useCOV else mp.eye(self.par.tmax)
         )
-        # - - - - - - - - - - - - - - - Main functions - - - - - - - - - - - - - - - #
+        for channel in [self.channelA, *self.secondary_channels]:
+            channel.sigma_matrix = SigmaMatrix(self.par, self.Bh, channel.alpha)
+            channel.sigma_matrix.evaluate()
 
-    def eigProject(self, lambda_, estar_, alpha_):
+    def eigProject(self, lambda_, estar_, channel):
         tmax = self.par.tmax
         nboot = self.par.num_boot
 
-        matrix = self.selectSigmaMat[str(alpha_)]
+        eigvecs = channel.sigma_matrix.eigvecs
+        eigvals = channel.sigma_matrix.eigvals
 
-        eigvecs = matrix.eigvecs
-        eigvals = matrix.eigvals
-
-        # get f
         f = mp.matrix(tmax, 1)
         for i in range(tmax):
             f[i] = ft_mp(
                 e=mpf(str(estar_)),
                 t=mpf(i + 1),
                 sigma_=self.par.mpsigma,
-                alpha=mpf(str(alpha_)),
+                alpha=mpf(str(channel.alpha)),
                 e0=self.par.mpe0,
                 type=self.par.periodicity,
                 T=mpf(str(self.par.time_extent)),
                 ker_type=self.par.kerneltype,
             )
         ftild = self.Bh * f
-        f_proj = eigvecs.T * ftild
+        f_proj_mp = eigvecs.T * ftild
+        f_proj = np.array(f_proj_mp)
+        eigvals = np.array(eigvals)
 
         contrib_k_mean = np.zeros(tmax)
         contrib_k_err = np.zeros(tmax)
@@ -214,19 +212,15 @@ class HilbertEigTruncWrapper:
         cumulative_k_err = np.zeros(tmax)
         beta_jk = mp.matrix(nboot, tmax)
 
-        eigvals = np.array(eigvals)
-        f_proj = np.array(f_proj)
-
         for j in range(nboot):
             cj = self.correlator.mpsample[j, :].T
             ctild = self.Bh * cj
-            beta = eigvecs.T * ctild  # beta, vector of lenght tmax
+            beta = eigvecs.T * ctild  # beta, vector of length tmax
             beta_jk[j, :] = beta.T  # beta, double array nms, tmax
 
         cumulative_samples = np.zeros(nboot)
         for k in range(tmax):
             bk = np.array(beta_jk[:, k])  # beta[k], array containing stats
-            # beta_k_mean[k], beta_k_err[k] = averageVector_fp(bk, get_var=True)  # beta[k] mean and stdv
 
             contrib_k_samples = (
                 bk * f_proj[k] / (eigvals[k] + lambda_)
@@ -240,28 +234,26 @@ class HilbertEigTruncWrapper:
                 cumulative_samples, get_var=True
             )
 
-        if 0:  # for debug only
-            import matplotlib.pyplot as plt
+        return contrib_k_mean, contrib_k_err, cumulative_k_mean, cumulative_k_err, f_proj_mp
 
-            plt.errorbar(
-                x=(np.arange(tmax))[:16],
-                y=cumulative_k_mean[:16],
-                yerr=cumulative_k_err[:16],
-                fmt="o-",
-                ecolor="red",
-                capsize=3,
-                label="Cumulative Mean ± Error",
-            )
-            plt.xlabel("k")
-            plt.ylabel("Cumulative Mean")
-            plt.title(
-                f"Cumulative contribution projection for alpha={alpha_}, estar={estar_}"
-            )
-            plt.grid(True)
-            plt.legend()
-            plt.show()
-
-        return contrib_k_mean, contrib_k_err, cumulative_k_mean, cumulative_k_err
+    def _effective_gt(self, channel, f_proj_mp, kstar, lambda_):
+        """
+        The coefficient vector g_t (same t-indexing as HLT/GP's gt: index i
+        pairs with physical time t=i+1) that reproduces this channel's
+        kstar-truncated reconstruction as a plain dot product with the
+        correlator's central value -- i.e. the effective smearing kernel
+        actually realised by this eigenspace-truncated result. Derived from
+        cumulative = sum_{k<=kstar} beta_jk[k] f_proj[k]/(eigvals[k]+lambda_),
+        beta = eigvecs.T Bh c, by swapping the k- and t-sums: gt = Bh.T eigvecs w,
+        w[k] = f_proj[k]/(eigvals[k]+lambda_) for k<=kstar, else 0.
+        """
+        tmax = self.par.tmax
+        eigvals = channel.sigma_matrix.eigvals
+        eigvecs = channel.sigma_matrix.eigvecs
+        w = mp.matrix(tmax, 1)
+        for k in range(kstar + 1):
+            w[k] = f_proj_mp[k] / (eigvals[k] + lambda_)
+        return self.Bh.T * (eigvecs * w)
 
     def which_k_saturates(self, contrib_k_mean, contrib_k_err):
         counter = 0
@@ -272,58 +264,74 @@ class HilbertEigTruncWrapper:
                 if counter >= self.algorithmPar.n_consecutive:
                     log(rf"Result found at k* = {k}")
                     return k
-        print(
-            rf"Failure: Eigenvalues did not saturate {self.algorithmPar.n_consecutive} times. Using all values."
+        log(
+            rf"Failure: Eigenvalues did not saturate {self.algorithmPar.n_consecutive} times. Using all values.",
+            level=logging.WARNING,
         )
         return self.par.tmax - 1
 
     def run(self):
-        alphas = [self.algorithmPar.alphaA]
-        if self.par.Na > 1:
-            alphas.append(self.algorithmPar.alphaB)
-        if self.par.Na > 2:
-            alphas.append(self.algorithmPar.alphaC)
-
-        log_data = {"energies": [], "result": []}
+        channels = [self.channelA, *self.secondary_channels]
+        self._scan_data = []
 
         for e_i in range(self.par.Ne):
             energy = self.espace[e_i]
+            scan = {}
+            result = {}
 
-            energy_entry = {"energy": float(energy)}
-            result_entry = {"energy": float(energy)}
-
-            for idx, alpha in enumerate(alphas):
-                label = chr(ord("A") + idx)  # 'A', 'B', 'C'
-
+            for channel in channels:
                 (
                     contrib_k_mean,
                     contrib_k_err,
                     cumulative_k_mean,
                     cumulative_k_err,
-                ) = self.eigProject(self.l_reg, energy, alpha)
+                    f_proj_mp,
+                ) = self.eigProject(self.l_reg, energy, channel)
 
                 kstar = self.which_k_saturates(contrib_k_mean, contrib_k_err)
 
-                # store results dynamically
-                getattr(self, f"kstop{label}")[e_i] = kstar
-                getattr(self, f"res{label}")[e_i] = cumulative_k_mean[kstar]
-                getattr(self, f"err{label}")[e_i] = cumulative_k_err[kstar]
+                channel.kstop[e_i] = kstar
+                channel.res[e_i] = cumulative_k_mean[kstar]
+                channel.err[e_i] = cumulative_k_err[kstar]
 
-                energy_entry[label] = {
-                    "contrib_k_mean": contrib_k_mean.tolist(),
-                    "contrib_k_err": contrib_k_err.tolist(),
-                    "cumulative_k_mean": cumulative_k_mean.tolist(),
-                    "cumulative_k_err": cumulative_k_err.tolist(),
+                gt = self._effective_gt(channel, f_proj_mp, kstar, self.l_reg)
+
+                scan[channel.label] = {
+                    "k": list(range(self.par.tmax)),
+                    "contrib_mean": contrib_k_mean.tolist(),
+                    "contrib_err": contrib_k_err.tolist(),
+                    "cumulative_mean": cumulative_k_mean.tolist(),
+                    "cumulative_err": cumulative_k_err.tolist(),
                 }
-
-                result_entry[label] = {
+                result[channel.label] = {
                     "kstar": int(kstar),
-                    "res": float(getattr(self, f"res{label}")[e_i]),
-                    "err": float(getattr(self, f"err{label}")[e_i]),
+                    "res": float(channel.res[e_i]),
+                    "err": float(channel.err[e_i]),
+                    "gt": [float(x) for x in gt],
                 }
 
-            log_data["energies"].append(energy_entry)
-            log_data["result"].append(result_entry)
+            self._scan_data.append(
+                {"energy": float(energy), "scan": scan, "result": result}
+            )
 
-        with open(self.log_path, "w") as f:
-            json.dump(log_data, f, indent=4)
+    def save(self, path=None):
+        """
+        Writes the eigen-space analysis (arXiv:2605.14652 Fig. 7: the
+        cumulative contribution to rho as eigenmodes of A_N are added, for
+        every alpha channel) to a single JSON file (see ioutils.py for the
+        shared schema). Use examples/plot_output.py to plot from it.
+        """
+        if self._scan_data is None:
+            raise RuntimeError("Nothing to save: call run() first.")
+
+        channels = [self.channelA, *self.secondary_channels]
+        metadata = ioutils.base_metadata(self.par, "EigenspaceAnalysis")
+        metadata["alphas"] = {ch.label: ch.alpha for ch in channels}
+        metadata["algorithm"] = {
+            "l_reg": float(self.l_reg),
+            "n_consecutive": self.algorithmPar.n_consecutive,
+            "useCOV": self.useCOV,
+        }
+
+        path = path or ioutils.default_output_path(self.par, metadata["method"])
+        return ioutils.write_json(path, metadata, self._scan_data)

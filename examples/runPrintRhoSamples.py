@@ -91,14 +91,14 @@ def main():
     #   Here is the resampling
     if par.periodicity == "EXP":
         corr = u.Obs(
-            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, is_resampled=True
+            T=par.time_extent, tmax=par.tmax, nms=par.num_boot, sample_type="bootstrap"
         )
     if par.periodicity == "COSH":
         corr = u.Obs(
             T=symCorr.T,
             tmax=symCorr.tmax,
             nms=par.num_boot,
-            is_resampled=True,
+            sample_type="bootstrap",
         )
 
     if par.periodicity == "COSH":

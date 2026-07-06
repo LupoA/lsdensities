@@ -3,9 +3,12 @@ from .utils.rhoMath import cauchy
 
 
 def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
+    """
+    Cauchy matrix A_N (arXiv:2605.14652, Sec. II)
+    """
     S_ = mp.matrix(tmax, tmax)
     for i in range(tmax):
-        for j in range(tmax):
+        for j in range(i, tmax):
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
             entry = mp.fsub(arg, alpha)  # i+j+2-a
@@ -13,7 +16,6 @@ def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
             arg = mp.fmul(arg, e0)
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
-            S_[i, j] = entry
             if type == "COSH":
                 assert T > 0
                 entry2 = mp.fsub(mpf(i), mpf(j))
@@ -39,11 +41,16 @@ def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
                 entry2 = mp.fdiv(arg2, entry2)
                 entry3 = mp.fdiv(arg3, entry3)
                 entry4 = mp.fdiv(arg4, entry4)
-                S_[i, j] += entry2 + entry3 + entry4
+                entry += entry2 + entry3 + entry4
+            S_[i, j] = entry
+            S_[j, i] = entry
     return S_
 
 
 def generalised_ft(t, alpha, sigma, e, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652
+    '''
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma, sigma)  #   s^2
     arg = mp.fmul(aux, newt)  #   s^2 (t-alpha)
@@ -66,6 +73,9 @@ def generalised_ft(t, alpha, sigma, e, e0):
 
 
 def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for the half-norm normalisation of the gussian kernel
+    '''
     newt = mp.fsub(t, alpha)  #
     aux = mp.fmul(sigma, sigma)  # s^2
     arg = mp.fmul(aux, newt)  # s^2 (t-alpha)
@@ -92,6 +102,9 @@ def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
 
 
 def generalised_ft_theta(t, sigma, e0):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for a step function
+    '''
     aux = (sigma * t / 2) - (e0 / sigma)
     res = mp.erfc(aux)
     aux = t * t * sigma * sigma / 4
@@ -103,6 +116,9 @@ def generalised_ft_theta(t, sigma, e0):
 
 
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS"):
+    '''
+    The vector f, from Section II of arXiv:2605.14652, for any coded kernel
+    '''
     if ker_type == "FULLNORMGAUSS":
         res = generalised_ft(t, alpha, sigma_, e, e0)
         if type == "COSH":
@@ -203,10 +219,10 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
             aux2 = cauchy(k, sigma, e) ** 2
             aux = aux * aux2
             return aux
-    else:
-        raise ValueError("Invalid smearing kernel (par.ker_type)")
 
         res = mp.quad(integrand2, [e0, mp.inf], method="gauss-legendre")
+    else:
+        raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res
 
 
@@ -228,6 +244,9 @@ def a0_array(espace_mp, par, alpha):
 
 
 def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
+    '''
+    For Gaussian Processes, what hlt_matrix() is to HLT
+    '''
     _res = ft_mp(
         e=e1,
         t=t2,

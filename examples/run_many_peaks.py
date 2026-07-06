@@ -11,7 +11,6 @@ from lsdensities.utils.rhoParser import parse_synthetic_inputs
 from lsdensities.utils.rhoMath import gauss_fp, cauchy
 import random
 from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
-from lsdensities.utils.rhoUtils import MatrixBundle
 import json
 
 pion_mass = 0.140  # Gev
@@ -117,7 +116,7 @@ def main():
         STATES = random.randint(8, 100)
 
         exact_correlator, exact_cov, espace, rhoStrue = generate(par, espace, STATES)
-        fake_corr = Obs(T=par.time_extent, tmax=par.tmax, nms=nms, is_resampled=True)
+        fake_corr = Obs(T=par.time_extent, tmax=par.tmax, nms=nms, sample_type="bootstrap")
         fake_corr.sample = np.random.multivariate_normal(
             exact_correlator, exact_cov, nms
         )
@@ -143,12 +142,11 @@ def main():
             comparisonRatio=0.4,
             resize=2,
         )
-        matrix_bundle = MatrixBundle(Bmatrix=fake_corr.mpcov, bnorm=cNorm)
-
         HLT = InverseProblemWrapper(
             par=par,
             algorithmPar=hltParams,
-            matrix_bundle=matrix_bundle,
+            B=fake_corr.mpcov,
+            bnorm=cNorm,
             correlator=fake_corr,
             energies=energies,
         )
