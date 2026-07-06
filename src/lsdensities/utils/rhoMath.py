@@ -1,9 +1,6 @@
 import numpy as np
-from numpy import linalg as LA
 import math
-import scipy.linalg as sp_linalg
 from mpmath import mp
-from scipy.special import erf
 
 
 def kronecker_fp(a, b):
@@ -39,24 +36,6 @@ def cauchy(k, sigma_, omega_):
     aux = aux * aux + sigma_ * sigma_
     aux = sigma_ / aux
     return aux
-
-
-def theta_erf(x, x0, sigma):
-    res = 1 + erf((x - x0) / sigma)
-    return res / 2
-
-
-def norm2_fp(matrix):  # for square matrices only
-    assert matrix.shape[0] == matrix.shape[1]
-    return LA.norm(matrix) / np.sqrt(matrix.shape[0])
-
-
-def choelesky_invert_scipy(
-    in_,
-):  # invert positive definite matrix. wee faster than numpy
-    _L, _lower = sp_linalg.cho_factor(in_)
-    out_ = sp_linalg.cho_solve((_L, _lower), np.eye(in_.shape[0]))
-    return out_
 
 
 def norm2_mp(matrix):  # for square matrices only

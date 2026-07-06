@@ -2,15 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random as rd
 import os
-import math
-from ..core import hlt_matrix
-from .rhoMath import norm2_mp
 import time
 from mpmath import mp, mpf
 import hashlib
 import logging
-
-target_result_precision = 1e-8
 
 #   #   #   #   #   #  ----- logger -----   #   #   #   #   #   #
 
@@ -245,15 +240,6 @@ class Obs:
             plt.show()
 
 
-def print_hlt_format(mtobs, T, nms, filename, directory):
-    cout = os.path.join(directory, filename)
-    with open(cout, "w") as output:
-        print(nms, T, T, "2", "3", file=output)
-        for j in range(0, nms):
-            for i in range(0, T):
-                print(i, mtobs[j, i], file=output)
-
-
 def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     """
     The input file has a header with time_extent and number of measurements.
@@ -415,45 +401,6 @@ class MatrixBundle:
     def __init__(self, Bmatrix: mp.matrix, bnorm=mpf(1)):
         self.B = Bmatrix
         self.bnorm = bnorm
-
-
-def adjust_precision(tmax: int):
-    """
-    currently not used;
-    This function should *reduce* the numerical precision
-    from the large input value
-    to a value suggested by the condition
-    number of S
-    If the starting prec is too small the function might
-    too small of a value which results in a warning
-    """
-    S_ = hlt_matrix(tmax, alpha=0)
-    condS = mp.cond(S_)
-    n_prec = math.ceil(math.log10(condS)) + 3  #   +3 to be extra cautious
-    print(
-        LogMessage(),
-        "Adjust precision ::: ",
-        "Suggested numerical precision based on tmax is {:4d}".format(n_prec),
-    )
-    print(LogMessage(), "Adjust precision ::: ", "Switching to suggested precision")
-    init_precision(n_prec)
-    S_ = hlt_matrix(tmax, alpha=0)
-    condS = mp.cond(S_)
-    n_prec_post = math.ceil(math.log10(condS)) + 3
-    if n_prec_post != n_prec:
-        print(
-            LogMessage(),
-            f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Suggested precision might be small. Suggest restarting with higher --prec option",
-        )
-        print(
-            LogMessage(),
-            f"{bcolors.WARNING}Warning{bcolors.ENDC} ::: Asserting whether minimal precision 1e-8 on the inversion is guaranteed ",
-        )
-    invS = S_ ** (-1)
-    diff = S_ * invS
-    diff = norm2_mp(diff) - 1
-    assert float(diff) < target_result_precision
-    return 0
 
 
 class bcolors:

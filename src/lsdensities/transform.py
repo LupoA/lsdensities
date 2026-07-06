@@ -1,7 +1,6 @@
 from mpmath import mp, mpf
-from progressbar import ProgressBar
 from .core import ft_mp, gte
-from .utils.rhoStat import averageScalar_mp, averageVector_mp
+from .utils.rhoStat import averageScalar_mp
 
 
 def coefficients_ssd(matrix, params, estar, alpha):
@@ -42,49 +41,6 @@ def get_ssd_scalar(gt, corr, params):
         aux_ = mp.fmul(gt[i], corr[i])
         rho = mp.fadd(rho, aux_)
     return rho
-
-
-def get_ssd_vector(gt, corr, params):
-    """
-    Computes smeared spectral density rho = sum_t g(t) c(t) at fixed energy
-    Vector version: the operation is performed on a single vector of dimension par.tmax
-    for a vector of energies
-
-    :param gt: mp.matrix len(params.Ne, params.tmax)
-    :param corr: mp.matrix len(params.tmax)
-    :param params: instance of Inputs class
-    :return: mp.matrix(params.Ne)
-    """
-    rho = mp.matrix(params.Ne, 1)
-    for e in range(params.Ne):
-        rho[e] = 0
-        for i in range(params.tmax):
-            aux_ = mp.fmul(gt[e, i], corr[i])
-            rho[e] = mp.fadd(rho[e], aux_)
-    return rho
-
-
-def get_ssd_averaged_vector(gt, corr_type, params):
-    """
-    Computes smeared spectral density rho = sum_t g(t) c(t) at fixed energy.
-    Averaged version: the operation is performed on a vector of correlators, corresponding to different statistical samples. Result is averaged.
-    Vector version: the operation is performed at an array of energies.
-
-    :param gt: mp.matrix len(params.Ne, params.tmax)
-    :param corr_type: instance of Obs type
-    :param params: instance of Inputs class
-    :return: [mp.matrix(params.Ne), mp.matrix(params.Ne)] corresponding to avg and std
-    """
-    pbar = ProgressBar()
-    rhob = mp.matrix(params.Ne, params.num_boot)
-    for b in pbar(range(params.num_boot)):
-        y = corr_type.sample[b][:]
-        for e in range(params.Ne):
-            rhob[e, b] = 0
-            for i in range(params.tmax):
-                aux_ = mp.fmul(gt[e, i], y[i])
-                rhob[e, b] = mp.fadd(rhob[e, b], aux_)
-    return averageVector_mp(rhob)
 
 
 def get_ssd_averaged_scalar(gt, corr_samples, params):
