@@ -1,5 +1,5 @@
 import numpy as np
-from .utils.rhoUtils import CB_colors, plot_markers
+from .utils.common import CB_colors, plot_markers
 
 
 def plotwErr(ax, x, y, yerr, label="", markerId=0, colorID=0):

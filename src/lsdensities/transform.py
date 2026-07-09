@@ -1,12 +1,12 @@
 from mpmath import mp, mpf
 from .core import ft_mp, gte
-from .utils.rhoStat import averageScalar_mp
+from .utils.stat_utils import averageScalar_mp
 
 
 def coefficients_ssd(matrix, params, estar, alpha):
     """
     Computes the coefficients spanning the smeared spectral density
-        gt = hlt_matrix * ft_mp
+        gt = cauchy_matrix * ft_mp
 
     Operation is performed for a single energy "estar"
     """
@@ -52,7 +52,7 @@ def get_ssd_averaged_scalar(gt, corr_samples, params, sample_type="bootstrap"):
     :param corr_samples: mp.matrix of dimensions (params.num_boot, params.tmax).
     :param params: instance of Inputs class
     :param sample_type: how the samples in `corr_samples` were obtained -- must
-        match the correlator's own Obs.sample_type (see rhoUtils._variance_scale_factor)
+        match the correlator's own Obs.sample_type (see common._variance_scale_factor)
         so that the error on rho is scaled consistently with the error on the correlator.
     :return: [mpf(float), mpf(float)] corresponding to avg and std
     """

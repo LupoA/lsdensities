@@ -1,8 +1,8 @@
 """
 Shared JSON output format for lsdensities results.
 
-Every wrapper (InverseProblemWrapper, GaussianProcessWrapper,
-HilbertEigTruncWrapper) writes one JSON file per run with the same top-level
+Every wrapper (HLTWithBackusGilbert, GaussianProcessWrapper,
+HLTWithSVD) writes one JSON file per run with the same top-level
 shape:
 
     {"metadata": {...}, "energies": [{"energy": ..., "scan": {...}, "result": {...}}, ...]}

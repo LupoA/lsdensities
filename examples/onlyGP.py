@@ -1,13 +1,13 @@
-import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import init_precision, LogMessage, end, generate_seed
-from lsdensities.utils.rhoParser import parse_inputs
-from lsdensities.utils.rhoUtils import create_out_paths
-from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
+import lsdensities.utils.common as u
+from lsdensities.utils.common import init_precision, LogMessage, end, generate_seed
+from lsdensities.utils.parser import parse_inputs
+from lsdensities.utils.common import create_out_paths
+from lsdensities.correlator.correlator_utils import symmetrisePeriodicCorrelator
+from lsdensities.utils.parallel_utils import ParallelBootstrapLoop
 from mpmath import mp, mpf
 import random
 import numpy as np
-from lsdensities.GP_class import (
+from lsdensities.inverse_problem_solvers.gaussian_process import (
     AlgorithmParameters,
     GaussianProcessWrapper,
 )

@@ -1,17 +1,17 @@
 """
-Tests for src/lsdensities/correlator/correlatorUtils.py.
+Tests for src/lsdensities/correlator/correlator_utils.py.
 """
 
 import numpy as np
 import pytest
 
-from lsdensities.correlator.correlatorUtils import (
+from lsdensities.correlator.correlator_utils import (
     InputsCorrelatorAnalysis,
     effective_mass,
     foldPeriodicCorrelator,
     symmetrisePeriodicCorrelator,
 )
-from lsdensities.utils.rhoUtils import Inputs, Obs
+from lsdensities.utils.common import Inputs, Obs
 
 
 def _make_cosh_correlator(T, nms, mass, symmetric=True):

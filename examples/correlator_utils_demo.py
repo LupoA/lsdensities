@@ -1,14 +1,14 @@
 """
-Demo for lsdensities.correlator.correlatorUtils: read a raw correlator, fold
+Demo for lsdensities.correlator.correlator_utils: read a raw correlator, fold
 it if periodic, bootstrap-resample it, and look at its covariance and
 effective mass. Merges what used to be two near-identical scripts
 (fold.py and resample.py) into one, since folding is just the COSH-only step
 that comes before the (otherwise identical) resample/covariance/mass pipeline.
 """
 
-from lsdensities.utils.rhoUtils import Obs, LogMessage, read_datafile
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
-from lsdensities.correlator.correlatorUtils import (
+from lsdensities.utils.common import Obs, LogMessage, read_datafile
+from lsdensities.utils.parallel_utils import ParallelBootstrapLoop
+from lsdensities.correlator.correlator_utils import (
     effective_mass,
     foldPeriodicCorrelator,
     InputsCorrelatorAnalysis,

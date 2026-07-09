@@ -1,12 +1,12 @@
 import logging
 
-from .core import hlt_matrix
-from .transform import ft_mp
-from .utils.rhoStat import averageVector_fp
+from ..core import cauchy_matrix
+from ..transform import ft_mp
+from ..utils.stat_utils import averageVector_fp
 from mpmath import mp, mpf
 import numpy as np
-from .utils.rhoUtils import Inputs, Obs, log
-from . import ioutils
+from ..utils.common import Inputs, Obs, log
+from .. import io_utils
 
 
 class HETpar:
@@ -69,7 +69,7 @@ class SigmaMatrix:
 
     def evaluate(self):
         log(" Saving H Matrix ")
-        self.matrix = hlt_matrix(
+        self.matrix = cauchy_matrix(
             tmax=self.par.tmax,
             alpha=self.alpha,
             e0=self.par.mpe0,
@@ -89,13 +89,13 @@ class EigenspaceChannel:
     def __init__(self, label: str, alpha: float, num_energies: int):
         self.label = label
         self.alpha = alpha
-        self.sigma_matrix = None  # set by HilbertEigTruncWrapper.prepare()
+        self.sigma_matrix = None  # set by HLTWithSVD.prepare()
         self.kstop = np.zeros(num_energies)
         self.res = np.zeros(num_energies)
         self.err = np.zeros(num_energies)
 
 
-class HilbertEigTruncWrapper:
+class HLTWithSVD:
     def __init__(
         self,
         par: Inputs,
@@ -318,14 +318,14 @@ class HilbertEigTruncWrapper:
         """
         Writes the eigen-space analysis (arXiv:2605.14652 Fig. 7: the
         cumulative contribution to rho as eigenmodes of A_N are added, for
-        every alpha channel) to a single JSON file (see ioutils.py for the
+        every alpha channel) to a single JSON file (see io_utils.py for the
         shared schema). Use examples/plot_output.py to plot from it.
         """
         if self._scan_data is None:
             raise RuntimeError("Nothing to save: call run() first.")
 
         channels = [self.channelA, *self.secondary_channels]
-        metadata = ioutils.base_metadata(self.par, "EigenspaceAnalysis")
+        metadata = io_utils.base_metadata(self.par, "EigenspaceAnalysis")
         metadata["alphas"] = {ch.label: ch.alpha for ch in channels}
         metadata["algorithm"] = {
             "l_reg": float(self.l_reg),
@@ -333,5 +333,5 @@ class HilbertEigTruncWrapper:
             "useCOV": self.useCOV,
         }
 
-        path = path or ioutils.default_output_path(self.par, metadata["method"])
-        return ioutils.write_json(path, metadata, self._scan_data)
+        path = path or io_utils.default_output_path(self.par, metadata["method"])
+        return io_utils.write_json(path, metadata, self._scan_data)

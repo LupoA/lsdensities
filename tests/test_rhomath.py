@@ -1,12 +1,12 @@
 """
-Tests for src/lsdensities/utils/rhoMath.py.
+Tests for src/lsdensities/utils/math_utils.py.
 """
 
 import numpy as np
 import pytest
 from mpmath import mp, mpf
 
-from lsdensities.utils.rhoMath import (
+from lsdensities.utils.math_utils import (
     cauchy,
     gauss_fp,
     invert_matrix_ge,

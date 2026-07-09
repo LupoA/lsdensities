@@ -18,7 +18,7 @@ from lsdensities.transform import (
     get_ssd_averaged_scalar,
     get_ssd_scalar,
 )
-from lsdensities.utils.rhoUtils import Inputs, _variance_scale_factor
+from lsdensities.utils.common import Inputs, _variance_scale_factor
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ def test_get_ssd_averaged_scalar_matches_manual_average(params):
     ]
     expected_avg = sum(values) / params.num_boot
     # get_ssd_averaged_scalar defaults to sample_type="bootstrap": the error is
-    # the ddof=1 sample std of the replicates, used directly (see rhoStat.averageScalar_mp).
+    # the ddof=1 sample std of the replicates, used directly (see stat_utils.averageScalar_mp).
     expected_err = mp.sqrt(
         sum((v - expected_avg) ** 2 for v in values) / (params.num_boot - 1)
     )
@@ -101,7 +101,7 @@ def test_get_ssd_averaged_scalar_matches_manual_average(params):
 @pytest.mark.parametrize("sample_type", ["montecarlo", "bootstrap", "jackknife"])
 def test_get_ssd_averaged_scalar_error_scales_with_sample_type(params, sample_type):
     # rho's error must be rescaled by the same sample_type-dependent factor as
-    # the correlator's own error (rhoUtils._variance_scale_factor), otherwise a
+    # the correlator's own error (common._variance_scale_factor), otherwise a
     # spectral density built from montecarlo/jackknife samples would silently
     # report a bootstrap-scaled (i.e. wrong) error.
     gt = mp.randmatrix(params.tmax, 1)

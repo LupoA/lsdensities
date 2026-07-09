@@ -2,21 +2,21 @@
 This file does a bunch of extra stuff (resample and fold the correlator read from file) before solving the inverse problem.
 For a simpler example look at run_hlt_wnoise.py
 '''
-import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import (
+import lsdensities.utils.common as u
+from lsdensities.utils.common import (
     init_precision,
     LogMessage,
     end,
     generate_seed,
 )
-from lsdensities.utils.rhoUtils import create_out_paths
-from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
-from lsdensities.utils.rhoParser import parse_inputs
+from lsdensities.utils.common import create_out_paths
+from lsdensities.correlator.correlator_utils import symmetrisePeriodicCorrelator
+from lsdensities.utils.parallel_utils import ParallelBootstrapLoop
+from lsdensities.utils.parser import parse_inputs
 import os
 from mpmath import mp, mpf
 import numpy as np
-from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
+from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
 import random
 
 
@@ -95,7 +95,7 @@ def main():
         lambdaMin=5e-2,
         comparisonRatio=0.3,
     )
-    HLT = InverseProblemWrapper(
+    HLT = HLTWithBackusGilbert(
         par=par,
         algorithmPar=hltParams,
         B=corr.mpcov,

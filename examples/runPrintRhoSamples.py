@@ -1,5 +1,5 @@
-import lsdensities.utils.rhoUtils as u
-from lsdensities.utils.rhoUtils import (
+import lsdensities.utils.common as u
+from lsdensities.utils.common import (
     init_precision,
     LogMessage,
     end,
@@ -8,16 +8,16 @@ from lsdensities.utils.rhoUtils import (
     plot_markers,
     CB_colors,
 )
-from lsdensities.utils.rhoParser import parseArgumentPrintSamples
-from lsdensities.correlator.correlatorUtils import symmetrisePeriodicCorrelator
-from lsdensities.utils.rhoParallelUtils import ParallelBootstrapLoop
+from lsdensities.utils.parser import parseArgumentPrintSamples
+from lsdensities.correlator.correlator_utils import symmetrisePeriodicCorrelator
+from lsdensities.utils.parallel_utils import ParallelBootstrapLoop
 from mpmath import mp, mpf
-from lsdensities.core import a0_array, hlt_matrix
+from lsdensities.core import a0_array, cauchy_matrix
 from lsdensities.abw import gAg, gBg
 from lsdensities.transform import get_ssd_scalar, y_combine_sample_Eslice_mp_ToFile
 import os
 import time
-from lsdensities.utils.rhoMath import invert_matrix_ge
+from lsdensities.utils.math_utils import invert_matrix_ge
 import matplotlib.pyplot as plt
 
 
@@ -130,7 +130,7 @@ def main():
         fpath = os.path.join(par.logpath, fname)
         _Bnorm = cNorm / (estar_ * estar_)
         _factor = (lambda_e[_e] * A0set[_e]) / _Bnorm
-        S_ = hlt_matrix(
+        S_ = cauchy_matrix(
             tmax=par.tmax,
             alpha=0,
             e0=par.mpe0,

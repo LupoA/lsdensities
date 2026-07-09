@@ -4,7 +4,7 @@ import re
 import matplotlib.pyplot as plt
 import os
 from lmfit import Parameters, Minimizer
-from lsdensities.utils.rhoUtils import LogMessage
+from lsdensities.utils.common import LogMessage
 
 
 def main():

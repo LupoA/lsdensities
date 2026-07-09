@@ -1,16 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mp
-from lsdensities.utils.rhoUtils import (
+from lsdensities.utils.common import (
     LogMessage,
     generate_seed,
     Obs,
     CB_colors,
 )
-from lsdensities.utils.rhoParser import parse_synthetic_inputs
-from lsdensities.utils.rhoMath import gauss_fp, cauchy
+from lsdensities.utils.parser import parse_synthetic_inputs
+from lsdensities.utils.math_utils import gauss_fp, cauchy
 import random
-from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
+from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
 import json
 
 pion_mass = 0.140  # Gev
@@ -142,7 +142,7 @@ def main():
             comparisonRatio=0.4,
             resize=2,
         )
-        HLT = InverseProblemWrapper(
+        HLT = HLTWithBackusGilbert(
             par=par,
             algorithmPar=hltParams,
             B=fake_corr.mpcov,

@@ -1,5 +1,5 @@
 import argparse
-from lsdensities.utils.rhoUtils import Inputs
+from lsdensities.utils.common import Inputs
 
 
 def _add_common_arguments(parser):

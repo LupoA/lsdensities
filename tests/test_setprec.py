@@ -1,4 +1,4 @@
-from lsdensities.utils.rhoUtils import LogMessage
+from lsdensities.utils.common import LogMessage
 from mpmath import mp, mpf
 
 

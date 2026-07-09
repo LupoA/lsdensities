@@ -1,8 +1,8 @@
 """
 Standalone plotting for lsdensities output files.
 
-InverseProblemWrapper.save() / GaussianProcessWrapper.save() / HilbertEigTruncWrapper.save()
-all write one JSON file per run (see src/lsdensities/ioutils.py). This script reads such a file back and reproduces the relevant plot.
+HLTWithBackusGilbert.save() / GaussianProcessWrapper.save() / HLTWithSVD.save()
+all write one JSON file per run (see src/lsdensities/io_utils.py). This script reads such a file back and reproduces the relevant plot.
 Options are:
 
   stability          arXiv:2605.14652 Fig. 6, rho panel only: rho scanned over
@@ -37,10 +37,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from lsdensities.ioutils import closest_energy_entry, load_json
-from lsdensities.plotutils import plotNoErr, plotwErr
-from lsdensities.utils.rhoMath import cauchy, gauss_fp
-from lsdensities.utils.rhoUtils import CB_colors
+from lsdensities.io_utils import closest_energy_entry, load_json
+from lsdensities.plot_utils import plotNoErr, plotwErr
+from lsdensities.utils.math_utils import cauchy, gauss_fp
+from lsdensities.utils.common import CB_colors
 
 DEFAULT_MPLSTYLE = Path(__file__).with_name("lsdensities.mplstyle")
 
@@ -380,19 +380,19 @@ def main():
     sub = parser.add_subparsers(dest="mode", required=True)
 
     p_stab = sub.add_parser("stability", parents=[common], help="Fig. 6-style rho-vs-lambda plot at one energy (no NLL panel)")
-    p_stab.add_argument("--file", required=True, help="Output JSON from InverseProblemWrapper.save() or GaussianProcessWrapper.save()")
+    p_stab.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_stab.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
     p_nll = sub.add_parser("nll", parents=[common], help="NLL-vs-lambda plot at one energy")
-    p_nll.add_argument("--file", required=True, help="Output JSON from InverseProblemWrapper.save() or GaussianProcessWrapper.save()")
+    p_nll.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_nll.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
     p_stab_nll = sub.add_parser("stability-and-nll", parents=[common], help="Fig. 6-style plot with both the rho and NLL panels, at one energy")
-    p_stab_nll.add_argument("--file", required=True, help="Output JSON from InverseProblemWrapper.save() or GaussianProcessWrapper.save()")
+    p_stab_nll.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_stab_nll.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
     p_eig = sub.add_parser("eigenspace", parents=[common], help="Fig. 7-style eigen-space analysis plot at one energy (two figures: cumulative and per-mode)")
-    p_eig.add_argument("--file", required=True, help="Output JSON from HilbertEigTruncWrapper.save()")
+    p_eig.add_argument("--file", required=True, help="Output JSON from HLTWithSVD.save()")
     p_eig.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
     p_eig.add_argument("--kmin", type=int, default=None, help="Restrict the plotted eigenmode index to k >= kmin. Default: no lower bound")
     p_eig.add_argument("--kmax", type=int, default=None, help="Restrict the plotted eigenmode index to k <= kmax. Default: no upper bound")
@@ -402,7 +402,7 @@ def main():
     p_spec.add_argument("--labels", nargs="+", help="Legend label per --file (defaults to each file's 'method')")
 
     p_kernel = sub.add_parser("kernel", parents=[common], help="Reconstructed vs exact smearing kernel at one energy")
-    p_kernel.add_argument("--file", required=True, help="Output JSON from InverseProblemWrapper.save(), GaussianProcessWrapper.save() or HilbertEigTruncWrapper.save()")
+    p_kernel.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save(), GaussianProcessWrapper.save() or HLTWithSVD.save()")
     p_kernel.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
     p_kernel.add_argument("--result", choices=["HLT", "Bayes"], default="HLT", help="For HLT/GP output: which flagged result's g_t to use. Ignored for EigenspaceAnalysis output. Default=HLT")
     p_kernel.add_argument("--channel", default="A", help="For EigenspaceAnalysis output: which alpha channel's g_t to use (A, B or C). Ignored for HLT/GP output. Default=A")

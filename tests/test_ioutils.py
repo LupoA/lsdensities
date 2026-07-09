@@ -1,12 +1,12 @@
 """
-Tests for src/lsdensities/ioutils.py's provenance metadata.
+Tests for src/lsdensities/io_utils.py's provenance metadata.
 """
 
 import re
 from datetime import datetime
 
-from lsdensities.ioutils import _provenance_metadata, base_metadata
-from lsdensities.utils.rhoUtils import Inputs
+from lsdensities.io_utils import _provenance_metadata, base_metadata
+from lsdensities.utils.common import Inputs
 
 
 def test_provenance_metadata_has_expected_keys():

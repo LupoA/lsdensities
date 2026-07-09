@@ -1,8 +1,8 @@
 from mpmath import mp, mpf
-from .utils.rhoMath import cauchy
+from .utils.math_utils import cauchy
 
 
-def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
+def cauchy_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
     """
     Cauchy matrix A_N (arXiv:2605.14652, Sec. II)
     """
@@ -47,7 +47,7 @@ def hlt_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
     return S_
 
 
-def generalised_ft(t, alpha, sigma, e, e0):
+def ft_fullnorm(t, alpha, sigma, e, e0):
     '''
     The vector f, from Section II of arXiv:2605.14652
     '''
@@ -72,7 +72,7 @@ def generalised_ft(t, alpha, sigma, e, e0):
     return res
 
 
-def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
+def ft_halfnorm(t, alpha, sigma, e, e0):
     '''
     The vector f, from Section II of arXiv:2605.14652, for the half-norm normalisation of the gussian kernel
     '''
@@ -101,7 +101,7 @@ def generalised_ft_halfnorm(t, alpha, sigma, e, e0):
     return res
 
 
-def generalised_ft_theta(t, sigma, e0):
+def ft_theta(t, sigma, e0):
     '''
     The vector f, from Section II of arXiv:2605.14652, for a step function
     '''
@@ -120,18 +120,18 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
     The vector f, from Section II of arXiv:2605.14652, for any coded kernel
     '''
     if ker_type == "FULLNORMGAUSS":
-        res = generalised_ft(t, alpha, sigma_, e, e0)
+        res = ft_fullnorm(t, alpha, sigma_, e, e0)
         if type == "COSH":
             assert T > 0
-            pterm = generalised_ft(T - t, alpha, sigma_, e, e0)
+            pterm = ft_fullnorm(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
         res *= 0.5
 
     elif ker_type == "HALFNORMGAUSS":
-        res = generalised_ft_halfnorm(t, alpha, sigma_, e, e0)
+        res = ft_halfnorm(t, alpha, sigma_, e, e0)
         if type == "COSH":
             assert T > 0
-            pterm = generalised_ft_halfnorm(T - t, alpha, sigma_, e, e0)
+            pterm = ft_halfnorm(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
     elif ker_type == "CAUCHY":
 
@@ -149,9 +149,9 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
 
         res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
     elif ker_type == "THETA-ERF":
-        res = generalised_ft_theta(t - alpha, sigma_, e0)
+        res = ft_theta(t - alpha, sigma_, e0)
         if type == "COSH":
-            pterm = generalised_ft_theta(T - t + alpha, sigma_, e0)
+            pterm = ft_theta(T - t + alpha, sigma_, e0)
             res = mp.fadd(res, pterm)
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
@@ -245,7 +245,7 @@ def a0_array(espace_mp, par, alpha):
 
 def integrandSigmaMat(e1, alpha, s, t1, t2, E0, par):
     '''
-    For Gaussian Processes, what hlt_matrix() is to HLT
+    For Gaussian Processes, what cauchy_matrix() is to HLT
     '''
     _res = ft_mp(
         e=e1,

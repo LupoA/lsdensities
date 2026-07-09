@@ -1,6 +1,6 @@
-from lsdensities.utils.rhoUtils import LogMessage
+from lsdensities.utils.common import LogMessage
 from lsdensities.core import integrandSigmaMat
-from lsdensities.utils.rhoUtils import Inputs
+from lsdensities.utils.common import Inputs
 from mpmath import mp
 import time
 from scipy.integrate import quad

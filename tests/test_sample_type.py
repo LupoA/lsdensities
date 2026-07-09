@@ -1,6 +1,6 @@
 """
 Tests for Obs's sample_type ("montecarlo"/"bootstrap"/"jackknife"), the
-matching mp-precision estimators in rhoStat.py, and JackknifeLoop.
+matching mp-precision estimators in stat_utils.py, and JackknifeLoop.
 
 Formulas (n = number of samples, S = sum((x_i - mean)**2), ddof=1 std sigma =
 sqrt(S/(n-1))):
@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 from mpmath import mp
 
-from lsdensities.utils.rhoParallelUtils import JackknifeLoop, ParallelBootstrapLoop
-from lsdensities.utils.rhoStat import averageScalar_mp, averageVector_mp
-from lsdensities.utils.rhoUtils import Inputs, Obs, _variance_scale_factor
+from lsdensities.utils.parallel_utils import JackknifeLoop, ParallelBootstrapLoop
+from lsdensities.utils.stat_utils import averageScalar_mp, averageVector_mp
+from lsdensities.utils.common import Inputs, Obs, _variance_scale_factor
 
 
 def _textbook_jackknife_se(replicates):

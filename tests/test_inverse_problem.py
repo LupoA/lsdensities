@@ -1,11 +1,11 @@
-from lsdensities.utils.rhoUtils import (
+from lsdensities.utils.common import (
     init_precision,
     Inputs,
 )
 from mpmath import mp, mpf
-from lsdensities.core import hlt_matrix
+from lsdensities.core import cauchy_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
-from lsdensities.utils.rhoMath import gauss_fp
+from lsdensities.utils.math_utils import gauss_fp
 
 
 def run(time_extent):
@@ -26,7 +26,7 @@ def run(time_extent):
         lattice_correlator[t] = mp.exp(-mpf(t + 1) * mpf(str(peak)))
         lattice_covariance[t, t] = lattice_correlator[t] * 0.02
 
-    regularised_matrix = hlt_matrix(parameters.tmax, alpha=0)
+    regularised_matrix = cauchy_matrix(parameters.tmax, alpha=0)
     matrix_inverse = regularised_matrix ** (-1)
 
     coeff = coefficients_ssd(

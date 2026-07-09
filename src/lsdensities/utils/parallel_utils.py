@@ -1,6 +1,6 @@
 import numpy as np
-from .rhoUtils import LogMessage, Inputs
-from .rhoStat import parallel_bootstrap_compact_fp
+from .common import LogMessage, Inputs
+from .stat_utils import parallel_bootstrap_compact_fp
 import multiprocessing
 from typing import List
 import random

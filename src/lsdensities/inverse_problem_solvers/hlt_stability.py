@@ -4,9 +4,9 @@ import time
 import numpy as np
 from mpmath import mp, mpf
 
-from .abw import gAg
-from .core import hlt_matrix
-from .stabilityAnalysis import (
+from ..abw import gAg
+from ..core import cauchy_matrix
+from .stability_analysis import (
     A0_t,
     AlgorithmParameters,
     AlphaChannel,
@@ -14,16 +14,16 @@ from .stabilityAnalysis import (
     save_stability_output,
     scan_secondary_channels,
 )
-from .transform import (
+from ..transform import (
     coefficients_ssd,
     combine_fMf_scalar,
     combine_likelihood,
     get_ssd_averaged_scalar,
 )
-from .utils.rhoMath import invert_matrix_ge
-from .utils.rhoUtils import Inputs, Obs, bcolors, log
+from ..utils.math_utils import invert_matrix_ge
+from ..utils.common import Inputs, Obs, bcolors, log
 
-__all__ = ["AlgorithmParameters", "A0_t", "SigmaMatrix", "InverseProblemWrapper"]
+__all__ = ["AlgorithmParameters", "A0_t", "SigmaMatrix", "HLTWithBackusGilbert"]
 
 
 class SigmaMatrix:
@@ -39,7 +39,7 @@ class SigmaMatrix:
 
     def evaluate(self):
         log(" Saving Sigma Matrix ")
-        self.matrix = hlt_matrix(
+        self.matrix = cauchy_matrix(
             tmax=self.par.tmax,
             alpha=self.alpha,
             e0=self.par.mpe0,
@@ -48,7 +48,7 @@ class SigmaMatrix:
         )
 
 
-class InverseProblemWrapper:
+class HLTWithBackusGilbert:
     def __init__(
         self,
         par: Inputs,
@@ -100,7 +100,7 @@ class InverseProblemWrapper:
                 )
                 self.secondary_channels.append(self.channelC)
 
-        #   Backward-compatible flat aliases (used by plotutils.py and external callers)
+        #   Backward-compatible flat aliases (used by plot_utils.py and external callers)
         self.A0_A, self.SigmaMatA = self.channelA.a0, self.channelA.sigma_matrix
         self.rho_list = self.channelA.rho_list
         self.errBoot_list = self.channelA.errBoot_list
@@ -559,7 +559,7 @@ class InverseProblemWrapper:
     def save(self, path=None):
         """
         Writes the full stability-analysis scan and results to a single JSON
-        file (see stabilityAnalysis.save_stability_output / ioutils.py for the
+        file (see stability_analysis.save_stability_output / io_utils.py for the
         schema). Use examples/plot_output.py to plot from it.
         """
         return save_stability_output(self, "HLT", path)

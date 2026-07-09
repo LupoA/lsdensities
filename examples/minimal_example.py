@@ -1,11 +1,11 @@
-from lsdensities.utils.rhoUtils import (
+from lsdensities.utils.common import (
     init_precision,
     Inputs,
 )
 from mpmath import mp, mpf
-from lsdensities.core import hlt_matrix
+from lsdensities.core import cauchy_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
-from lsdensities.utils.rhoMath import gauss_fp
+from lsdensities.utils.math_utils import gauss_fp
 
 # compute the smeared spectral density at some energy,
 # from a lattice correlator
@@ -34,12 +34,12 @@ for t in range(parameters.tmax):  # mock data
 
 
 regularising_parameter = mpf(str(1e-6))  # regularising parameters; must be tuned.
-# Automatic tuning is provided in lsdensities/InverseProblemWrapper.py
+# Automatic tuning is provided in lsdensities/inverse_problem_solvers/hlt_stability.py
 # this example has exact data, so the parameters
 # can be made as small as zero, in which case the result will be exact in
 # the limit of infinite tmax
 
-regularised_matrix = hlt_matrix(parameters.tmax, alpha=0) + (
+regularised_matrix = cauchy_matrix(parameters.tmax, alpha=0) + (
     regularising_parameter * lattice_covariance
 )
 matrix_inverse = regularised_matrix ** (-1)

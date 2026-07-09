@@ -1,5 +1,5 @@
 """
-Regression test: InverseProblemWrapper must propagate the correlator's own
+Regression test: HLTWithBackusGilbert must propagate the correlator's own
 Obs.sample_type into the frequentist ("Bootstrap") error on the smeared
 spectral density, exactly as it already does for the Bayesian error (which
 goes through Obs.evaluate_covmatrix -> B). Without this, drho_estar_Bootstrap
@@ -10,8 +10,8 @@ was passed in (see lsdensities.transform.get_ssd_averaged_scalar).
 import numpy as np
 from mpmath import mp, mpf
 
-from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
-from lsdensities.utils.rhoUtils import Inputs, Obs, _variance_scale_factor, init_precision
+from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
+from lsdensities.utils.common import Inputs, Obs, _variance_scale_factor, init_precision
 
 
 def _make_params(nms):
@@ -42,7 +42,7 @@ def _make_wrapper(par, sample_type, raw_sample, nms, fixed_B):
     corr.fill_mp_sample()
 
     algorithmPar = AlgorithmParameters(lambdaMax=1.0)
-    wrapper = InverseProblemWrapper(
+    wrapper = HLTWithBackusGilbert(
         par=par,
         algorithmPar=algorithmPar,
         B=fixed_B,

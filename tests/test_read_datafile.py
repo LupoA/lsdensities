@@ -1,5 +1,5 @@
 """
-Tests for rhoUtils.read_datafile's sample_type handling.
+Tests for common.read_datafile's sample_type handling.
 
 read_datafile used to take a `resampled: bool` flag, which could only ever
 distinguish "montecarlo" vs "bootstrap" -- there was no way to say a file
@@ -9,7 +9,7 @@ every other entry point that builds an Obs.
 
 import pytest
 
-from lsdensities.utils.rhoUtils import read_datafile
+from lsdensities.utils.common import read_datafile
 
 
 def _write_datafile(path, nms, T):

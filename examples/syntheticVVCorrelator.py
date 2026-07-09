@@ -17,8 +17,8 @@ correlated.
 
 import numpy as np
 
-from lsdensities.utils.rhoMath import gauss_fp
-from lsdensities.utils.rhoUtils import Obs
+from lsdensities.utils.math_utils import gauss_fp
+from lsdensities.utils.common import Obs
 
 PION_MASS = 0.140  # GeV
 RHO_MASS = 0.775  # GeV, dominant vector-meson resonance
@@ -85,9 +85,9 @@ def generate_correlator(
     generated from, for use as the reconstruction target.
 
     Returns (correlator, rho_true) where correlator is an lsdensities.Obs
-    instance ready to be passed to InverseProblemWrapper/GaussianProcessWrapper
+    instance ready to be passed to HLTWithBackusGilbert/GaussianProcessWrapper
     (mp sample, covariance and central value already filled in). Pass
-    with_cholesky=True for HilbertEigTruncWrapper, which additionally needs
+    with_cholesky=True for HLTWithSVD, which additionally needs
     the Cholesky factor of the covariance (mpcholesky).
     """
     peaks, weights = generate_states(

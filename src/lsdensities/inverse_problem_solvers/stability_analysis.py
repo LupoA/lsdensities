@@ -5,16 +5,16 @@ optionally cross-checked at several values of the kernel exponent alpha
 (Fig. 6, top panel), until the reconstructed smeared spectral density
 stabilises within its statistical error.
 
-Used by both InverseProblemWrapper (frequentist/HLT) and GaussianProcessWrapper
+Used by both HLTWithBackusGilbert (frequentist/HLT) and GaussianProcessWrapper
 (Bayesian): the two differ in how the regulated matrix and its associated prior
 are built, but share the parameter bookkeeping and the logic that cross-checks
 the alpha channels below.
 """
 
 from mpmath import mp, mpf
-from .core import a0_array
-from . import ioutils
-from .utils.rhoUtils import Inputs, log
+from ..core import a0_array
+from .. import io_utils
+from ..utils.common import Inputs, log
 
 
 class AlgorithmParameters:
@@ -194,13 +194,13 @@ def save_stability_output(wrapper, method, path=None):
     Writes the full stability-analysis scan (arXiv:2605.14652 Fig. 6: rho and
     its statistical/Bayesian error, scanned over lambda for every alpha
     channel) plus the flagged plateau/NLL-minimum results, to a single JSON
-    file (see ioutils.py for the shared schema). Works for both
-    InverseProblemWrapper ("HLT") and GaussianProcessWrapper ("GP") since they
+    file (see io_utils.py for the shared schema). Works for both
+    HLTWithBackusGilbert ("HLT") and GaussianProcessWrapper ("GP") since they
     share the same channel/result attributes.
     """
     channels = [wrapper.channelA, *wrapper.secondary_channels]
 
-    metadata = ioutils.base_metadata(wrapper.par, method)
+    metadata = io_utils.base_metadata(wrapper.par, method)
     metadata["alphas"] = {ch.label: ch.alpha for ch in channels}
     metadata["algorithm"] = {
         "lambdaMax": wrapper.algorithmPar.lambdaMax,
@@ -252,5 +252,5 @@ def save_stability_output(wrapper, method, path=None):
             }
         )
 
-    path = path or ioutils.default_output_path(wrapper.par, method)
-    return ioutils.write_json(path, metadata, energies)
+    path = path or io_utils.default_output_path(wrapper.par, method)
+    return io_utils.write_json(path, metadata, energies)

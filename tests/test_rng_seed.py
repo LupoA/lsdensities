@@ -1,4 +1,4 @@
-from lsdensities.utils.rhoUtils import generate_seed, Inputs, init_precision
+from lsdensities.utils.common import generate_seed, Inputs, init_precision
 
 
 def test_rng_seeding():

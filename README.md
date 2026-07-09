@@ -39,21 +39,22 @@ available kernels.
 A realistic example is shown in ```examples/runInverseProblem.py```, where input data for the correlator
 needs to be provided.
 
-The most complete class is `src/lsdensities/InverseProblemWrapper.py`, which
+The most complete class is
+`src/lsdensities/inverse_problem_solvers/hlt_stability.py`, which
 provides utilities for estimating errors and treating
 the bias both in the HLT and in the Bayesian framework.
 
 Function call example:
 
 ```python
-from lsdensities.utils.rhoUtils import (
+from lsdensities.utils.common import (
     init_precision,
     Inputs,
 )
 from mpmath import mp, mpf
-from lsdensities.core import hlt_matrix
+from lsdensities.core import cauchy_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
-from lsdensities.utils.rhoMath import gauss_fp
+from lsdensities.utils.math_utils import gauss_fp
 
 # compute the smeared spectral density at some energy,
 # from a lattice correlator
@@ -82,13 +83,13 @@ for t in range(parameters.tmax):    # mock data
 
 
 regularising_parameter = mpf(str(1e-6))   # regularising parameters; must be tuned.
-                                          # Automatic tuning is provided in InverseProblemWrapper.py
+                                          # Automatic tuning is provided in hlt_stability.py
                                           # this example has exact data, so the parameters
                                           # can be made as small as zero,
                                           # in which case the result will be exact in
                                           # the limit of infinite tmax
 
-regularised_matrix = hlt_matrix(parameters.tmax, alpha=0) + (regularising_parameter * lattice_covariance)
+regularised_matrix = cauchy_matrix(parameters.tmax, alpha=0) + (regularising_parameter * lattice_covariance)
 matrix_inverse = regularised_matrix**(-1)
 
 coeff = coefficients_ssd(matrix_inverse,   # linear coefficients

@@ -3,7 +3,7 @@ import math
 import random
 from mpmath import mp, mpf
 
-from .rhoUtils import _variance_scale_factor, ranvec
+from .common import _variance_scale_factor, ranvec
 
 
 def averageVector_fp(vector, get_error=True, get_var=False):
@@ -45,9 +45,9 @@ def parallel_bootstrap_compact_fp(par_, in_, out_, start, end, seed, is_folded=F
 def averageVector_mp(in_, sample_type="bootstrap"):
     """
     Mean and error of each row of `in_` (xlen_ observables x samplesize_ samples).
-    See rhoUtils._variance_scale_factor for how `sample_type` ("montecarlo",
+    See common._variance_scale_factor for how `sample_type` ("montecarlo",
     "bootstrap" or "jackknife") turns the ddof=1 sample variance into the error
-    on the mean; this must stay consistent with Obs.evaluate() in rhoUtils.py.
+    on the mean; this must stay consistent with Obs.evaluate() in common.py.
     """
     xlen_ = in_.rows
     samplesize_ = in_.cols

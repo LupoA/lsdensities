@@ -1,5 +1,5 @@
 """
-Test of the eigen-space analysis method (HilbertEigTruncWrapper) of
+Test of the eigen-space analysis method (HLTWithSVD) of
 arXiv:2605.14652 (Sec. III.B), on the same synthetic vector-vector-like
 correlator used by run_hlt_wnoise.py.
 
@@ -9,7 +9,7 @@ stop contributing beyond their own statistical noise (arXiv:2605.14652 Eq. 34).
 
 Saves the full eigen-space scan (contribution of each eigenmode, and the
 running cumulative sum, for every alpha channel) to a JSON file under
---outdir (see src/lsdensities/ioutils.py for the schema) and a plot comparing
+--outdir (see src/lsdensities/io_utils.py for the schema) and a plot comparing
 the reconstructed smeared spectral density against the known exact one. Use
 examples/plot_output.py to plot the eigen-space analysis (arXiv:2605.14652
 Fig. 7) at a given energy from the saved JSON.
@@ -21,8 +21,8 @@ import os
 import numpy as np
 from mpmath import mp, mpf
 
-from lsdensities.HilbertEigTruncation import HETpar, HilbertEigTruncWrapper
-from lsdensities.utils.rhoUtils import Inputs, init_precision, log
+from lsdensities.inverse_problem_solvers.hlt_eigenspace import HETpar, HLTWithSVD
+from lsdensities.utils.common import Inputs, init_precision, log
 from syntheticVVCorrelator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_ea_wnoise")
@@ -81,7 +81,7 @@ def main():
 
     hetParams = HETpar(alphaA=0, alphaB=1.99, alphaC=0.5, n_consecutive=args.n_consecutive)
 
-    EA = HilbertEigTruncWrapper(
+    EA = HLTWithSVD(
         par=par,
         algorithmPar=hetParams,
         correlator=corr,

@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpmath import mpf, mp
-from lsdensities.utils.rhoUtils import log, end, generate_seed
-from lsdensities.utils.rhoParser import parse_synthetic_inputs
-from lsdensities.utils.rhoMath import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
-from lsdensities.core import hlt_matrix
+from lsdensities.utils.common import log, end, generate_seed
+from lsdensities.utils.parser import parse_synthetic_inputs
+from lsdensities.utils.math_utils import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
+from lsdensities.core import cauchy_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
 import random
 
@@ -81,7 +81,7 @@ def main():
 
     exact_correlator, espace, rhoStrue = generate(par, espace)
 
-    S = hlt_matrix(
+    S = cauchy_matrix(
         tmax=par.tmax, alpha=0, e0=mpf(0), type=par.periodicity, T=par.time_extent
     )
 

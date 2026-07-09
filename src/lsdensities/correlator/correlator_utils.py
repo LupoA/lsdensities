@@ -1,9 +1,9 @@
-from ..utils.rhoUtils import Obs, LogMessage
+from ..utils.common import Obs, LogMessage
 import argparse
 import numpy as np
 
 #   Usage:
-#       from correlatorUtils import effective_mass
+#       from correlator_utils import effective_mass
 #       effmass = effective_mass(corr, par, type='EXP')
 #       effmass.plot(logscale=False)
 #       print(effmass.central, '±', effmass.err)

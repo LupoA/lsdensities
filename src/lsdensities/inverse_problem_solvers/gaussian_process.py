@@ -5,9 +5,9 @@ import time
 import numpy as np
 from mpmath import mp, mpf
 
-from .abw import gAg
-from .core import integrandSigmaMat
-from .stabilityAnalysis import (
+from ..abw import gAg
+from ..core import integrandSigmaMat
+from .stability_analysis import (
     A0_t,
     AlgorithmParameters,
     AlphaChannel,
@@ -15,14 +15,14 @@ from .stabilityAnalysis import (
     save_stability_output,
     scan_secondary_channels,
 )
-from .transform import (
+from ..transform import (
     coefficients_ssd,
     combine_fMf_scalar,
     combine_likelihood,
     get_ssd_averaged_scalar,
 )
-from .utils.rhoMath import invert_matrix_ge
-from .utils.rhoUtils import Inputs, Obs, bcolors, log
+from ..utils.math_utils import invert_matrix_ge
+from ..utils.common import Inputs, Obs, bcolors, log
 
 __all__ = ["AlgorithmParameters", "A0_t", "SigmaMatrix", "GaussianProcessWrapper"]
 
@@ -34,7 +34,7 @@ class SigmaMatrix:
     """
     The Gaussian-process analogue of the Backus-Gilbert matrix A_N: evaluated by
     numerical quadrature under a Gaussian-process prior (as opposed to
-    InverseProblemWrapper's SigmaMatrix, which has a closed form). Can also be
+    HLTWithBackusGilbert's SigmaMatrix, which has a closed form). Can also be
     read back from the file it writes out, to avoid recomputing an expensive
     quadrature across repeated runs.
     """
@@ -148,7 +148,7 @@ class GaussianProcessWrapper:
                 )
                 self.secondary_channels.append(self.channelC)
 
-        #   Backward-compatible flat aliases (used by plotutils.py and external callers)
+        #   Backward-compatible flat aliases (used by plot_utils.py and external callers)
         self.A0_A, self.SigmaMatA = self.channelA.a0, self.channelA.sigma_matrix
         self.rho_list = self.channelA.rho_list
         self.errBoot_list = self.channelA.errBoot_list
@@ -268,7 +268,7 @@ class GaussianProcessWrapper:
 
         assert (
             self.par.kerneltype == "FULLNORMGAUSS"
-        ), "Gaussian Process only admit FULLNORMGAUSS as a prior. Consider using InverseProblemWrapper, or implement your prior."
+        ), "Gaussian Process only admit FULLNORMGAUSS as a prior. Consider using HLTWithBackusGilbert, or implement your prior."
         _prior_diag = 1 / (np.sqrt(2 * np.pi) * self.par.sigma)
         _prior_diag *= mp.exp(alpha_ * estar_)
         varianceRho = mp.fsub(_prior_diag, varianceRho)
@@ -602,7 +602,7 @@ class GaussianProcessWrapper:
     def save(self, path=None):
         """
         Writes the full stability-analysis scan and results to a single JSON
-        file (see stabilityAnalysis.save_stability_output / ioutils.py for the
+        file (see stability_analysis.save_stability_output / io_utils.py for the
         schema). Use examples/plot_output.py to plot from it.
         """
         return save_stability_output(self, "GP", path)

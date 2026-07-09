@@ -1,11 +1,11 @@
 """
-Test of the HLT method (InverseProblemWrapper) with the stability
+Test of the HLT method (HLTWithBackusGilbert) with the stability
 analysis of arXiv:2605.14652 (Sec. III.A), on a synthetic vector-vector-like
 correlator with a realistic, growing-with-time statistical error (see
 syntheticVVCorrelator.py).
 
 Saves the full stability-analysis scan to a JSON file under --outdir (see
-src/lsdensities/ioutils.py for the schema) and a plot comparing the
+src/lsdensities/io_utils.py for the schema) and a plot comparing the
 reconstructed smeared spectral density against the known exact one. Use
 examples/plot_output.py to plot the stability analysis (arXiv:2605.14652
 Fig. 6) at a given energy from the saved JSON.
@@ -20,8 +20,8 @@ import os
 import numpy as np
 from mpmath import mp, mpf
 
-from lsdensities.InverseProblemWrapper import AlgorithmParameters, InverseProblemWrapper
-from lsdensities.utils.rhoUtils import Inputs, init_precision, log
+from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
+from lsdensities.utils.common import Inputs, init_precision, log
 from syntheticVVCorrelator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_hlt_wnoise")
@@ -90,7 +90,7 @@ def main():
         lambdaMin=1e-5,
         comparisonRatio=0.3,
     )
-    HLT = InverseProblemWrapper(
+    HLT = HLTWithBackusGilbert(
         par=par,
         algorithmPar=hltParams,
         B=corr.mpcov,

@@ -285,7 +285,7 @@ def read_datafile(datapath_, sample_type="montecarlo"):  # (filename_, directory
 
     :param sample_type: rows are raw, independent measurements ("montecarlo i.e. not resampled" by default), or samples
         already resampled elsewhere ("bootstrap" or "jackknife"). See
-        Obs.sample_type / rhoUtils._variance_scale_factor: this determines how
+        Obs.sample_type / common._variance_scale_factor: this determines how
         the error on the correlator (and downstream quantities, e.g. the
         smeared spectral density) is computed, so it must match how the rows were
         actually produced.

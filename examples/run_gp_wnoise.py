@@ -3,7 +3,7 @@ Gaussian-process method (GaussianProcessWrapper) with the stability analysis.
 Still needs a lot of work, not a state-of-art gaussian process implementation!
 
 Saves the full stability-analysis scan to a JSON file under --outdir (see
-src/lsdensities/ioutils.py for the schema) and a plot comparing the
+src/lsdensities/io_utils.py for the schema) and a plot comparing the
 reconstructed smeared spectral density against the known exact one. Use
 examples/plot_output.py to plot the stability analysis (arXiv:2605.14652
 Fig. 6) at a given energy from the saved JSON.
@@ -15,8 +15,8 @@ import os
 import numpy as np
 from mpmath import mp, mpf
 
-from lsdensities.GP_class import AlgorithmParameters, GaussianProcessWrapper
-from lsdensities.utils.rhoUtils import Inputs, init_precision, log
+from lsdensities.inverse_problem_solvers.gaussian_process import AlgorithmParameters, GaussianProcessWrapper
+from lsdensities.utils.common import Inputs, init_precision, log
 from syntheticVVCorrelator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_gp_wnoise")

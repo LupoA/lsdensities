@@ -10,7 +10,7 @@ closed-form algebra.
 import pytest
 from mpmath import mp, mpf
 
-from lsdensities.core import a0_array, a0_scalar, ft_mp, gte, hlt_matrix
+from lsdensities.core import a0_array, a0_scalar, ft_mp, gte, cauchy_matrix
 
 KERNEL_TYPES = ["FULLNORMGAUSS", "HALFNORMGAUSS", "CAUCHY"]
 
@@ -29,22 +29,22 @@ def _set_precision():
     mp.dps = 30
 
 
-def test_hlt_matrix_symmetric_exp():
-    S = hlt_matrix(9, alpha=mpf("0.3"), e0=mpf("0.1"), type="EXP")
+def test_cauchy_matrix_symmetric_exp():
+    S = cauchy_matrix(9, alpha=mpf("0.3"), e0=mpf("0.1"), type="EXP")
     for i in range(9):
         for j in range(9):
             assert S[i, j] == S[j, i]
 
 
-def test_hlt_matrix_symmetric_cosh():
-    S = hlt_matrix(9, alpha=mpf("0.3"), e0=mpf("0.1"), type="COSH", T=20)
+def test_cauchy_matrix_symmetric_cosh():
+    S = cauchy_matrix(9, alpha=mpf("0.3"), e0=mpf("0.1"), type="COSH", T=20)
     for i in range(9):
         for j in range(9):
             assert S[i, j] == S[j, i]
 
 
-def test_hlt_matrix_diagonal_is_positive():
-    S = hlt_matrix(10, alpha=mpf("0.5"), e0=mpf("0"), type="EXP")
+def test_cauchy_matrix_diagonal_is_positive():
+    S = cauchy_matrix(10, alpha=mpf("0.5"), e0=mpf("0"), type="EXP")
     for i in range(10):
         assert S[i, i] > 0
 
@@ -84,7 +84,7 @@ def test_a0_scalar_halfnormgauss_matches_numerical_integral():
 
 
 def test_a0_array_matches_a0_scalar():
-    from lsdensities.utils.rhoUtils import Inputs
+    from lsdensities.utils.common import Inputs
 
     par = Inputs()
     par.mpsigma = mpf("0.3")
