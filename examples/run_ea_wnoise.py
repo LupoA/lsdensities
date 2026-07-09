@@ -42,6 +42,7 @@ def parse_args():
     parser.add_argument("--l-reg", type=float, default=1e-9, help="Small regulator added to the eigenvalues to avoid dividing by (numerically) zero. Default=1e-9")
     parser.add_argument("--n-consecutive", type=int, default=2, help="Number of consecutive eigenmodes compatible with zero required before truncating. Default=2")
     parser.add_argument("--outdir", type=str, default=DEFAULT_OUTDIR, help="Output directory. Default=examples/test_ea_wnoise")
+    parser.add_argument("--loglevel", type=str, default="WARNING", help="Accepted strings are 'WARNING', 'INFO' or 'DEBUG'. Setting 'INFO' shows the details of the eigen-space truncation scan. Default=WARNING")
     return parser.parse_args()
 
 
@@ -63,7 +64,9 @@ def main():
     par.num_boot = args.nsamples
     par.outdir = args.outdir
     par.directoryName = "run"
+    par.loglevel = args.loglevel
     par.assign_values()
+    par.apply_loglevel()
     init_precision(par.prec)
     par.plotpath = os.path.join(par.outdir, "Plots")
     par.logpath = os.path.join(par.outdir, "Logs")

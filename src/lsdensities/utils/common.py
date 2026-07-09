@@ -391,16 +391,25 @@ class Inputs:
             + str(self.kerneltype)
         )
 
-    def init(self):
-        self.assign_values()
-        init_precision(self.prec)
-        self.plotpath, self.logpath = create_out_paths(self)
+    def apply_loglevel(self):
+        """
+        Applies self.loglevel to the shared "log" logger, so that log() calls
+        (e.g. in hlt_stability.py) are actually emitted at that level. Split
+        out of init() so that scripts which build their own output paths
+        (rather than calling init()) can still opt in to this.
+        """
         if self.loglevel == "INFO":
             logger.setLevel(logging.INFO)
         elif self.loglevel == "DEBUG":
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.WARNING)
+
+    def init(self):
+        self.assign_values()
+        init_precision(self.prec)
+        self.plotpath, self.logpath = create_out_paths(self)
+        self.apply_loglevel()
 
     def report(self):
         print(LogMessage(), "Init ::: ", "Reading file:", self.datapath)

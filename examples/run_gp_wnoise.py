@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument("--Na", type=int, default=3, choices=[1, 2, 3], help="Number of alpha values used to cross-check the stability analysis. Default=3")
     parser.add_argument("--A0cut", type=float, default=0.2, help="Maximum accepted A/A0. Default=0.2")
     parser.add_argument("--outdir", type=str, default=DEFAULT_OUTDIR, help="Output directory. Default=examples/test_gp_wnoise")
+    parser.add_argument("--loglevel", type=str, default="WARNING", help="Accepted strings are 'WARNING', 'INFO' or 'DEBUG'. Setting 'INFO' shows the details of the scan over lambda and alpha. Default=WARNING")
     return parser.parse_args()
 
 
@@ -57,7 +58,9 @@ def main():
     par.A0cut = args.A0cut
     par.outdir = args.outdir
     par.directoryName = "run"
+    par.loglevel = args.loglevel
     par.assign_values()
+    par.apply_loglevel()
     init_precision(par.prec)
     par.plotpath = os.path.join(par.outdir, "Plots")
     par.logpath = os.path.join(par.outdir, "Logs")
