@@ -32,51 +32,18 @@ Examples:
 
 import argparse
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 
 from lsdensities.ioutils import closest_energy_entry, load_json
-from lsdensities.plotutils import plotNoErr, plotwErr, setPlotOpt
+from lsdensities.plotutils import plotNoErr, plotwErr
 from lsdensities.utils.rhoMath import cauchy, gauss_fp
 from lsdensities.utils.rhoUtils import CB_colors
 
-PRD_SINGLE_WIDTH = 3.375
-PRD_DOUBLE_WIDTH = 6.9
-ASPECT_RATIO = 1.6
+DEFAULT_MPLSTYLE = Path(__file__).with_name("lsdensities.mplstyle")
 
-def figsize_single(scale=1.0):
-    w = PRD_SINGLE_WIDTH * scale
-    h = w / ASPECT_RATIO
-    return (w, h)
-
-def figsize_double(scale=1.0):
-    w = PRD_DOUBLE_WIDTH * scale
-    h = w / ASPECT_RATIO
-    return (w, h)
-
-def apply_style():
-    mpl.rcParams.update({
-        "figure.figsize": figsize_double(),
-        "font.size": 16,
-        "axes.labelsize": 16,
-        "axes.titlesize": 16,
-        "xtick.labelsize": 16,
-        "ytick.labelsize": 16,
-        "legend.fontsize": 18,
-
-        "lines.linewidth": 1.,
-        "axes.linewidth": 1.0,
-        "xtick.major.width": 1.5,
-        "ytick.major.width": 1.5,
-
-        "xtick.major.size": 4,
-        "ytick.major.size": 4,
-
-        "font.family": "serif",
-        "mathtext.fontset": "cm",
-    })
 
 def _energy_entry(data, energy):
     entry = closest_energy_entry(data, energy)
@@ -136,7 +103,6 @@ def plot_stability(data, energy, outdir, show):
     alphas = data["metadata"].get("alphas", {})
     channels = _stability_channels(entry, alphas)
 
-    setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 6))
 
     for color_id, _label, ch, alpha_label in channels:
@@ -166,7 +132,6 @@ def plot_nll(data, energy, outdir, show):
     alphas = data["metadata"].get("alphas", {})
     channels = _stability_channels(entry, alphas)
 
-    setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 6))
 
     for color_id, _label, ch, alpha_label in channels:
@@ -197,7 +162,6 @@ def plot_stability_and_nll(data, energy, outdir, show):
     alphas = data["metadata"].get("alphas", {})
     channels = _stability_channels(entry, alphas)
 
-    setPlotOpt(plt)
     fig, (ax, ax2) = plt.subplots(
         nrows=2, sharex=True, figsize=(8, 10), gridspec_kw={"height_ratios": [3, 2]}
     )
@@ -254,7 +218,6 @@ def plot_eigenspace(data, energy, kmin, kmax, outdir, show):
         + r"$\sigma$" + " = {:2.2f} ".format(data["metadata"]["sigma"])
     )
 
-    setPlotOpt(plt)
     fig_cum, ax_cum = plt.subplots(figsize=(8, 6))
     fig_contrib, ax_contrib = plt.subplots(figsize=(8, 6))
 
@@ -349,7 +312,6 @@ def plot_kernel(data, energy, result, channel, outdir, show):
     reconstructed = _reconstructed_kernel(gt, meta["time_extent"], meta["periodicity"], e_prime)
     exact = _exact_kernel(meta["kerneltype"], e_prime, e_star, sigma)
 
-    setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.plot(e_prime, exact, color="black", ls="--", label="Exact kernel")
     ax.plot(e_prime, reconstructed, color=CB_colors[0], label=f"Reconstructed ({tag})")
@@ -369,7 +331,6 @@ def plot_kernel(data, energy, result, channel, outdir, show):
 
 def plot_spectrum(datasets, labels, outdir, show):
     """The full rho_sigma(E) vs E, from one or more stability-analysis output files."""
-    setPlotOpt(plt)
     fig, ax = plt.subplots(figsize=(8, 6))
 
     next_color = 0
@@ -403,11 +364,15 @@ def plot_spectrum(datasets, labels, outdir, show):
 
 
 def main():
-    apply_style()
-    # Shared so --outdir/--show are accepted both before and after the subcommand.
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--outdir", type=str, default=".", help="Where to save plots (ignored if --show). Default: current directory")
     common.add_argument("--show", action="store_true", help="Display interactively instead of saving to file")
+    common.add_argument(
+        "--mplstyle",
+        type=str,
+        default=str(DEFAULT_MPLSTYLE),
+        help=f"Matplotlib style file to apply (see matplotlib.style.use). Default: {DEFAULT_MPLSTYLE.name}, bundled alongside this script",
+    )
 
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, parents=[common]
@@ -443,6 +408,7 @@ def main():
     p_kernel.add_argument("--channel", default="A", help="For EigenspaceAnalysis output: which alpha channel's g_t to use (A, B or C). Ignored for HLT/GP output. Default=A")
 
     args = parser.parse_args()
+    plt.style.use(args.mplstyle)
 
     if args.mode == "stability":
         plot_stability(load_json(args.file), args.energy, args.outdir, args.show)

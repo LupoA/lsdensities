@@ -1,0 +1,22 @@
+# Default look for examples/plot_output.py.
+#
+# This looks fabulous but you can override it by passing your own file to --mplstyle, or edit this one if you think you can do better:)
+#
+
+font.size: 22
+font.family: serif
+mathtext.fontset: cm
+
+axes.labelsize: 16
+axes.titlesize: 16
+axes.linewidth: 1.0
+
+xtick.labelsize: 22
+ytick.labelsize: 22
+xtick.major.width: 1.5
+ytick.major.width: 1.5
+xtick.major.size: 4
+ytick.major.size: 4
+
+legend.fontsize: 18
+lines.linewidth: 1.0
