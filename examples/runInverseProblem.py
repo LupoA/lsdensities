@@ -1,3 +1,7 @@
+'''
+This file does a bunch of extra stuff (resample and fold the correlator read from file) before solving the inverse problem.
+For a simpler example look at run_hlt_wnoise.py
+'''
 import lsdensities.utils.rhoUtils as u
 from lsdensities.utils.rhoUtils import (
     init_precision,

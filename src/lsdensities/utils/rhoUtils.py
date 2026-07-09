@@ -270,7 +270,7 @@ class Obs:
             plt.show()
 
 
-def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
+def read_datafile(datapath_, sample_type="montecarlo"):  # (filename_, directory_):
     """
     You should write your own, compatible with your format!
     Here we assume that the input file has a header with time_extent and number of measurements.
@@ -282,6 +282,13 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
     #   31  corr[31]
     #   0   corr[0]
     #   ... so on
+
+    :param sample_type: rows are raw, independent measurements ("montecarlo i.e. not resampled" by default), or samples
+        already resampled elsewhere ("bootstrap" or "jackknife"). See
+        Obs.sample_type / rhoUtils._variance_scale_factor: this determines how
+        the error on the correlator (and downstream quantities, e.g. the
+        smeared spectral density) is computed, so it must match how the rows were
+        actually produced.
     """
     with open(datapath_, "r") as file:
         header = next(file).strip()
@@ -294,7 +301,7 @@ def read_datafile(datapath_, resampled=False):  # (filename_, directory_):
             T=header_T,
             tmax=header_T - 1,
             nms=header_nms,
-            sample_type="bootstrap" if resampled else "montecarlo",
+            sample_type=sample_type,
         )
         # loop over file: read and store
         for indx, lndex in enumerate(file):

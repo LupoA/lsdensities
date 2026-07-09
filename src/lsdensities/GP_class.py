@@ -249,7 +249,10 @@ class GaussianProcessWrapper:
             "s",
         )
         rho_estar, drho_estar_Bootstrap = get_ssd_averaged_scalar(
-            _g_t_estar, self.correlator.mpsample, self.par
+            _g_t_estar,
+            self.correlator.mpsample,
+            self.par,
+            sample_type=self.correlator.sample_type,
         )
         start_time = time.time()
         log(

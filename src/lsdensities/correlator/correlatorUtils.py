@@ -12,7 +12,7 @@ import numpy as np
 def effective_mass(corr, par, type="COSH"):
     th = int(par.time_extent / 2)
     thm = th - 1
-    mass = Obs(T=thm, nms=par.num_boot, sample_type="bootstrap", tmax=thm)
+    mass = Obs(T=thm, nms=corr.nms, sample_type=corr.sample_type, tmax=thm)
     if type == "COSH":
         mass.sample[:, :] = np.arccosh(
             (corr.sample[:, 2 : th + 1] + corr.sample[:, 0 : th - 1])
@@ -27,11 +27,11 @@ def effective_mass(corr, par, type="COSH"):
     return mass
 
 
-def foldPeriodicCorrelator(corr, par, sample_type="montecarlo"):
+def foldPeriodicCorrelator(corr, par):
     assert par.periodicity == "COSH"
     halfT = int(par.time_extent / 2)
     foldedCorr = Obs(
-        T=halfT + 1, tmax=par.tmax, nms=par.num_samples, sample_type=sample_type
+        T=halfT + 1, tmax=par.tmax, nms=par.num_samples, sample_type=corr.sample_type
     )
     for n in range(par.num_samples):
         foldedCorr.sample[n, 0] = corr.sample[n, 0]

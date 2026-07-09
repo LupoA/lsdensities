@@ -65,6 +65,18 @@ def test_fold_periodic_correlator_requires_cosh():
         foldPeriodicCorrelator(corr, par)
 
 
+@pytest.mark.parametrize("sample_type", ["montecarlo", "bootstrap", "jackknife"])
+def test_fold_periodic_correlator_propagates_sample_type(sample_type):
+    # Folding is just an average over existing samples: it must never change
+    # (or silently assume) the sample_type, unlike a resampling step would.
+    par, corr = _make_cosh_correlator(16, 3, 0.35)
+    corr.sample_type = sample_type
+
+    folded = foldPeriodicCorrelator(corr, par)
+
+    assert folded.sample_type == sample_type
+
+
 def test_symmetrise_periodic_correlator_reproduces_symmetric_input():
     T, nms, mass = 16, 3, 0.35
     par, corr = _make_cosh_correlator(T, nms, mass, symmetric=True)
@@ -115,6 +127,21 @@ def test_effective_mass_exp_recovers_known_mass():
     emass = effective_mass(corr, par, type="EXP")
 
     assert emass.central == pytest.approx(mass, abs=1e-8)
+
+
+@pytest.mark.parametrize("sample_type", ["montecarlo", "bootstrap", "jackknife"])
+def test_effective_mass_propagates_sample_type(sample_type):
+    # effective_mass used to hardcode sample_type="bootstrap" regardless of
+    # corr's actual sample_type, silently mis-scaling the mass's error
+    # whenever corr wasn't a bootstrap correlator.
+    T, nms, mass_ = 16, 3, 0.35
+    par, corr = _make_cosh_correlator(T, nms, mass_, symmetric=True)
+    corr.sample_type = sample_type
+
+    emass = effective_mass(corr, par, type="COSH")
+
+    assert emass.sample_type == sample_type
+    assert emass.nms == corr.nms
 
 
 def test_effective_mass_invalid_type_raises():

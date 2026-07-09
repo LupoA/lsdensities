@@ -42,7 +42,7 @@ def get_ssd_scalar(gt, corr, params):
     return rho
 
 
-def get_ssd_averaged_scalar(gt, corr_samples, params):
+def get_ssd_averaged_scalar(gt, corr_samples, params, sample_type="bootstrap"):
     """
     Computes smeared spectral density rho = sum_t g(t) c(t) at fixed energy
     Averaged version: the operation is performed on a vector of correlators, corresponding to different statistical samples. Result is averaged.
@@ -51,6 +51,9 @@ def get_ssd_averaged_scalar(gt, corr_samples, params):
     :param gt: mp.matrix len(params.Ne, params.tmax)
     :param corr_samples: mp.matrix of dimensions (params.num_boot, params.tmax).
     :param params: instance of Inputs class
+    :param sample_type: how the samples in `corr_samples` were obtained -- must
+        match the correlator's own Obs.sample_type (see rhoUtils._variance_scale_factor)
+        so that the error on rho is scaled consistently with the error on the correlator.
     :return: [mpf(float), mpf(float)] corresponding to avg and std
     """
     rhob = mp.matrix(params.num_boot, 1)
@@ -60,7 +63,7 @@ def get_ssd_averaged_scalar(gt, corr_samples, params):
         for i in range(params.tmax):
             aux_ = mp.fmul(gt[i], y[i])
             rhob[b] = mp.fadd(rhob[b], aux_)
-    return averageScalar_mp(rhob)
+    return averageScalar_mp(rhob, sample_type=sample_type)
 
 
 def combine_fMf_scalar(gt, params, estar, alpha):
@@ -107,7 +110,7 @@ def combine_base_scalar(gt, params, estar):
     return out_
 
 
-def y_combine_sample_Eslice_mp_ToFile(file, ht_sliced, mpmatrix, params):
+def y_combine_sample_Eslice_mp_ToFile(file, ht_sliced, mpmatrix, params, sample_type="bootstrap"):
     rhob = mp.matrix(params.num_boot, 1)
     with open(file, "w") as output:
         for b in range(params.num_boot):
@@ -118,7 +121,7 @@ def y_combine_sample_Eslice_mp_ToFile(file, ht_sliced, mpmatrix, params):
                 rhob[b] = mp.fadd(rhob[b], aux_)
             print(b, float(rhob[b]), file=output)
         # print(LogMessage(), "rho[e] +/- stat ", float(averageScalar_mp(rhob)[0]), (float(averageScalar_mp(rhob)[1])))
-    return averageScalar_mp(rhob)
+    return averageScalar_mp(rhob, sample_type=sample_type)
 
 
 def combine_likelihood(minv, params, mpcorr):

@@ -18,7 +18,7 @@ from lsdensities.transform import (
     get_ssd_averaged_scalar,
     get_ssd_scalar,
 )
-from lsdensities.utils.rhoUtils import Inputs
+from lsdensities.utils.rhoUtils import Inputs, _variance_scale_factor
 
 
 @pytest.fixture
@@ -96,6 +96,27 @@ def test_get_ssd_averaged_scalar_matches_manual_average(params):
     )
     assert abs(avg - expected_avg) < mpf("1e-25")
     assert abs(err - expected_err) < mpf("1e-25")
+
+
+@pytest.mark.parametrize("sample_type", ["montecarlo", "bootstrap", "jackknife"])
+def test_get_ssd_averaged_scalar_error_scales_with_sample_type(params, sample_type):
+    # rho's error must be rescaled by the same sample_type-dependent factor as
+    # the correlator's own error (rhoUtils._variance_scale_factor), otherwise a
+    # spectral density built from montecarlo/jackknife samples would silently
+    # report a bootstrap-scaled (i.e. wrong) error.
+    gt = mp.randmatrix(params.tmax, 1)
+    samples = mp.randmatrix(params.num_boot, params.tmax)
+
+    _, err = get_ssd_averaged_scalar(gt, samples, params, sample_type=sample_type)
+    _, err_bootstrap = get_ssd_averaged_scalar(
+        gt, samples, params, sample_type="bootstrap"
+    )
+
+    scale = _variance_scale_factor(sample_type, params.num_boot)
+    scale_bootstrap = _variance_scale_factor("bootstrap", params.num_boot)
+    expected_ratio = mp.sqrt(mpf(scale) / mpf(scale_bootstrap))
+
+    assert abs(err / err_bootstrap - expected_ratio) < mpf("1e-25")
 
 
 def test_combine_fMf_scalar_matches_direct_sum(params):

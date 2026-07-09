@@ -150,7 +150,7 @@ def main():
         )
         _g_t_estar = get_ssd_scalar(_Minv, par, estar_, alpha=0)
         rho[_e], drho[_e] = y_combine_sample_Eslice_mp_ToFile(
-            fpath, _g_t_estar, corr.mpsample, par
+            fpath, _g_t_estar, corr.mpsample, par, sample_type=corr.sample_type
         )
 
         gag_estar = gAg(S_, _g_t_estar, estar_, 0, par)
