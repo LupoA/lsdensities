@@ -83,7 +83,7 @@ def _add_common_arguments(parser):
     parser.add_argument(
         "--kerneltype",
         type=str,
-        help="Accepted strings are 'FULLNORMGAUSS', 'HALFNORMGAUSS' or 'CAUCHY', depending on which smearing kernel.",
+        help="Accepted strings are 'FULLNORMGAUSS', 'HALFNORMGAUSS', 'CAUCHY' or 'THETA-ERF', depending on which smearing kernel.",
         default="FULLNORMGAUSS",
     )
     parser.add_argument(

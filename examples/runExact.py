@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpmath import mpf, mp
 from lsdensities.utils.common import log, end, generate_seed
 from lsdensities.utils.parser import parse_synthetic_inputs
-from lsdensities.utils.math_utils import gauss_fp, invert_matrix_ge, norm2_mp, cauchy
+from lsdensities.utils.math_utils import gauss_fp, invert_matrix_ge, norm2_mp, cauchy, theta_erf
 from lsdensities.core import cauchy_matrix
 from lsdensities.transform import coefficients_ssd, get_ssd_scalar
 import random
@@ -61,6 +61,11 @@ def generate(par, espace):
                 rhoStrue[e_i] += (
                     cauchy(peaks_location[_n], par.sigma, espace[e_i]) * weights[_n]
                 )
+            elif par.kerneltype == "THETA-ERF":
+                rhoStrue[e_i] += (
+                    theta_erf(espace[e_i], peaks_location[_n], par.sigma)
+                    * weights[_n]
+                )
 
     if par.periodicity == "EXP":
         return exact_correlator, espace, rhoStrue
@@ -116,7 +121,7 @@ def main():
         color="r",
     )
     plt.xlabel("GeV")
-    plt.title("# States : {:2d}".format(STATES))
+    plt.title("Kernel: {} - # States : {:2d}".format(par.kerneltype, STATES))
     plt.legend()
     plt.show()
     end()

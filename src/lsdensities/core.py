@@ -101,18 +101,24 @@ def ft_halfnorm(t, alpha, sigma, e, e0):
     return res
 
 
-def ft_theta(t, sigma, e0):
+def _theta_erf_mp(x, x0, sigma):
+    """
+    Arbitrary-precision (mpmath) equivalent of utils.math_utils.theta_erf
+    """
+    return (1 + mp.erf((x - x0) / sigma)) / 2
+
+
+def ft_theta(t, alpha, sigma, e, e0):
     '''
-    The vector f, from Section II of arXiv:2605.14652, for a step function
+    f_t(e) = int_e0^inf dE' exp(alpha E') * theta_erf(e, E', sigma) * exp(-t E')
     '''
-    aux = (sigma * t / 2) - (e0 / sigma)
-    res = mp.erfc(aux)
-    aux = t * t * sigma * sigma / 4
-    aux -= t * e0
-    res *= mp.exp(aux)
-    res += mp.erfc(e0 / sigma)
-    res /= 2 * t
-    return res
+    assert e > e0, "theta-erf kernel requires e > e0 (the step must lie within the integration domain [e0, inf))"
+    lam = t - alpha
+    term1 = mp.exp(-lam * e0) * _theta_erf_mp(e, e0, sigma)
+    term2 = mpf("0.5") * mp.exp(-lam * e + (lam * sigma) ** 2 / 4) * mp.erfc(
+        (e0 - e) / sigma + lam * sigma / 2
+    )
+    return (term1 - term2) / lam
 
 
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS"):
@@ -149,9 +155,10 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
 
         res = mp.quad(integrand, [e0, mp.inf], method="gauss-legendre")
     elif ker_type == "THETA-ERF":
-        res = ft_theta(t - alpha, sigma_, e0)
+        res = ft_theta(t, alpha, sigma_, e, e0)
         if type == "COSH":
-            pterm = ft_theta(T - t + alpha, sigma_, e0)
+            assert T > 0
+            pterm = ft_theta(T - t, alpha, sigma_, e, e0)
             res = mp.fadd(res, pterm)
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
@@ -221,6 +228,13 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
             return aux
 
         res = mp.quad(integrand2, [e0, mp.inf], method="gauss-legendre")
+    elif ker_type == "THETA-ERF":
+        assert e > e0, "theta-erf kernel requires e > e0 (the step must lie within the integration domain [e0, inf))"
+
+        def integrand3(k):
+            return mp.exp(alpha * k) * _theta_erf_mp(e, k, sigma) ** 2
+
+        res = mp.quad(integrand3, [e0, mp.inf], method="gauss-legendre")
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res

@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from mpmath import mp
-
+from scipy.special import erf
 
 def kronecker_fp(a, b):
     if a == b:
@@ -86,3 +86,7 @@ def invert_matrix_ge(mp_matrix):
     mp_inverse_matrix = mp.matrix(inverse_matrix)
 
     return mp_inverse_matrix
+
+def theta_erf(x, x0, sigma):
+    res = 1 + erf((x - x0) / sigma)
+    return res / 2
