@@ -2,12 +2,12 @@
 
 
 **lsdensities** is a Python library for the calculation of
-smeared spectral densities from lattice correlators.
+smeared spectral densities from lattice correlators using variations of the <a href="https://arxiv.org/pdf/1903.06476.pdf">HLT</a> method in its <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">frequentist or Bayesian formulation</a>
 
-Solutions can be obtained with the
-<a href="https://arxiv.org/pdf/1903.06476.pdf">Hansen Lupo Tantalo</a> method
-and <a href="https://arxiv.org/pdf/2311.18125.pdf">
-Bayesian inference with Gaussian Processes</a>, or combinations of the two.
+Some features of this library:
+- Stability</a> analysis to estimate the bias introduced by the Backus-Gilbert regulator.
+- Error estimates via frequentist methods (bootstrap/jackknife...) or <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian methods (via Gaussian Processes)</a>.
+- Singular Value Decomposition and "<a href="https://arxiv.org/pdf/2605.14652">Eigenspace Analysis</a>"
 
 This library is based on <a href="https://mpmath.org/">mpmath</a>
 for performing the high-precision arithmetic operations that are necessary
@@ -28,21 +28,20 @@ pip install https://github.com/LupoA/lsdensities
 
 ## Usage
 
-Preliminary tests can be found in the ``tests`` folder, and tested using the ``pytest`` command.
+Some tests can be found in the ``tests`` folder, and tested using the ``pytest`` command.
 
 Usage examples can be found in the ``examples`` folder.
 
 The most basic workflow is illustrated in `examples/runExact.py`,
 which generates a high-precision correlator, and computes the corresponding spectral density smeared with one of the
-available kernels.
+available kernels without regulators (the problem is not ill-posed when the data is not noisy).
 
-A realistic example is shown in ```examples/runInverseProblem.py```, where input data for the correlator
-needs to be provided.
+A simple example of how to run the stability analysis is found in `examples/run_hlt_wnoise.py`, which uses synthetic data with synthetic noise.
 
-The most complete class is
-`src/lsdensities/inverse_problem_solvers/hlt_stability.py`, which
-provides utilities for estimating errors and treating
-the bias both in the HLT and in the Bayesian framework.
+Most inverse-problem related functionalities are in `src/lsdensities/inverse_problem_solvers` which contains routines for
+- stability analysis `src/lsdensities/inverse_problem_solvers/stability_analysis.py`
+- hlt method with frequentist and bayesian errors `src/lsdensities/inverse_problem_solvers/hlt_stability.py` 
+- eigenspace analysis `src/lsdensities/inverse_prolem_solvers/hlt_eigenspace.py`
 
 Function call example:
 
@@ -117,9 +116,12 @@ Please make sure to update tests as appropriate.
 Development requirements can be installed by using ``pip install -r requirements.txt``, and they are listed in ``requirements.txt``.
 
 ## References
-For the mean ideas: https://arxiv.org/pdf/1903.06476.pdf
+M. Hansen, A. Lupo, N.Tantalo, <a href="https://arxiv.org/pdf/1903.06476.pdf">"Extraction of spectral densities from lattice correlators"</a>, Phys.Rev.D 99 (2019) 9, 094508
 
-For the Bayesian setup and the general treatment of the bias: https://arxiv.org/pdf/2311.18125.pdf
+L. Del Debbio, A. Lupo, M. Panero, N. Tantalo, <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian solution to the inverse problem and its relation
+to Backus–Gilbert methods</a>, Eur.Phys.J.C 85 (2025) 2, 185
+
+A. Lupo, N. Tantalo, <a href="https://arxiv.org/pdf/2605.14652">Extraction of spectral densities from lattice correlators: decoupling signal from noise</a>
 
 ## License
 
