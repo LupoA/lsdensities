@@ -43,6 +43,24 @@ def test_cauchy_matrix_symmetric_cosh():
             assert S[i, j] == S[j, i]
 
 
+@pytest.mark.parametrize("periodicity", ["EXP", "COSH"])
+def test_cauchy_matrix_matches_numerical_integral(periodicity):
+    # S_ij = int_e0^inf dE exp(alpha E) b_{i+1}(E) b_{j+1}(E), with alpha and
+    # e0 both non-zero
+    alpha, e0, T = mpf("-0.5"), mpf("0.3"), 20
+    S = cauchy_matrix(4, alpha=alpha, e0=e0, type=periodicity, T=T)
+
+    def b(t, E):
+        res = mp.exp(-t * E)
+        if periodicity == "COSH":
+            res += mp.exp(-(T - t) * E)
+        return res
+
+    for i, j in [(0, 0), (1, 3)]:
+        numeric = mp.quad(lambda E: mp.exp(alpha * E) * b(i + 1, E) * b(j + 1, E), [e0, 1, mp.inf])
+        assert abs(S[i, j] / numeric - 1) < mpf("1e-25")
+
+
 def test_cauchy_matrix_diagonal_is_positive():
     S = cauchy_matrix(10, alpha=mpf("0.5"), e0=mpf("0"), type="EXP")
     for i in range(10):
@@ -149,3 +167,25 @@ def test_gte_cosh_is_sum_of_periodic_images():
     T, t, e = 20, mpf(3), mpf("0.5")
     expected = mp.exp(-t * e) + mp.exp(-(T - t) * e)
     assert gte(T=T, t=t, e=e, periodicity="COSH") == expected
+
+
+@pytest.mark.parametrize(
+    "ker_type, power, alpha",
+    [("LINEAR", 1, mpf("-0.5")), ("INVPOW1", -1, mpf("0")), ("INVPOW3", -3, mpf("-0.5"))],
+)
+def test_power_kernels_match_numerical_integrals(ker_type, power, alpha):
+    t, e0, T = mpf("3"), mpf("0.3"), 20
+    A0 = a0_scalar(e=mpf("0"), sigma=mpf("0"), alpha=alpha, e0=e0, ker_type=ker_type)
+    numeric = mp.quad(lambda E: mp.exp(alpha * E) * E ** (2 * power), [e0, 1, mp.inf])
+    assert abs(A0 / numeric - 1) < mpf("1e-25")
+    f = ft_mp(e=mpf("0"), t=t, sigma_=mpf("0"), alpha=alpha, e0=e0, type="COSH", T=T, ker_type=ker_type)
+    numeric = mp.quad(
+        lambda E: mp.exp(alpha * E) * E**power * (mp.exp(-t * E) + mp.exp(-(T - t) * E)), [e0, 1, mp.inf]
+    )
+    assert abs(f / numeric - 1) < mpf("1e-25")
+
+
+@pytest.mark.parametrize("ker_type, alpha", [("LINEAR", mpf("0")), ("INVPOW1", mpf("0.5"))])
+def test_power_kernels_reject_alpha_with_infinite_norm(ker_type, alpha):
+    with pytest.raises(ValueError, match="diverges"):
+        a0_scalar(e=mpf("0"), sigma=mpf("0"), alpha=alpha, e0=mpf("0.3"), ker_type=ker_type)

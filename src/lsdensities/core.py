@@ -12,8 +12,8 @@ def cauchy_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
             entry = mp.fadd(mpf(i), mpf(j))
             arg = mp.fadd(entry, mpf(2))  # i+j+2
             entry = mp.fsub(arg, alpha)  # i+j+2-a
-            arg = mp.fneg(arg)
-            arg = mp.fmul(arg, e0)
+            arg = mp.fneg(entry)
+            arg = mp.fmul(arg, e0)  # -(i+j+2-a) e0
             arg = mp.exp(arg)
             entry = mp.fdiv(arg, entry)
             if type == "COSH":
@@ -29,9 +29,9 @@ def cauchy_matrix(tmax: int, alpha, e0=mpf(0), type="EXP", T=0):
                 entry2 = mp.fsub(arg2, alpha)  # T+i-j-a
                 entry3 = mp.fsub(arg3, alpha)  # T+j-i-a
                 entry4 = mp.fsub(arg4, alpha)  # 2T-j-i-2-a
-                arg2 = mp.fneg(arg2)
-                arg3 = mp.fneg(arg3)
-                arg4 = mp.fneg(arg4)
+                arg2 = mp.fneg(entry2)
+                arg3 = mp.fneg(entry3)
+                arg4 = mp.fneg(entry4)
                 arg2 = mp.fmul(arg2, e0)
                 arg3 = mp.fmul(arg3, e0)
                 arg4 = mp.fmul(arg4, e0)
@@ -146,6 +146,38 @@ def ft_inverse_power(t, alpha, e0, n):
     return lam ** (n - 1) * mp.gammainc(1 - n, lam * e0)
 
 
+def inverse_power_order(ker_type, n=None):
+    """
+    The power n of the kernel k(E')=E'^{-n}: either given explicitly, with
+    ker_type "INVPOW", or as part of ker_type, e.g. "INVPOW3".
+    """
+    suffix = ker_type[len("INVPOW"):]
+    if suffix:
+        n = int(suffix)
+    assert n is not None and n > 0, "INVPOW kernel requires n > 0 (k(E)=E^-n)"
+    return n
+
+
+def a0_power(alpha, e0, m):
+    """
+    A[g=0] = int_e0^inf dE' exp(alpha E') E'^m for the power kernels
+    (m = 2 for LINEAR, m = -2n for E'^-n), in closed form:
+        Gamma(m+1, beta e0) / beta^{m+1},  beta = -alpha > 0,
+        e0^{m+1} / (-m-1),                 alpha = 0 (requires m < -1).
+    Finite only for alpha < 0 or, if m < -1, alpha = 0: the kernel does not
+    decay fast enough for the exponentially growing weight of alpha > 0.
+    """
+    if alpha > 0 or (alpha == 0 and m >= -1):
+        raise ValueError(
+            f"A[g=0] = int dE' exp(alpha E') E'^{m} diverges for alpha = {alpha}: "
+            "power kernels need alpha < 0 (alpha <= 0 for E'^-n)"
+        )
+    if alpha == 0:
+        return mp.power(e0, m + 1) / (-m - 1)
+    beta = -alpha
+    return mp.gammainc(m + 1, beta * e0) / mp.power(beta, m + 1)
+
+
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS", n=None):
     '''
     The vector f, from Section II of arXiv:2605.14652, for any coded kernel
@@ -191,8 +223,8 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
             assert T > 0
             pterm = ft_linear(T - t, alpha, e0)
             res = mp.fadd(res, pterm)
-    elif ker_type == "INVPOW":
-        assert n is not None and n > 0, "INVPOW kernel requires n > 0 (k(E)=E^-n)"
+    elif ker_type.startswith("INVPOW"):
+        n = inverse_power_order(ker_type, n)
         res = ft_inverse_power(t, alpha, e0, n)
         if type == "COSH":
             assert T > 0
@@ -273,6 +305,11 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
             return mp.exp(alpha * k) * _theta_erf_mp(e, k, sigma) ** 2
 
         res = mp.quad(integrand3, [e0, mp.inf], method="gauss-legendre")
+    elif ker_type == "LINEAR":
+        res = a0_power(alpha, e0, 2)
+    elif ker_type.startswith("INVPOW"):
+        assert e0 > 0, "k(E)=E^-n kernel requires e0 > 0 (E'^-n is not integrable at E'=0 for n >= 1)"
+        res = a0_power(alpha, e0, -2 * inverse_power_order(ker_type))
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
     return res

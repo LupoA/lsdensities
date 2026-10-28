@@ -66,3 +66,50 @@ def test_convergence():
     assert diff16 > diff32
     assert diff32 > diff48
     assert diff48 > diff64
+
+
+def test_stability_analysis_power_kernel():
+    # rho(E) = sum_i w_i delta(E - E_i): int rho(E) / E^3 dE = sum_i w_i / E_i^3.
+    # e0 > 0 and alpha != 0 in every channel.
+    import numpy as np
+
+    from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
+    from lsdensities.utils.common import Obs
+
+    init_precision(60)
+    peaks, weights = np.array([0.5, 0.9, 1.6]), np.array([0.6, 1.0, 0.8])
+    par = Inputs()
+    par.time_extent = 16
+    par.periodicity = "EXP"
+    par.kerneltype = "INVPOW3"
+    par.sigma = 0
+    par.emin = par.emax = par.e0 = 0.3
+    par.Ne = 1
+    par.Na = 3
+    par.num_boot = 200
+    par.assign_values()
+
+    t = np.arange(par.time_extent)
+    exact = (weights * np.exp(-np.outer(t, peaks))).sum(axis=1)
+    rng = np.random.default_rng(0)
+    corr = Obs(T=par.time_extent, tmax=par.tmax, nms=par.num_boot, sample_type="bootstrap")
+    corr.sample = rng.multivariate_normal(exact, np.diag((1e-4 * exact) ** 2), size=par.num_boot)
+    corr.evaluate()
+    corr.evaluate_covmatrix()
+    corr.fill_mp_sample()
+
+    hlt = HLTWithBackusGilbert(
+        par=par,
+        algorithmPar=AlgorithmParameters(
+            alphaA=-0.5, alphaB=-1.0, alphaC=-1.5, lambdaMax=10, lambdaMin=1e-3, lambdaStep=2, lambdaScanCap=2
+        ),
+        B=corr.mpcov,
+        bnorm=mpf(str(corr.central[1] ** 2)),
+        correlator=corr,
+        energies=[par.e0],
+    )
+    hlt.prepareHLT()
+    hlt.run()
+    true_value = float(np.sum(weights / peaks**3))
+    assert abs(hlt.rhoResultHLT[0] - true_value) < 3 * hlt.rho_quadrature_err_HLT[0] + 1e-3 * true_value
+    assert 0 <= hlt.aa0[0] <= 1

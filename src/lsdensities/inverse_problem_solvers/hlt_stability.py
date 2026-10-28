@@ -504,7 +504,7 @@ class HLTWithBackusGilbert:
         self.rhoResultHLT[idx] = rhoHLT
         self.drho_result[idx] = drhoHLT
         self.gt_HLT[idx] = gtHLT
-        self.aa0[idx] = gag_flag
+        self.aa0[idx] = gag_flag / channelA.a0.valute_at_E_dictionary[estar_]
         #   bayesian
         self.minNLL[idx] = minNLL
         self.lambdaResultBayes[idx] = lambdaStarBayes
