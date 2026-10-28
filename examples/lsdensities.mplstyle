@@ -18,5 +18,5 @@ ytick.major.width: 1.5
 xtick.major.size: 4
 ytick.major.size: 4
 
-legend.fontsize: 18
+legend.fontsize: 15
 lines.linewidth: 1.0

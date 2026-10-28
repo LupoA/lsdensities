@@ -1,6 +1,7 @@
 """
-Synthetic vector-vector-like lattice correlator, with a realistic noise model,
-shared by run_hlt_wnoise.py and run_gp_wnoise.py so that both methods are
+Synthetic vector-vector-like lattice correlator, with a realistic noise model.
+Used by the examples (run_ea_wnoise.py, run_hlt_wnoise.py, run_gp_wnoise.py,
+run_bbounds_wnoise.py, run_all_wnoise.py, ...) so that all methods are
 compared against exactly the same mock dataset.
 
 The mock spectrum follows the same recipe as arXiv:2605.14652 (Eqs. 25-26):
@@ -10,15 +11,14 @@ one dominant low-lying resonance around the rho mass, plus a multi-hadron
 continuum above the two-pion threshold.
 
 The covariance is the qualitatively realistic one for hadronic
-correlators: the relative statistical error grows with Euclidean time and nearby time slices are
-correlated.
-
+correlators: the relative statistical error grows with Euclidean time and
+nearby time slices are correlated.
 """
 
 import numpy as np
 
-from lsdensities.utils.math_utils import gauss_fp
-from lsdensities.utils.common import Obs
+from ..utils.common import Obs
+from ..utils.math_utils import gauss_fp
 
 PION_MASS = 0.140  # GeV
 RHO_MASS = 0.775  # GeV, dominant vector-meson resonance
@@ -73,6 +73,7 @@ def generate_correlator(
     espace,
     seed=1,
     n_continuum=24,
+    continuum_emax=None,
     base_rel_error=0.002,
     target_rel_error=0.15,
     corr_length=3.0,
@@ -89,9 +90,14 @@ def generate_correlator(
     (mp sample, covariance and central value already filled in). Pass
     with_cholesky=True for HLTWithSVD, which additionally needs
     the Cholesky factor of the covariance (mpcholesky).
+
+    The continuum extends up to continuum_emax, by default 3 * par.emax: the
+    mock spectrum, for a given seed, depends on it.
     """
+    if continuum_emax is None:
+        continuum_emax = 3 * par.emax
     peaks, weights = generate_states(
-        seed, n_continuum=n_continuum, continuum_emax=3 * par.emax
+        seed, n_continuum=n_continuum, continuum_emax=continuum_emax
     )
 
     T = par.time_extent

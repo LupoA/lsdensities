@@ -6,6 +6,7 @@ from mpmath import mp, mpf
 
 from ..abw import gAg
 from ..core import cauchy_matrix
+from .causal_bootstrap_bounds import compute_causal_bootstrap_bounds
 from .stability_analysis import (
     A0_t,
     AlgorithmParameters,
@@ -118,6 +119,7 @@ class HLTWithBackusGilbert:
             self.likelihood_list_alphaC = self.channelC.likelihood_list
 
         self.lambda_list = [[] for _ in range(self.par.Ne)]
+        self.causal_bootstrap = None  #   set by compute_causal_bootstrap_bounds()
 
         #   Results
         self.minNLL = np.zeros(self.par.Ne)  # minimum of Negative Log Likelihood
@@ -555,6 +557,16 @@ class HLTWithBackusGilbert:
             self.scanParameters(self.espace[e_i])
             self.estimate_sys_error(e_i)
         return 0
+
+    def compute_causal_bootstrap_bounds(self, **kwargs):
+        """
+        Bounds of arXiv:2605.20509 on the same rho_sigma(E), at every energy,
+        from positivity of rho and the correlator data alone (see
+        causal_bootstrap_bounds.CausalBootstrapAnalysis for the arguments).
+        save() then writes them next to the results, and
+        examples/plot_output.py overlays them with --causal-bootstrap.
+        """
+        return compute_causal_bootstrap_bounds(self, **kwargs)
 
     def save(self, path=None):
         """

@@ -4,8 +4,9 @@ arXiv:2605.14652 (Sec. III.B), on the same synthetic vector-vector-like
 correlator used by run_hlt_wnoise.py.
 
 Rather than scanning the Backus-Gilbert trade-off parameter lambda, this
-method expands the reconstruction in the eigenbasis of the matrix A_N and truncates the sum once successive eigenmodes
-stop contributing beyond their own statistical noise (arXiv:2605.14652 Eq. 34).
+method expands the reconstruction in the eigenbasis of the matrix A_N and
+truncates the sum once successive eigenmodes stop contributing beyond their
+own statistical noise (arXiv:2605.14652 Eq. 34).
 
 Saves the full eigen-space scan (contribution of each eigenmode, and the
 running cumulative sum, for every alpha channel) to a JSON file under
@@ -23,7 +24,7 @@ from mpmath import mp, mpf
 
 from lsdensities.inverse_problem_solvers.hlt_eigenspace import HETpar, HLTWithSVD
 from lsdensities.utils.common import Inputs, init_precision, log
-from syntheticVVCorrelator import generate_correlator
+from lsdensities.correlator.synthetic_vv_correlator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_ea_wnoise")
 

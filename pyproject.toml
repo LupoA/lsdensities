@@ -23,12 +23,18 @@ dependencies = [
     "scipy",
     "matplotlib",
     "progressbar",
+    "cvxpy",
+    "python-flint",
+    "gmpy2",
 ]
 
 [project.urls]
 Homepage = "https://github.com/LupoA/lsdensities"
 Issues = "https://github.com/LupoA/lsdensities/issues/"
 
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.

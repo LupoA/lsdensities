@@ -7,6 +7,10 @@ from mpmath import mp, mpf
 import numpy as np
 from ..utils.common import Inputs, Obs, log
 from .. import io_utils
+from .causal_bootstrap_bounds import (
+    add_causal_bootstrap_output,
+    compute_causal_bootstrap_bounds,
+)
 
 
 class HETpar:
@@ -162,6 +166,7 @@ class HLTWithSVD:
         self.espace_is_filled = False
         self.result_is_filled = np.full(par.Ne, False, dtype=bool)
         self._scan_data = None  # filled by run(), consumed by save()
+        self.causal_bootstrap = None  # set by compute_causal_bootstrap_bounds()
 
     def _fillEspaceMP(self):
         """
@@ -314,6 +319,16 @@ class HLTWithSVD:
                 {"energy": float(energy), "scan": scan, "result": result}
             )
 
+    def compute_causal_bootstrap_bounds(self, **kwargs):
+        """
+        Bounds of arXiv:2605.20509 on the same rho_sigma(E), at every energy,
+        from positivity of rho and the correlator data alone (see
+        causal_bootstrap_bounds.CausalBootstrapAnalysis for the arguments).
+        save() then writes them next to the results, and
+        examples/plot_output.py overlays them with --causal-bootstrap.
+        """
+        return compute_causal_bootstrap_bounds(self, **kwargs)
+
     def save(self, path=None):
         """
         Writes the eigen-space analysis (arXiv:2605.14652 Fig. 7: the
@@ -333,5 +348,8 @@ class HLTWithSVD:
             "useCOV": self.useCOV,
         }
 
+        energies = [dict(entry) for entry in self._scan_data]
+        add_causal_bootstrap_output(self, metadata, energies)
+
         path = path or io_utils.default_output_path(self.par, metadata["method"])
-        return io_utils.write_json(path, metadata, self._scan_data)
+        return io_utils.write_json(path, metadata, energies)

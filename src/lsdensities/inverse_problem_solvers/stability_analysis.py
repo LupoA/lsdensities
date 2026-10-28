@@ -14,6 +14,7 @@ the alpha channels below.
 from mpmath import mp, mpf
 from ..core import a0_array
 from .. import io_utils
+from .causal_bootstrap_bounds import add_causal_bootstrap_output
 from ..utils.common import Inputs, log
 
 
@@ -251,6 +252,8 @@ def save_stability_output(wrapper, method, path=None):
                 },
             }
         )
+
+    add_causal_bootstrap_output(wrapper, metadata, energies)
 
     path = path or io_utils.default_output_path(wrapper.par, method)
     return io_utils.write_json(path, metadata, energies)

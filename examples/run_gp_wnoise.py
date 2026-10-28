@@ -17,7 +17,7 @@ from mpmath import mp, mpf
 
 from lsdensities.inverse_problem_solvers.gaussian_process import AlgorithmParameters, GaussianProcessWrapper
 from lsdensities.utils.common import Inputs, init_precision, log
-from syntheticVVCorrelator import generate_correlator
+from lsdensities.correlator.synthetic_vv_correlator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_gp_wnoise")
 

@@ -2,13 +2,17 @@
 Test of the HLT method (HLTWithBackusGilbert) with the stability
 analysis of arXiv:2605.14652 (Sec. III.A), on a synthetic vector-vector-like
 correlator with a realistic, growing-with-time statistical error (see
-syntheticVVCorrelator.py).
+lsdensities.correlator.synthetic_vv_correlator).
 
 Saves the full stability-analysis scan to a JSON file under --outdir (see
 src/lsdensities/io_utils.py for the schema) and a plot comparing the
 reconstructed smeared spectral density against the known exact one. Use
 examples/plot_output.py to plot the stability analysis (arXiv:2605.14652
 Fig. 6) at a given energy from the saved JSON.
+
+The result shown is the plateau of the stability analysis, with its
+frequentist (bootstrap) error. With --bayes, the result at the minimum of the
+negative log-likelihood, with its Bayesian error, is shown as well.
 """
 
 import argparse
@@ -19,7 +23,7 @@ from mpmath import mp, mpf
 
 from lsdensities.inverse_problem_solvers.hlt_stability import AlgorithmParameters, HLTWithBackusGilbert
 from lsdensities.utils.common import Inputs, init_precision, log
-from syntheticVVCorrelator import generate_correlator
+from lsdensities.correlator.synthetic_vv_correlator import generate_correlator
 
 DEFAULT_OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_hlt_wnoise")
 
@@ -36,6 +40,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=1, help="Seed for the synthetic correlator. Default=1")
     parser.add_argument("--Na", type=int, default=3, choices=[1, 2, 3], help="Number of alpha values used to cross-check the stability analysis. Default=3")
     parser.add_argument("--A0cut", type=float, default=0.2, help="Maximum accepted A/A0. Default=0.2")
+    parser.add_argument("--bayes", action="store_true", help="Also show the result at the minimum of the negative log-likelihood, with its Bayesian error")
     parser.add_argument("--outdir", type=str, default=DEFAULT_OUTDIR, help="Output directory. Default=examples/test_hlt_wnoise")
     parser.add_argument("--loglevel", type=str, default="WARNING", help="Accepted strings are 'WARNING', 'INFO' or 'DEBUG'. Setting 'INFO' shows the details of the scan over lambda and alpha. Default=WARNING")
     return parser.parse_args()
@@ -108,18 +113,20 @@ def main():
         "--energy <E>",
     )
 
-    log("Energy \t True \t HLT (stat+sys) \t Bayes (stat+sys)")
+    log("Energy \t True \t HLT (stat+sys)" + (" \t Bayes (stat+sys)" if args.bayes else ""))
     for e_i in range(par.Ne):
-        log(
-            "{:2.3f} \t {:2.4f} \t {:2.4f} +/- {:2.4f} \t {:2.4f} +/- {:2.4f}".format(
-                espace[e_i],
-                rho_true[e_i],
-                HLT.rhoResultHLT[e_i],
-                HLT.rho_quadrature_err_HLT[e_i],
+        line = "{:2.3f} \t {:2.4f} \t {:2.4f} +/- {:2.4f}".format(
+            espace[e_i],
+            rho_true[e_i],
+            HLT.rhoResultHLT[e_i],
+            HLT.rho_quadrature_err_HLT[e_i],
+        )
+        if args.bayes:
+            line += " \t {:2.4f} +/- {:2.4f}".format(
                 HLT.rhoResultBayes[e_i],
                 HLT.rho_quadrature_err_Bayes[e_i],
             )
-        )
+        log(line)
 
     import matplotlib.pyplot as plt
 
@@ -132,17 +139,18 @@ def main():
         marker="s",
         ls="",
         capsize=3,
-        label="HLT (Backus-Gilbert)",
+        label="HLT",
     )
-    plt.errorbar(
-        espace,
-        HLT.rhoResultBayes,
-        yerr=HLT.rho_quadrature_err_Bayes,
-        marker="d",
-        ls="",
-        capsize=3,
-        label="HLT (Bayesian NLL)",
-    )
+    if args.bayes:
+        plt.errorbar(
+            espace,
+            HLT.rhoResultBayes,
+            yerr=HLT.rho_quadrature_err_Bayes,
+            marker="d",
+            ls="",
+            capsize=3,
+            label="HLT (Bayesian NLL)",
+        )
     plt.xlabel(r"$E$ [GeV]")
     plt.ylabel(r"$\rho_\sigma(E)$")
     plt.title("Smeared spectral density: reconstructed vs. exact")

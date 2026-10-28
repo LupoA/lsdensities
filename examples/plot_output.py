@@ -1,20 +1,35 @@
 """
 Standalone plotting for lsdensities output files.
 
-HLTWithBackusGilbert.save() / GaussianProcessWrapper.save() / HLTWithSVD.save()
-all write one JSON file per run (see src/lsdensities/io_utils.py). This script reads such a file back and reproduces the relevant plot.
+HLTWithBackusGilbert.save() / GaussianProcessWrapper.save() / HLTWithSVD.save() /
+CausalBootstrapAnalysis.save() all write one JSON file per run (see src/lsdensities/io_utils.py). This script reads such a file back and reproduces the relevant plot.
 Options are:
 
   stability          arXiv:2605.14652 Fig. 6, rho panel only: rho scanned over
                      lambda, for every alpha channel, at one energy.
+                     --causal-bootstrap overlays the arXiv:2605.20509 bounds
+                     on rho (if computed, see compute_causal_bootstrap_bounds)
+                     as a lambda-independent band.
   nll                NLL scanned over lambda, for every alpha channel, at one
                      energy, plus the flagged minimum.
   stability-and-nll  arXiv:2605.14652 Fig. 6 in full: both panels above,
-                     stacked, at one energy.
+                     stacked, at one energy. Also supports --causal-bootstrap.
   eigenspace         arXiv:2605.14652 Fig. 7: the individual and cumulative
                      contribution to rho as eigenmodes of A_N are added, for
-                     every alpha channel, at one energy.
+                     every alpha channel, at one energy. --causal-bootstrap
+                     overlays the arXiv:2605.20509 bounds on the cumulative
+                     contribution, i.e. on rho itself.
   spectrum           the full rho_sigma(E) vs E, from one or more files.
+                     For HLT/GP output, the plateau result with its
+                     frequentist error; --bayes also draws the result at the
+                     NLL minimum, with its Bayesian error. Output of
+                     CausalBootstrapAnalysis is drawn as the bounds at each
+                     energy; --causal-bootstrap also draws those stored in
+                     the other files.
+  causal-bootstrap   arXiv:2605.20509 bounds on rho at one energy, for every
+                     degree of the polynomial approximation of the kernel,
+                     and their intersection (output of
+                     CausalBootstrapAnalysis).
   kernel             the reconstructed smearing kernel Delta(E, E'), built
                      from the flagged result's (HLT/GP) or chosen channel's
                      (EigenspaceAnalysis) saved g_t coefficients, vs the
@@ -28,6 +43,10 @@ Examples:
     python3 plot_output.py eigenspace         --file HET_....json --energy 0.9 --kmin 0 --kmax 13
     python3 plot_output.py spectrum           --file test_hlt_wnoise/Logs/HLT_....json test_gp_wnoise/Logs/GP_....json
     python3 plot_output.py kernel             --file test_hlt_wnoise/Logs/HLT_....json --energy 0.9
+    python3 plot_output.py stability          --file test_hlt_wnoise/Logs/HLT_....json --energy 0.9 --causal-bootstrap
+    python3 plot_output.py eigenspace         --file HET_....json --energy 0.9 --causal-bootstrap
+    python3 plot_output.py causal-bootstrap   --file test_bbounds_wnoise/Logs/CausalBootstrap_....json --energy 0.9
+    python3 plot_output.py spectrum           --file test_bbounds_wnoise/Logs/CausalBootstrap_....json test_hlt_wnoise/Logs/HLT_....json
 """
 
 import argparse
@@ -97,8 +116,59 @@ def _stability_title(entry, data):
     )
 
 
-def plot_stability(data, energy, outdir, show):
-    """arXiv:2605.14652 Fig. 6, rho panel only: rho scanned over lambda, for every alpha channel."""
+def _causal_bootstrap_label(data):
+    confidence = data["metadata"].get("causal_bootstrap", {}).get("confidence")
+    if confidence is None:
+        return "Causal bootstrap"
+    return f"Causal bootstrap ({confidence:.0%} CL)"
+
+
+def _overlay_causal_bootstrap_band(ax, entry, data):
+    """
+    The arXiv:2605.20509 bounds on rho_sigma(E) stored at this energy, as a
+    horizontal band: they do not depend on lambda, nor on the eigenmode
+    index. Returns whether anything was drawn (nothing if the bounds were
+    not computed, or do not exist at this energy).
+    """
+    bounds = entry.get("causal_bootstrap")
+    if not bounds:
+        print(f"Note: no causal-bootstrap bounds stored at E={entry['energy']:.4g}")
+        return False
+    ax.axhspan(
+        ymin=bounds["lower"], ymax=bounds["upper"],
+        alpha=0.15, color=CB_colors[5 % len(CB_colors)],
+        label=_causal_bootstrap_label(data),
+    )
+    for y in (bounds["lower"], bounds["upper"]):
+        ax.axhline(y, color=CB_colors[5 % len(CB_colors)], lw=1)
+    return True
+
+
+def _plot_hlt_result(ax, hlt, as_star):
+    """
+    The flagged HLT result on a rho-vs-lambda panel: a band of its
+    statistical error or, when the causal-bootstrap band is also drawn, a
+    star at (lambda*, rho*) with its total (stat + sys) error.
+    """
+    if as_star:
+        ax.errorbar(
+            hlt["lambda_star"], hlt["rho"], yerr=hlt["quadrature_err"],
+            marker="*", markersize=18, color="red", markeredgecolor="black", ecolor="red",
+            elinewidth=2, capsize=4, ls="", zorder=10, label="HLT",
+        )
+    else:
+        ax.axhspan(
+            ymin=hlt["rho"] - hlt["stat_err"], ymax=hlt["rho"] + hlt["stat_err"],
+            alpha=0.3, color=CB_colors[4],
+        )
+
+
+def plot_stability(data, energy, outdir, show, show_causal_bootstrap=False):
+    """
+    arXiv:2605.14652 Fig. 6, rho panel only: rho scanned over lambda, for
+    every alpha channel. With show_causal_bootstrap, the arXiv:2605.20509
+    bounds are overlaid (see _overlay_causal_bootstrap_band).
+    """
     entry = _energy_entry(data, energy)
     alphas = data["metadata"].get("alphas", {})
     channels = _stability_channels(entry, alphas)
@@ -111,11 +181,9 @@ def plot_stability(data, energy, outdir, show):
             label=alpha_label, markerId=color_id, colorID=color_id,
         )
 
-    hlt = entry["result"]["HLT"]
-    ax.axhspan(
-        ymin=hlt["rho"] - hlt["stat_err"], ymax=hlt["rho"] + hlt["stat_err"],
-        alpha=0.3, color=CB_colors[4],
-    )
+    _plot_hlt_result(ax, entry["result"]["HLT"], as_star=show_causal_bootstrap)
+    if show_causal_bootstrap:
+        _overlay_causal_bootstrap_band(ax, entry, data)
 
     ax.set_xlabel(r"$\lambda$", fontsize=32)
     ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
@@ -156,8 +224,12 @@ def plot_nll(data, energy, outdir, show):
     _save_or_show(fig, outdir, f"nll_E{entry['energy']:.3f}.png", show)
 
 
-def plot_stability_and_nll(data, energy, outdir, show):
-    """arXiv:2605.14652 Fig. 6 in full: rho and the NLL scanned over lambda, for every alpha channel."""
+def plot_stability_and_nll(data, energy, outdir, show, show_causal_bootstrap=False):
+    """
+    arXiv:2605.14652 Fig. 6 in full: rho and the NLL scanned over lambda, for
+    every alpha channel. With show_causal_bootstrap, the arXiv:2605.20509
+    bounds are overlaid on the rho panel (see _overlay_causal_bootstrap_band).
+    """
     entry = _energy_entry(data, energy)
     alphas = data["metadata"].get("alphas", {})
     channels = _stability_channels(entry, alphas)
@@ -176,12 +248,10 @@ def plot_stability_and_nll(data, energy, outdir, show):
             label="NLL " + alpha_label, markerId=color_id, colorID=color_id,
         )
 
-    hlt = entry["result"]["HLT"]
     bayes = entry["result"]["Bayes"]
-    ax.axhspan(
-        ymin=hlt["rho"] - hlt["stat_err"], ymax=hlt["rho"] + hlt["stat_err"],
-        alpha=0.3, color=CB_colors[4],
-    )
+    _plot_hlt_result(ax, entry["result"]["HLT"], as_star=show_causal_bootstrap)
+    if show_causal_bootstrap:
+        _overlay_causal_bootstrap_band(ax, entry, data)
     ax2.plot(
         bayes["lambda_star"], bayes["NLL"],
         marker="*", markersize=25, markerfacecolor="red", markeredgecolor="black",
@@ -208,8 +278,13 @@ def _windowed_by_k(ch, kmin, kmax):
     return {key: [v[i] for i in idx] for key, v in ch.items()}
 
 
-def plot_eigenspace(data, energy, kmin, kmax, outdir, show):
-    """arXiv:2605.14652 Fig. 7: individual and cumulative eigenmode contributions to rho, as two separate figures."""
+def plot_eigenspace(data, energy, kmin, kmax, outdir, show, show_causal_bootstrap=False):
+    """
+    arXiv:2605.14652 Fig. 7: individual and cumulative eigenmode
+    contributions to rho, as two separate figures. With
+    show_causal_bootstrap, the arXiv:2605.20509 bounds on rho are overlaid
+    on the cumulative one (see _overlay_causal_bootstrap_band).
+    """
     entry = _energy_entry(data, energy)
     labels = sorted(entry["scan"].keys())
     alphas = data["metadata"].get("alphas", {})
@@ -236,6 +311,15 @@ def plot_eigenspace(data, energy, kmin, kmax, outdir, show):
         if (kmin is None or kmin <= result["kstar"]) and (kmax is None or result["kstar"] <= kmax):
             ax_cum.axvline(result["kstar"], color=CB_colors[color_id], ls="--", alpha=0.5)
             ax_contrib.axvline(result["kstar"], color=CB_colors[color_id], ls="--", alpha=0.5)
+
+    if show_causal_bootstrap and _overlay_causal_bootstrap_band(ax_cum, entry, data):
+        # The modes beyond k* are dominated by noise and would squash the
+        # band: zoom on the bounds and on the truncated results.
+        bounds = entry["causal_bootstrap"]
+        lo = [bounds["lower"]] + [r["res"] - r["err"] for r in entry["result"].values()]
+        hi = [bounds["upper"]] + [r["res"] + r["err"] for r in entry["result"].values()]
+        margin = 0.5 * (max(hi) - min(lo))
+        ax_cum.set_ylim(min(lo) - margin, max(hi) + margin)
 
     ax_cum.set_xlabel(r"$k$", fontsize=32)
     ax_cum.set_ylabel(r"$\sum_{k'\leq k} \hat g(k')\hat C(k')$", fontsize=22)
@@ -290,6 +374,8 @@ def plot_kernel(data, energy, result, channel, outdir, show):
     """
     entry = _energy_entry(data, energy)
     meta = data["metadata"]
+    if meta["method"] == "CausalBootstrap":
+        raise ValueError("CausalBootstrap output has no g_t coefficients: there is no reconstructed kernel")
     if meta["method"] == "EigenspaceAnalysis":
         if channel not in entry["result"]:
             raise ValueError(
@@ -329,13 +415,43 @@ def plot_kernel(data, energy, result, channel, outdir, show):
     _save_or_show(fig, outdir, f"kernel_E{e_star:.3f}_{file_tag}.png", show)
 
 
-def plot_spectrum(datasets, labels, outdir, show):
-    """The full rho_sigma(E) vs E, from one or more stability-analysis output files."""
+def _plot_bounds_vs_energy(ax, energies, bounds, label, color_id):
+    """Bounds (dicts with "lower", "upper", or None) at each energy, as capped bars."""
+    points = [(e, b["lower"], b["upper"]) for e, b in zip(energies, bounds) if b]
+    if not points:
+        return False
+    e, lower, upper = map(np.array, zip(*points))
+    ax.errorbar(
+        e, (lower + upper) / 2, yerr=(upper - lower) / 2,
+        marker="none", ls="", capsize=6, elinewidth=2,
+        color=CB_colors[color_id % len(CB_colors)], alpha=0.6, label=label,
+    )
+    return True
+
+
+def plot_spectrum(datasets, labels, outdir, show, show_causal_bootstrap=False, show_bayes=False):
+    """
+    The full rho_sigma(E) vs E, from one or more output files. For HLT/GP
+    output, the plateau result with its frequentist error and, with
+    show_bayes, the result at the NLL minimum with its Bayesian error.
+    Output of CausalBootstrapAnalysis is drawn as the bounds at each energy;
+    with show_causal_bootstrap, so are the bounds stored in the other files.
+    """
     fig, ax = plt.subplots(figsize=(8, 6))
 
     next_color = 0
     for data, run_label in zip(datasets, labels):
         energies = [e["energy"] for e in data["energies"]]
+        if data["metadata"]["method"] == "CausalBootstrap":
+            bounds = [e["result"]["CausalBootstrap"] for e in data["energies"]]
+            label = f"{run_label} ({data['metadata']['algorithm']['confidence']:.0%} CL)"
+            if _plot_bounds_vs_energy(ax, energies, bounds, label, next_color):
+                next_color += 1
+            continue
+        if show_causal_bootstrap:
+            bounds = [e.get("causal_bootstrap") for e in data["energies"]]
+            label = f"{run_label}: {_causal_bootstrap_label(data)}"
+            _plot_bounds_vs_energy(ax, energies, bounds, label, next_color + 5)
         if data["metadata"]["method"] == "EigenspaceAnalysis":
             res = [e["result"]["A"]["res"] for e in data["energies"]]
             err = [e["result"]["A"]["err"] for e in data["energies"]]
@@ -344,23 +460,68 @@ def plot_spectrum(datasets, labels, outdir, show):
             continue
         hlt_rho = [e["result"]["HLT"]["rho"] for e in data["energies"]]
         hlt_err = [e["result"]["HLT"]["quadrature_err"] for e in data["energies"]]
-        bayes_rho = [e["result"]["Bayes"]["rho"] for e in data["energies"]]
-        bayes_err = [e["result"]["Bayes"]["quadrature_err"] for e in data["energies"]]
         plotwErr(
             ax, energies, hlt_rho, hlt_err,
-            label=f"{run_label} (plateau)", markerId=next_color, colorID=next_color,
+            label=run_label, markerId=next_color, colorID=next_color,
         )
-        plotwErr(
-            ax, energies, bayes_rho, bayes_err,
-            label=f"{run_label} (Bayesian NLL)", markerId=next_color + 1, colorID=next_color + 1,
-        )
-        next_color += 2
+        next_color += 1
+        if show_bayes:
+            bayes_rho = [e["result"]["Bayes"]["rho"] for e in data["energies"]]
+            bayes_err = [e["result"]["Bayes"]["quadrature_err"] for e in data["energies"]]
+            plotwErr(
+                ax, energies, bayes_rho, bayes_err,
+                label=f"{run_label} (Bayesian NLL)", markerId=next_color, colorID=next_color,
+            )
+            next_color += 1
 
     ax.set_xlabel(r"$E$ [GeV]")
     ax.set_ylabel(r"$\rho_\sigma(E)$")
     ax.legend()
     plt.tight_layout()
     _save_or_show(fig, outdir, "spectrum.png", show)
+
+
+def plot_causal_bootstrap(data, energy, outdir, show):
+    """
+    arXiv:2605.20509 bounds on rho_sigma(E) at one energy, for each degree
+    of the polynomial approximation of the smearing kernel (output of
+    CausalBootstrapAnalysis), with their intersection as a band.
+    """
+    if data["metadata"]["method"] != "CausalBootstrap":
+        raise ValueError("causal-bootstrap mode needs the output of CausalBootstrapAnalysis.save()")
+    entry = _energy_entry(data, energy)
+    scan = entry["scan"]
+    result = entry["result"]["CausalBootstrap"]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    points = [(d, lo, hi) for d, lo, hi in zip(scan.get("degree", []), scan.get("lower", []), scan.get("upper", []))
+              if lo is not None]
+    if points:
+        degree, lower, upper = map(np.array, zip(*points))
+        ax.errorbar(
+            degree, (lower + upper) / 2, yerr=(upper - lower) / 2,
+            marker="none", ls="", capsize=6, elinewidth=2, color=CB_colors[0],
+            label="Bounds at each degree",
+        )
+    if result:
+        ax.axhspan(
+            ymin=result["lower"], ymax=result["upper"], alpha=0.15,
+            color=CB_colors[5 % len(CB_colors)], label=_causal_bootstrap_label(
+                {"metadata": {"causal_bootstrap": data["metadata"]["algorithm"]}}
+            ),
+        )
+    else:
+        print(f"Note: no bounds at E={entry['energy']:.4g}")
+
+    ax.set_xlabel("Degree of the kernel approximation", fontsize=22)
+    ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
+    ax.legend()
+    ax.set_title(
+        r"$E$" + "= {:2.2f}  ".format(entry["energy"])
+        + r"$\sigma$" + " = {:2.2f} ".format(data["metadata"]["sigma"])
+    )
+    plt.tight_layout()
+    _save_or_show(fig, outdir, f"causal_bootstrap_E{entry['energy']:.3f}.png", show)
 
 
 def main():
@@ -383,6 +544,8 @@ def main():
     p_stab.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_stab.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
+    p_stab.add_argument("--causal-bootstrap", action="store_true", help="Overlay the arXiv:2605.20509 causal-bootstrap bounds on rho, if stored in the file (see compute_causal_bootstrap_bounds)")
+
     p_nll = sub.add_parser("nll", parents=[common], help="NLL-vs-lambda plot at one energy")
     p_nll.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_nll.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
@@ -391,15 +554,26 @@ def main():
     p_stab_nll.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save() or GaussianProcessWrapper.save()")
     p_stab_nll.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
+    p_stab_nll.add_argument("--causal-bootstrap", action="store_true", help="Overlay the arXiv:2605.20509 causal-bootstrap bounds on rho, if stored in the file (see compute_causal_bootstrap_bounds)")
+
     p_eig = sub.add_parser("eigenspace", parents=[common], help="Fig. 7-style eigen-space analysis plot at one energy (two figures: cumulative and per-mode)")
     p_eig.add_argument("--file", required=True, help="Output JSON from HLTWithSVD.save()")
     p_eig.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
     p_eig.add_argument("--kmin", type=int, default=None, help="Restrict the plotted eigenmode index to k >= kmin. Default: no lower bound")
     p_eig.add_argument("--kmax", type=int, default=None, help="Restrict the plotted eigenmode index to k <= kmax. Default: no upper bound")
 
+    p_eig.add_argument("--causal-bootstrap", action="store_true", help="Overlay the arXiv:2605.20509 causal-bootstrap bounds on rho, if stored in the file (see compute_causal_bootstrap_bounds)")
+
     p_spec = sub.add_parser("spectrum", parents=[common], help="Full rho_sigma(E) vs E, optionally overlaying several runs")
     p_spec.add_argument("--file", required=True, nargs="+", help="One or more output JSON files")
     p_spec.add_argument("--labels", nargs="+", help="Legend label per --file (defaults to each file's 'method')")
+
+    p_spec.add_argument("--causal-bootstrap", action="store_true", help="Also draw the arXiv:2605.20509 causal-bootstrap bounds stored in HLT/GP/EigenspaceAnalysis files")
+    p_spec.add_argument("--bayes", action="store_true", help="For HLT/GP files, also draw the result at the minimum of the NLL, with its Bayesian error")
+
+    p_cb = sub.add_parser("causal-bootstrap", parents=[common], help="Causal-bootstrap bounds vs the degree of the kernel approximation, at one energy")
+    p_cb.add_argument("--file", required=True, help="Output JSON from CausalBootstrapAnalysis.save()")
+    p_cb.add_argument("--energy", type=float, required=True, help="Energy to plot (GeV); closest available is used")
 
     p_kernel = sub.add_parser("kernel", parents=[common], help="Reconstructed vs exact smearing kernel at one energy")
     p_kernel.add_argument("--file", required=True, help="Output JSON from HLTWithBackusGilbert.save(), GaussianProcessWrapper.save() or HLTWithSVD.save()")
@@ -411,21 +585,24 @@ def main():
     plt.style.use(args.mplstyle)
 
     if args.mode == "stability":
-        plot_stability(load_json(args.file), args.energy, args.outdir, args.show)
+        plot_stability(load_json(args.file), args.energy, args.outdir, args.show, args.causal_bootstrap)
     elif args.mode == "nll":
         plot_nll(load_json(args.file), args.energy, args.outdir, args.show)
     elif args.mode == "stability-and-nll":
-        plot_stability_and_nll(load_json(args.file), args.energy, args.outdir, args.show)
+        plot_stability_and_nll(load_json(args.file), args.energy, args.outdir, args.show, args.causal_bootstrap)
     elif args.mode == "eigenspace":
-        plot_eigenspace(load_json(args.file), args.energy, args.kmin, args.kmax, args.outdir, args.show)
+        plot_eigenspace(load_json(args.file), args.energy, args.kmin, args.kmax, args.outdir, args.show,
+                        args.causal_bootstrap)
     elif args.mode == "kernel":
         plot_kernel(load_json(args.file), args.energy, args.result, args.channel, args.outdir, args.show)
+    elif args.mode == "causal-bootstrap":
+        plot_causal_bootstrap(load_json(args.file), args.energy, args.outdir, args.show)
     elif args.mode == "spectrum":
         datasets = [load_json(f) for f in args.file]
         labels = args.labels or [d["metadata"]["method"] for d in datasets]
         if len(labels) != len(datasets):
             parser.error("--labels must have the same length as --file")
-        plot_spectrum(datasets, labels, args.outdir, args.show)
+        plot_spectrum(datasets, labels, args.outdir, args.show, args.causal_bootstrap, args.bayes)
 
 
 if __name__ == "__main__":

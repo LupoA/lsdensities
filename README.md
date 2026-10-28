@@ -2,12 +2,14 @@
 
 
 **lsdensities** is a Python library for the calculation of
-smeared spectral densities from lattice correlators using variations of the <a href="https://arxiv.org/pdf/1903.06476.pdf">HLT</a> method in its <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">frequentist or Bayesian formulation</a>
+smeared spectral densities from lattice correlators using the <a href="https://arxiv.org/pdf/1903.06476.pdf">HLT</a> method.
 
 Some features of this library:
 - Stability</a> analysis to estimate the bias introduced by the Backus-Gilbert regulator.
-- Error estimates via frequentist methods (bootstrap/jackknife...) or <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian methods (via Gaussian Processes)</a>.
+net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian methods (via Gaussian Processes)</a>.
 - Singular Value Decomposition and "<a href="https://arxiv.org/pdf/2605.14652">Eigenspace Analysis</a>"
+- Bootstrap bounds from <a href="https://arxiv.org/pdf/2605.20509">here</a>.
+- Error estimates via frequentist methods (bootstrap/jackknife...) or <a href="https://inspirehep.
 
 This library is based on <a href="https://mpmath.org/">mpmath</a>
 for performing the high-precision arithmetic operations that are necessary
@@ -28,20 +30,23 @@ pip install https://github.com/LupoA/lsdensities
 
 ## Usage
 
-Some tests can be found in the ``tests`` folder, and tested using the ``pytest`` command.
-
 Usage examples can be found in the ``examples`` folder.
 
 The most basic workflow is illustrated in `examples/runExact.py`,
 which generates a high-precision correlator, and computes the corresponding spectral density smeared with one of the
 available kernels without regulators (the problem is not ill-posed when the data is not noisy).
 
-A simple example of how to run the stability analysis is found in `examples/run_hlt_wnoise.py`, which uses synthetic data with synthetic noise.
+Examples on synthetic data with synthetic noise (generated via `src/lsdensities/correlator/synthetic_vv_correlator.py`):
+- `examples/run_ea_wnoise.py`: eigenspace analysis
+- `examples/run_hlt_wnoise.py`: stability analysis, with frequentist errors (`--bayes` also shows the Bayesian errors)
+- `examples/run_bbounds_wnoise.py`: causal-bootstrap bounds
+- `examples/run_all_wnoise.py`: all of the above on the same data
 
 Most inverse-problem related functionalities are in `src/lsdensities/inverse_problem_solvers` which contains routines for
 - stability analysis `src/lsdensities/inverse_problem_solvers/stability_analysis.py`
 - hlt method with frequentist and bayesian errors `src/lsdensities/inverse_problem_solvers/hlt_stability.py` 
 - eigenspace analysis `src/lsdensities/inverse_prolem_solvers/hlt_eigenspace.py`
+- bootstrap bounds `src/lsdensities/inverse_problem_solvers/causal_bootstrap_bounds.py`
 
 Function call example:
 
@@ -108,8 +113,9 @@ print("Exact results :", true_value)  # exact smeared spectral density at E = en
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
+To test that nothing breaks you can use the ``tests`` folder, using the ``pytest`` command.
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
 
@@ -117,6 +123,8 @@ Development requirements can be installed by using ``pip install -r requirements
 
 ## References
 M. Hansen, A. Lupo, N.Tantalo, <a href="https://arxiv.org/pdf/1903.06476.pdf">"Extraction of spectral densities from lattice correlators"</a>, Phys.Rev.D 99 (2019) 9, 094508
+
+<a href="https://arxiv.org/pdf/2605.20509">"The Causal Bootstrap: Bounding Smeared Spectral Functions from Non-Perturbative Euclidean Data"</a>, arXiv:2605.20509
 
 L. Del Debbio, A. Lupo, M. Panero, N. Tantalo, <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian solution to the inverse problem and its relation
 to Backus–Gilbert methods</a>, Eur.Phys.J.C 85 (2025) 2, 185
