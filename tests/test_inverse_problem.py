@@ -1,3 +1,4 @@
+import pytest
 from lsdensities.utils.common import (
     init_precision,
     Inputs,
@@ -113,3 +114,8 @@ def test_stability_analysis_power_kernel():
     true_value = float(np.sum(weights / peaks**3))
     assert abs(hlt.rhoResultHLT[0] - true_value) < 3 * hlt.rho_quadrature_err_HLT[0] + 1e-3 * true_value
     assert 0 <= hlt.aa0[0] <= 1
+    # The flagged rho, lambda* and g_t come from the same step of the scan
+    step = hlt.lambda_list[0].index(hlt.lambdaResultHLT[0])
+    assert hlt.rhoResultHLT[0] == pytest.approx(float(hlt.channelA.rho_list[0][step]))
+    rho_from_gt = sum(g * mpf(str(c)) for g, c in zip(hlt.gt_HLT[0], corr.central[1:]))
+    assert float(rho_from_gt) == pytest.approx(hlt.rhoResultHLT[0], rel=1e-8)

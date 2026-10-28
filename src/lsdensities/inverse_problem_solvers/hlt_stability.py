@@ -345,6 +345,8 @@ class HLTWithBackusGilbert:
         )
 
         #   #   #   #   #   #   #   #   Loops over values of lambda #   #   #   #   #   #   #   #
+        #   _lambda, _rho, _errBoot, _gt, _gAg always refer to the previous lambda step
+        _lambda = lambda_
         lambda_ /= lambda_step
         while _countPositiveResult < _cap and lambda_ > self.algorithmPar.lambdaMin:
             #   -   -   -   -   -   -
@@ -362,7 +364,7 @@ class HLTWithBackusGilbert:
             #   because _countPositiveResult can be set to zero inside the loop
             if _countPositiveResult == 0:
                 lambdaStarHLT, rhoHLT, drhoHLT, gtHLT, gag_flag = (
-                    lambda_,
+                    _lambda,
                     _rho,
                     _errBoot,
                     _gt,
@@ -455,11 +457,11 @@ class HLTWithBackusGilbert:
                     _countPositiveResult == self.algorithmPar.plateau_id
                 ):  #   At future alphas we compare with rho_s at _countPositiveResult = 1. This can be changed.
                     lambdaStarHLT, rhoHLT, drhoHLT, gtHLT, gag_flag = (
-                        lambda_,
+                        _lambda,
                         _rho,
                         _errBoot,
-                        _gtUpdated,
-                        _gAgUpdated,
+                        _gt,
+                        _gAg,
                     )
                 _countPositiveResult += 1
                 log(
@@ -472,8 +474,11 @@ class HLTWithBackusGilbert:
                 _countPositiveResult = 0
 
             #   Update variables before restarting the loop
+            _lambda = lambda_
             _rho = _rhoUpdated
             _errBoot = _errBootUpdated
+            _gt = _gtUpdated
+            _gAg = _gAgUpdated
             lambda_ /= lambda_step
             #   Resize lambda_step
             if lambda_ <= 0:
