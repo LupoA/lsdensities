@@ -121,7 +121,32 @@ def ft_theta(t, alpha, sigma, e, e0):
     return (term1 - term2) / lam
 
 
-def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS"):
+def ft_linear(t, alpha, e0):
+    '''
+    f_t = int_e0^inf dE' exp(alpha E') * E' * exp(-t E') = int_e0^inf dE' E' exp(-lam E'), lam = t-alpha
+
+    The kernel k(E')=E' is not a smeared delta localised at some energy e, so
+    (unlike the other kernels) this does not depend on e/sigma.
+    '''
+    lam = t - alpha
+    return mp.exp(-lam * e0) * (e0 / lam + 1 / lam**2)
+
+
+def ft_inverse_power(t, alpha, e0, n):
+    '''
+    f_t = int_e0^inf dE' exp(alpha E') * E'^{-n} * exp(-t E') = int_e0^inf E'^{-n} exp(-lam E') dE', lam = t-alpha
+        = lam^{n-1} * Gamma(1-n, lam*e0)     (Gamma(s,x) = upper incomplete gamma, mp.gammainc(s, x))
+
+    The kernel k(E')=E'^{-n} is, like LINEAR, not localised at some energy e,
+    so this does not depend on e/sigma. E'^{-n} is not integrable at E'=0 for
+    n >= 1, so this requires e0 > 0.
+    '''
+    assert e0 > 0, "k(E)=E^-n kernel requires e0 > 0 (E'^-n is not integrable at E'=0 for n >= 1)"
+    lam = t - alpha
+    return lam ** (n - 1) * mp.gammainc(1 - n, lam * e0)
+
+
+def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS", n=None):
     '''
     The vector f, from Section II of arXiv:2605.14652, for any coded kernel
     '''
@@ -159,6 +184,19 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
         if type == "COSH":
             assert T > 0
             pterm = ft_theta(T - t, alpha, sigma_, e, e0)
+            res = mp.fadd(res, pterm)
+    elif ker_type == "LINEAR":
+        res = ft_linear(t, alpha, e0)
+        if type == "COSH":
+            assert T > 0
+            pterm = ft_linear(T - t, alpha, e0)
+            res = mp.fadd(res, pterm)
+    elif ker_type == "INVPOW":
+        assert n is not None and n > 0, "INVPOW kernel requires n > 0 (k(E)=E^-n)"
+        res = ft_inverse_power(t, alpha, e0, n)
+        if type == "COSH":
+            assert T > 0
+            pterm = ft_inverse_power(T - t, alpha, e0, n)
             res = mp.fadd(res, pterm)
     else:
         raise ValueError("Invalid smearing kernel (par.ker_type)")
