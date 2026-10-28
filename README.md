@@ -6,10 +6,9 @@ smeared spectral densities from lattice correlators using the <a href="https://a
 
 Some features of this library:
 - Stability</a> analysis to estimate the bias introduced by the Backus-Gilbert regulator.
-net/files/5af0fb67df50ae0242c5a1a6820680cf">Bayesian methods (via Gaussian Processes)</a>.
 - Singular Value Decomposition and "<a href="https://arxiv.org/pdf/2605.14652">Eigenspace Analysis</a>"
 - Bootstrap bounds from <a href="https://arxiv.org/pdf/2605.20509">here</a>.
-- Error estimates via frequentist methods (bootstrap/jackknife...) or <a href="https://inspirehep.
+- Error estimates via frequentist methods (bootstrap/jackknife...) or <a href="https://inspirehep.net/files/5af0fb67df50ae0242c5a1a6820680cf">bayesian</a> .
 
 This library is based on <a href="https://mpmath.org/">mpmath</a>
 for performing the high-precision arithmetic operations that are necessary
