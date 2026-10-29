@@ -193,8 +193,18 @@ class Obs:
         return self.cov
 
     def evaluate_cholesky(self):
+        """
+        Cholesky factor of the covariance of C(1), ..., C(tmax), the values
+        used by the inverse problem (see fill_mp_sample), stored in
+        self.cholesky[1:tmax+1, 1:tmax+1]. This is not the corresponding block
+        of the Cholesky factor of the full covariance, which would be
+        conditioned on C(0); the full covariance is also singular for a
+        folded correlator, where C(t) = C(T-t).
+        """
         assert self.cov_evaluated is True
-        self.cholesky = np.linalg.cholesky(self.cov)
+        used = slice(1, self.tmax + 1)
+        self.cholesky = np.zeros((self.T, self.T))
+        self.cholesky[used, used] = np.linalg.cholesky(self.cov[used, used])
         self.cholesky_evaluated = True
         return self.cholesky
 

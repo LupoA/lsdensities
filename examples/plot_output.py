@@ -116,6 +116,21 @@ def _stability_title(entry, data):
     )
 
 
+def _overlay_reference(ax, reference):
+    """
+    A reference value for rho, as a horizontal band. reference is a dict
+    with keys "value", "err" and "label".
+    """
+    if reference is None:
+        return
+    color = CB_colors[6 % len(CB_colors)]
+    ax.axhspan(
+        ymin=reference["value"] - reference["err"], ymax=reference["value"] + reference["err"],
+        alpha=0.3, color=color,
+    )
+    ax.axhline(reference["value"], color=color, lw=1.5, ls="-.", label=reference["label"])
+
+
 def _causal_bootstrap_label(data):
     confidence = data["metadata"].get("causal_bootstrap", {}).get("confidence")
     if confidence is None:
@@ -163,11 +178,13 @@ def _plot_hlt_result(ax, hlt, as_star):
         )
 
 
-def plot_stability(data, energy, outdir, show, show_causal_bootstrap=False):
+def plot_stability(data, energy, outdir, show, show_causal_bootstrap=False, title=None, reference=None):
     """
     arXiv:2605.14652 Fig. 6, rho panel only: rho scanned over lambda, for
     every alpha channel. With show_causal_bootstrap, the arXiv:2605.20509
-    bounds are overlaid (see _overlay_causal_bootstrap_band).
+    bounds are overlaid (see _overlay_causal_bootstrap_band). title replaces
+    the default one (energy, sigma and method); reference is drawn as in
+    _overlay_reference.
     """
     entry = _energy_entry(data, energy)
     alphas = data["metadata"].get("alphas", {})
@@ -184,12 +201,13 @@ def plot_stability(data, energy, outdir, show, show_causal_bootstrap=False):
     _plot_hlt_result(ax, entry["result"]["HLT"], as_star=show_causal_bootstrap)
     if show_causal_bootstrap:
         _overlay_causal_bootstrap_band(ax, entry, data)
+    _overlay_reference(ax, reference)
 
     ax.set_xlabel(r"$\lambda$", fontsize=32)
     ax.set_ylabel(r"$\rho_\sigma$", fontsize=32)
     ax.legend()
     ax.set_xscale("log")
-    ax.set_title(_stability_title(entry, data))
+    ax.set_title(title or _stability_title(entry, data))
     plt.tight_layout()
     _save_or_show(fig, outdir, f"stability_E{entry['energy']:.3f}.png", show)
 
@@ -278,23 +296,31 @@ def _windowed_by_k(ch, kmin, kmax):
     return {key: [v[i] for i in idx] for key, v in ch.items()}
 
 
-def plot_eigenspace(data, energy, kmin, kmax, outdir, show, show_causal_bootstrap=False):
+def plot_eigenspace(
+    data, energy, kmin, kmax, outdir, show, show_causal_bootstrap=False, title=None, reference=None, contrib=True,
+):
     """
     arXiv:2605.14652 Fig. 7: individual and cumulative eigenmode
     contributions to rho, as two separate figures. With
     show_causal_bootstrap, the arXiv:2605.20509 bounds on rho are overlaid
-    on the cumulative one (see _overlay_causal_bootstrap_band).
+    on the cumulative one (see _overlay_causal_bootstrap_band). title
+    replaces the default one (energy and sigma); reference is drawn on the
+    cumulative one as in _overlay_reference. contrib=False only makes the
+    cumulative one.
     """
     entry = _energy_entry(data, energy)
     labels = sorted(entry["scan"].keys())
     alphas = data["metadata"].get("alphas", {})
-    title = (
+    title = title or (
         r"$E$" + "= {:2.2f}  ".format(entry["energy"])
         + r"$\sigma$" + " = {:2.2f} ".format(data["metadata"]["sigma"])
     )
 
     fig_cum, ax_cum = plt.subplots(figsize=(8, 6))
-    fig_contrib, ax_contrib = plt.subplots(figsize=(8, 6))
+    figs = [(fig_cum, ax_cum, f"eigenspace_cumulative_E{entry['energy']:.3f}.png")]
+    if contrib:
+        fig_contrib, ax_contrib = plt.subplots(figsize=(8, 6))
+        figs.append((fig_contrib, ax_contrib, f"eigenspace_contrib_E{entry['energy']:.3f}.png"))
 
     for color_id, label in enumerate(labels):
         ch = _windowed_by_k(entry["scan"][label], kmin, kmax)
@@ -304,13 +330,14 @@ def plot_eigenspace(data, energy, kmin, kmax, outdir, show, show_causal_bootstra
             ax_cum, ch["k"], ch["cumulative_mean"], ch["cumulative_err"],
             label=alpha_label, markerId=color_id, colorID=color_id,
         )
-        plotwErr(
-            ax_contrib, ch["k"], ch["contrib_mean"], ch["contrib_err"],
-            label=alpha_label, markerId=color_id, colorID=color_id,
-        )
+        if contrib:
+            plotwErr(
+                ax_contrib, ch["k"], ch["contrib_mean"], ch["contrib_err"],
+                label=alpha_label, markerId=color_id, colorID=color_id,
+            )
         if (kmin is None or kmin <= result["kstar"]) and (kmax is None or result["kstar"] <= kmax):
-            ax_cum.axvline(result["kstar"], color=CB_colors[color_id], ls="--", alpha=0.5)
-            ax_contrib.axvline(result["kstar"], color=CB_colors[color_id], ls="--", alpha=0.5)
+            for _fig, ax, _name in figs:
+                ax.axvline(result["kstar"], color=CB_colors[color_id], ls="--", alpha=0.5)
 
     if show_causal_bootstrap and _overlay_causal_bootstrap_band(ax_cum, entry, data):
         # The modes beyond k* are dominated by noise and would squash the
@@ -321,25 +348,18 @@ def plot_eigenspace(data, energy, kmin, kmax, outdir, show, show_causal_bootstra
         margin = 0.5 * (max(hi) - min(lo))
         ax_cum.set_ylim(min(lo) - margin, max(hi) + margin)
 
-    ax_cum.set_xlabel(r"$k$", fontsize=32)
+    _overlay_reference(ax_cum, reference)
+
     ax_cum.set_ylabel(r"$\sum_{k'\leq k} \hat g(k')\hat C(k')$", fontsize=22)
-    ax_cum.legend()
-    ax_cum.set_title(title)
-    fig_cum.tight_layout()
+    if contrib:
+        ax_contrib.set_ylabel(r"$\hat g(k)\hat C(k)$", fontsize=22)
+    for fig, ax, _name in figs:
+        ax.set_xlabel(r"$k$", fontsize=32)
+        ax.legend()
+        ax.set_title(title)
+        fig.tight_layout()
 
-    ax_contrib.set_xlabel(r"$k$", fontsize=32)
-    ax_contrib.set_ylabel(r"$\hat g(k)\hat C(k)$", fontsize=22)
-    ax_contrib.legend()
-    ax_contrib.set_title(title)
-    fig_contrib.tight_layout()
-
-    _save_or_show_multi(
-        [
-            (fig_cum, f"eigenspace_cumulative_E{entry['energy']:.3f}.png"),
-            (fig_contrib, f"eigenspace_contrib_E{entry['energy']:.3f}.png"),
-        ],
-        outdir, show,
-    )
+    _save_or_show_multi([(fig, name) for fig, _ax, name in figs], outdir, show)
 
 
 def _reconstructed_kernel(gt, time_extent, periodicity, e_prime):

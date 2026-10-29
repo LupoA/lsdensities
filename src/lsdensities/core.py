@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from mpmath import mp, mpf
 from .utils.math_utils import cauchy
 
@@ -178,6 +180,51 @@ def a0_power(alpha, e0, m):
     return mp.gammainc(m + 1, beta * e0) / mp.power(beta, m + 1)
 
 
+def power_theta_exponent(ker_type):
+    """
+    The power m of the kernel k(E') = E'^m theta_erf(e, E', sigma), from
+    ker_type "LINEAR-THETA" (m = 1) or "INVPOW<n>-THETA" (m = -n).
+    """
+    assert ker_type.endswith("-THETA"), f"Not a truncated power kernel: {ker_type}"
+    base = ker_type[: -len("-THETA")]
+    if base == "LINEAR":
+        return 1
+    if base.startswith("INVPOW"):
+        return -inverse_power_order(base)
+    raise ValueError(f"Invalid truncated power kernel: {ker_type}")
+
+
+def _power_theta_quad(integrand, e, sigma, e0):
+    """
+    int_e0^inf of an integrand containing theta_erf(e, E', sigma), split
+    around the step so that the quadrature resolves it.
+    """
+    nodes = [e0] + [p for p in (e - 6 * sigma, e, e + 6 * sigma) if p > e0] + [mp.inf]
+    return mp.quad(integrand, nodes, method="gauss-legendre")
+
+
+def ft_power_theta(t, alpha, sigma, e, e0, m):
+    '''
+    f_t(e) = int_e0^inf dE' exp(alpha E') * E'^m * theta_erf(e, E', sigma) * exp(-t E')
+
+    The power kernels of ft_linear and ft_inverse_power, truncated above
+    E' = e by the smeared step of ft_theta, so that only the region below e
+    contributes to the sum rule.
+    '''
+    assert e > e0, "truncated power kernel requires e > e0 (the step must lie within the integration domain [e0, inf))"
+    assert m > 0 or e0 > 0, "k(E)=E^-n kernel requires e0 > 0 (E'^-n is not integrable at E'=0 for n >= 1)"
+    return _ft_power_theta_cached(mpf(t), mpf(alpha), mpf(sigma), mpf(e), mpf(e0), m, mp.prec)
+
+
+@lru_cache(maxsize=None)
+def _ft_power_theta_cached(t, alpha, sigma, e, e0, m, prec):
+    #   No closed form: the integral is done numerically, and ft_mp is called
+    #   with the same arguments at every step of the stability analysis.
+    #   prec is part of the key, so that a change of precision recomputes it
+    lam = t - alpha
+    return _power_theta_quad(lambda k: k**m * _theta_erf_mp(e, k, sigma) * mp.exp(-lam * k), e, sigma, e0)
+
+
 def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMGAUSS", n=None):
     '''
     The vector f, from Section II of arXiv:2605.14652, for any coded kernel
@@ -216,6 +263,13 @@ def ft_mp(e, t, sigma_, alpha, e0=mpf("0"), type="EXP", T=0, ker_type="FULLNORMG
         if type == "COSH":
             assert T > 0
             pterm = ft_theta(T - t, alpha, sigma_, e, e0)
+            res = mp.fadd(res, pterm)
+    elif ker_type.endswith("-THETA"):
+        m = power_theta_exponent(ker_type)
+        res = ft_power_theta(t, alpha, sigma_, e, e0, m)
+        if type == "COSH":
+            assert T > 0
+            pterm = ft_power_theta(T - t, alpha, sigma_, e, e0, m)
             res = mp.fadd(res, pterm)
     elif ker_type == "LINEAR":
         res = ft_linear(t, alpha, e0)
@@ -305,6 +359,14 @@ def a0_scalar(e, sigma, alpha, e0=mpf(0), ker_type="FULLNORMGAUSS"):
             return mp.exp(alpha * k) * _theta_erf_mp(e, k, sigma) ** 2
 
         res = mp.quad(integrand3, [e0, mp.inf], method="gauss-legendre")
+    elif ker_type.endswith("-THETA"):
+        #   Finite for any alpha: the step cuts the kernel off above e
+        assert e > e0, "truncated power kernel requires e > e0 (the step must lie within the integration domain [e0, inf))"
+        m = power_theta_exponent(ker_type)
+        assert m > 0 or e0 > 0, "k(E)=E^-n kernel requires e0 > 0 (E'^-n is not integrable at E'=0 for n >= 1)"
+        res = _power_theta_quad(
+            lambda k: mp.exp(alpha * k) * k ** (2 * m) * _theta_erf_mp(e, k, sigma) ** 2, e, sigma, e0
+        )
     elif ker_type == "LINEAR":
         res = a0_power(alpha, e0, 2)
     elif ker_type.startswith("INVPOW"):

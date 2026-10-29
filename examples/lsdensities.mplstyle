@@ -3,16 +3,16 @@
 # This looks fabulous but you can override it by passing your own file to --mplstyle, or edit this one if you think you can do better:)
 #
 
-font.size: 22
+font.size: 15
 font.family: serif
 mathtext.fontset: cm
 
-axes.labelsize: 16
-axes.titlesize: 16
+axes.labelsize: 15
+axes.titlesize: 15
 axes.linewidth: 1.0
 
-xtick.labelsize: 22
-ytick.labelsize: 22
+xtick.labelsize: 15
+ytick.labelsize: 15
 xtick.major.width: 1.5
 ytick.major.width: 1.5
 xtick.major.size: 4

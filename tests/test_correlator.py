@@ -159,3 +159,31 @@ def test_inputs_correlator_analysis_type_validation():
         InputsCorrelatorAnalysis(num_boot="100")
     with pytest.raises(TypeError):
         InputsCorrelatorAnalysis(num_samples="100")
+
+
+@pytest.mark.parametrize("folded", [False, True])
+def test_cholesky_factorises_the_covariance_that_is_used(folded):
+    # mpcholesky must satisfy L L^T = mpcov, the covariance of C(1..tmax),
+    # with or without C(0) correlated with the rest, and for a folded
+    # correlator, whose full covariance is singular.
+    from mpmath import mp
+
+    from lsdensities.utils.common import init_precision
+
+    init_precision(30)
+    T, tmax, nms = 12, 6, 400
+    rng = np.random.default_rng(0)
+    t = np.arange(T)
+    exact = np.exp(-0.5 * t) + np.exp(-0.5 * (T - t))
+    noise = rng.normal(size=(nms, 1)) * 0.1 + rng.normal(size=(nms, T)) * 0.01
+    sample = exact * (1 + noise)
+    if folded:
+        sample = 0.5 * (sample + np.roll(sample[:, ::-1], 1, axis=1))
+    corr = Obs(T=T, tmax=tmax, nms=nms, sample_type="bootstrap")
+    corr.sample = sample
+    corr.evaluate()
+    corr.evaluate_covmatrix()
+    corr.evaluate_cholesky()
+    corr.fill_mp_sample(w_cholesky=True)
+    product = corr.mpcholesky * corr.mpcholesky.T
+    assert mp.mnorm(product - corr.mpcov, 1) < 1e-12 * mp.mnorm(corr.mpcov, 1)

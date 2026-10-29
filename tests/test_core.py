@@ -189,3 +189,37 @@ def test_power_kernels_match_numerical_integrals(ker_type, power, alpha):
 def test_power_kernels_reject_alpha_with_infinite_norm(ker_type, alpha):
     with pytest.raises(ValueError, match="diverges"):
         a0_scalar(e=mpf("0"), sigma=mpf("0"), alpha=alpha, e0=mpf("0.3"), ker_type=ker_type)
+
+
+@pytest.mark.parametrize("ker_type, power", [("LINEAR-THETA", 1), ("INVPOW1-THETA", -1), ("INVPOW3-THETA", -3)])
+@pytest.mark.parametrize("alpha", [mpf("0"), mpf("-0.5"), mpf("0.5")])
+def test_truncated_power_kernels_match_numerical_integrals(ker_type, power, alpha):
+    #   alpha > 0 is allowed: the step makes the norm finite
+    t, e, sigma, e0, T = mpf("3"), mpf("1.0"), mpf("0.1"), mpf("0.3"), 20
+
+    def step(E):
+        return (1 + mp.erf((e - E) / sigma)) / 2
+
+    A0 = a0_scalar(e=e, sigma=sigma, alpha=alpha, e0=e0, ker_type=ker_type)
+    numeric = mp.quad(lambda E: mp.exp(alpha * E) * E ** (2 * power) * step(E) ** 2, mp.linspace(e0, 3, 30) + [mp.inf])
+    assert abs(A0 / numeric - 1) < mpf("1e-20")
+    f = ft_mp(e=e, t=t, sigma_=sigma, alpha=alpha, e0=e0, type="COSH", T=T, ker_type=ker_type)
+    numeric = mp.quad(
+        lambda E: mp.exp(alpha * E) * E**power * step(E) * (mp.exp(-t * E) + mp.exp(-(T - t) * E)),
+        mp.linspace(e0, 3, 30) + [mp.inf],
+    )
+    assert abs(f / numeric - 1) < mpf("1e-20")
+
+
+@pytest.mark.parametrize("ker_type", ["LINEAR", "INVPOW1", "INVPOW3"])
+def test_truncated_power_kernels_tend_to_untruncated_ones(ker_type):
+    #   With the step far above the support of exp(-t E), the truncation has no effect
+    t, e0, alpha = mpf("3"), mpf("0.3"), mpf("-0.5")
+    full = ft_mp(e=mpf("0"), t=t, sigma_=mpf("0"), alpha=alpha, e0=e0, ker_type=ker_type)
+    truncated = ft_mp(e=mpf("40"), t=t, sigma_=mpf("0.1"), alpha=alpha, e0=e0, ker_type=ker_type + "-THETA")
+    assert abs(truncated / full - 1) < mpf("1e-20")
+
+
+def test_truncated_power_kernel_invalid_name_raises():
+    with pytest.raises(ValueError, match="Invalid truncated power kernel"):
+        ft_mp(e=mpf("1"), t=mpf("1"), sigma_=mpf("0.1"), alpha=mpf("0"), e0=mpf("0.3"), ker_type="CAUCHY-THETA")
